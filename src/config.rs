@@ -1,12 +1,22 @@
-use serde::{Deserialize};
 use crate::geometry::Geometry;
+use serde::Deserialize;
+use crate::PixelPoint;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    pub target_map_file : String,
-    pub image_directory : String,
-    pub mode: GenerationMode,
-    pub geometry: Geometry
+    //TODO: Figure out what else we need at some point
+    /// New files - images and html - will be saved in a child directory of [target_directory].
+    pub target_directory: String,
+    pub map_image: MapImageConfig,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct MapImageConfig {
+    /// The file containing the map. ex: sweetestMap.png
+    pub image_file: String,
+    /// The contentless margin surrounding the map. Hexographer's default export has no margin.
+    pub image_margins: Option<PixelPoint>,
+    pub geometry: Geometry,
 }
 
 #[derive(Deserialize, Debug)]
