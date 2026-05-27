@@ -7,7 +7,7 @@ use crate::geometry::{CellMap, ComputesCellMap};
 mod config;
 mod geometry;
 
-#[derive(Deserialize, Debug, Clone, Copy)]
+#[derive(Deserialize, PartialEq, Debug, Clone, Copy)]
 struct PixelPoint {
     x: i32,
     y: i32,

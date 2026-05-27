@@ -11,7 +11,7 @@ mod transform;
 /// A hex map. All rows have the same number of hexes, all columns have the same number of hexes.
 ///
 /// It is possible to input
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct HexagonGeometryDefinition {
     flat_sides: FlatSides,
     number_of_rows: i8,
@@ -23,10 +23,35 @@ pub struct HexagonGeometryDefinition {
     filled_top_left_corner: FilledTopLeftCorner
 }
 
+/// A hex geometry in standard form, meaning that it has flat horizontal sides and the top-left
+/// corner is filled.
+/// Ex:
+///``` picture
+///             ••••••••••
+///            •          •
+///           •            •
+///          •              ••••••••••
+///           •            •          •
+///            •          •            •
+///             ••••••••••              •
+///            •          •            •
+///           •            •          •
+///          •              ••••••••••
+///           •            •
+///            •          •
+///             ••••••••••
+/// ```
+struct StandardizedHexGeometryDefinition {
+    number_of_rows: i8,
+    number_of_columns: i8,
+    hexagon_height: f32,
+    hexagon_width: f32,
+}
+
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 struct HexCellCoordinate {
-    row: i16,
-    column: i16
+    row: i8,
+    column: i8
 }
 impl HexCellCoordinate {
     fn to_coordinate_string(&self) -> String {
@@ -35,28 +60,29 @@ impl HexCellCoordinate {
 }
 
 struct HexCell {
-    coordinate: HexCellCoordinate,
-    cell: Cell
+    hex_coordinate: HexCellCoordinate,
+    neighbor_coordinates: Vec<HexCellCoordinate>,
+    center_point: PixelPoint,
+    bounding_polygon: Vec<PixelPoint>
 }
 
-struct HexCellMap<'map> {
-    cells_by_coordinate: HashMap<&'map HexCellCoordinate, HexCell>,
-    neighbors_by_coordinate: HashMap<&'map HexCellCoordinate, HexCell>,
+struct HexCellMap {
+    cells_by_coordinate: HashMap<HexCellCoordinate, HexCell>
 }
 
-impl HexCellMap<'_> {
-    fn to_cell_map<'map>(self) -> CellMap<'map>{
+impl HexCellMap {
+    fn to_cell_map<'map>(self) -> CellMap{
         unimplemented!()
     }
 }
 
 //TODO: Actually, do this computation ONCE for the flat filled version, rotate the others into this position. Much easier than a thousand ifs
 impl ComputesCellMap for HexagonGeometryDefinition {
-    fn compute_cell_map<'map>(
+    fn compute_cell_map(
         &self,
         map_dimensions: &PixelPoint,
         map_margin: &PixelPoint,
-    ) -> CellMap<'map> {
+    ) -> CellMap {
         let map_dimensions_without_margin = PixelPoint {
             x: map_dimensions.x - 2*map_margin.x,
             y: map_dimensions.y - 2*map_margin.y,
@@ -159,21 +185,21 @@ struct WidthHeight {
 ///
 /// h = 2H/(1+rows)
 ///
-///
-///                           ┌─────╴     ••••••••••                 ╶──────┐
-///                           │          •          •                       │
-///                           │         •            •                      │
-///           h - cell height │        •              ••••••••••            │
-///                           │         •            •          •           │
-///                           │          •          •            •          │
-///                           └─────╴     ••••••••••              •         │
-///                                      •          •            •          │  H - total height
-///                                     •            •          •           │
-///                                    •              ••••••••••            │
-///                                     •            •                      │
-///                                      •          •                       │
-///                                       ••••••••••                 ╶──────┘
-///
+///``` picture
+///                      ┌─────╴     ••••••••••                 ╶──────┐
+///                      │          •          •                       │
+///                      │         •            •                      │
+///      h - cell height │        •              ••••••••••            │
+///                      │         •            •          •           │
+///                      │          •          •            •          │
+///                      └─────╴     ••••••••••              •         │
+///                                 •          •            •          │  H - total height
+///                                •            •          •           │
+///                               •              ••••••••••            │
+///                                •            •                      │
+///                                 •          •                       │
+///                                  ••••••••••                 ╶──────┘
+///```
 ///
 fn compute_flat_cell_dimension(total_flat_cell_dimension: f32, number_of_flat_cells: f32) -> f32 {
     (2.0 * total_flat_cell_dimension) / (number_of_flat_cells + 1.0)
@@ -192,6 +218,7 @@ pub enum FlatSides {
 pub enum FilledTopLeftCorner {
     /// There's an empty hex at the top left of the map. For flat top hexes, the corner looks like this:
     ///
+    ///``` picture
     ///                         ••••••••••
     ///                        •          •
     ///                       •            •
@@ -202,20 +229,22 @@ pub enum FilledTopLeftCorner {
     ///           •            •
     ///            •          •
     ///             ••••••••••
-    ///
+    ///```
     EMPTY,
     /// There's no empty space at the top left of the map. For flat top hexes, the corner looks like this:
     ///
-    ///                        ••••••••••
-    ///                       •          •
-    ///                      •            •
-    ///                     •     (0,0)    ••••••••••
-    ///                      •            •          •
-    ///                       •          •            •
-    ///                        ••••••••••    (0,1)     •
-    ///                                  •            •
-    ///                                   •          •
-    ///                                    ••••••••••
+    ///``` picture
+    ///             ••••••••••
+    ///            •          •
+    ///           •            •
+    ///          •     (0,0)    ••••••••••
+    ///           •            •          •
+    ///            •          •            •
+    ///             ••••••••••    (0,1)     •
+    ///                       •            •
+    ///                        •          •
+    ///                         ••••••••••
+    /// ```
     FILLED,
 }
 
