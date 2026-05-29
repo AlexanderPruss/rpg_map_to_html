@@ -1,11 +1,10 @@
 use crate::PixelPoint;
 use crate::geometry::hexagons::FilledTopLeftCorner::{EMPTY, FILLED};
 use crate::geometry::hexagons::FlatSides::FlatVerticalSides;
-use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
-use crate::geometry::{Cell, CellMap, ComputesCellMap};
+use crate::geometry::{BoundingPolygon, CellMap, ComputesCellMap};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::iter::Copied;
+use crate::geometry::hexagons::transform::{InvertibleStandardizedGeometry, InvertibleTransform};
 
 mod transform;
 
@@ -47,6 +46,176 @@ struct StandardizedHexGeometryDefinition {
     number_of_columns: u8,
     hexagon_height: f32,
     hexagon_width: f32,
+    geometry_dimensions: PixelPoint
+}
+
+type HexCellMap = HashMap<HexCellCoordinate, HexCell>;
+fn to_cell_map(hex_cell_map: HexCellMap) -> CellMap {
+    unimplemented!()
+}
+struct StandardizedHexCellMap {
+    standardized_map: HexCellMap,
+    transforms_applied: Vec<Box<dyn InvertibleTransform>>
+}
+
+impl ComputesCellMap for HexagonGeometryDefinition {
+    
+    fn compute_cell_map(&self, map_dimensions: &PixelPoint, map_margin: &PixelPoint) -> CellMap {
+        let map_dimensions_without_margin = PixelPoint {
+            x: map_dimensions.x - 2 * map_margin.x,
+            y: map_dimensions.y - 2 * map_margin.y,
+        };
+
+        let invertible_standardized_geometry = InvertibleStandardizedGeometry::standardize(self, map_dimensions_without_margin);
+        let (standardized_geometry, transforms_applied) = (invertible_standardized_geometry.standardized_geometry, invertible_standardized_geometry.transforms_applied);
+        let standardized_hex_cell_map: StandardizedHexCellMap = standardized_geometry.compute_standardized_cell_map();
+        
+        let hex_cell_map = standardized_hex_cell_map.invert_standardization(transforms_applied);
+        let hex_cell_map = self.offset_map(hex_cell_map, map_margin);
+        to_cell_map(hex_cell_map);
+    }
+}
+
+impl InvertibleStandardizedGeometry {
+    
+}
+
+impl StandardizedHexGeometryDefinition {
+
+    /// Computes a Hex Cell map, using the assumptions that the Hex Geometry is a
+    /// [StandardizedHexGeometryDefinition] with no margins.
+    fn compute_standardized_cell_map(&self) -> StandardizedHexCellMap {
+        let hex_height = self.compute_hex_height();
+        let hex_widths = self.compute_hex_width(hex_height);
+        let (hex_width, hex_middle_width, hex_edge_with) = (hex_widths.hex_width, hex_widths.hex_middle_width, hex_widths.hex_edge_width);
+
+        let hex_0_0_center = PositionDelta{x: hex_width/2.0, y: hex_height/2.0};
+        let row_position_delta = PositionDelta {x: 0.0, y: hex_height};
+        let column_position_delta = PositionDelta{x: hex_middle_width + hex_edge_with, y:0.0};
+        let odd_column_offset = PositionDelta{x: 0.0, y: hex_height/2.0};
+        
+        
+        
+        for row_coordinate in 0..self.number_of_rows {
+            for column_coordinate in 0.. self.number_of_columns {
+                let coordinate = HexCellCoordinate{row: row_coordinate, column: column_coordinate};
+                
+            }
+        }
+
+        todo!()
+    }
+
+    fn offset_map(&self, p0: _, p1: &PixelPoint) -> _ {
+        todo!()
+    }
+
+    /// The first row adds a full cell height, each further row adds just half.
+    ///
+    /// H = h + (row-1)*h/2.
+    ///
+    /// Solving for h,
+    ///
+    /// h = 2H/(1+rows)
+    ///
+    ///``` picture
+    ///                  ┌─────╴     ••••••••••                 ╶──────┐
+    ///                  │          •          •                       │
+    ///                  │         •            •                      │
+    ///  h - cell height │        •              ••••••••••            │
+    ///                  │         •            •          •           │
+    ///                  │          •          •            •          │
+    ///                  └─────╴     ••••••••••              •         │
+    ///                             •          •            •          │  H - total height
+    ///                            •            •          •           │
+    ///                           •              ••••••••••            │
+    ///                            •            •                      │
+    ///                             •          •                       │
+    ///                              ••••••••••                 ╶──────┘
+    ///```
+    fn compute_hex_height(&self) -> f32 {
+        let total_height = self.geometry_dimensions.y as f32;
+        (2.0 * total_height) / (self.number_of_rows as f32 + 1.0)
+    }
+
+    /// The ratio of width to height is part of the geometry definition, so computing one from the
+    /// other is trivial. We also compute two other widths:
+    ///```picture
+    ///                         W:= map width
+    ///         ┌──────────────────────────────────────────┐
+    ///         │                                          │
+    ///         │  •••••••••••               •••••••••••   │
+    ///         │ •           •             •           •  │
+    ///         ╵•             •           •             • ╵
+    ///         •       •       •••••••••••       •       •
+    ///          •      ╷      •           •             •
+    ///           •     │     •             •           •
+    ///            •••••│•••••       •       •••••••••••
+    ///                 │     •      ╷      •
+    ///                 │      •     │     •
+    ///                 │       •••••│•••••
+    ///                 │            │
+    ///                 └────────────┘
+    ///                    w_delta := x delta whenever we shift over a column
+    ///
+    ///                             w_mid := width of the straight part of the hexagon
+    ///                          ┌─────────┐
+    ///                          ╵         ╵
+    ///                          •••••••••••
+    ///                         •           •
+    ///                        •             •
+    ///                       •       •       •
+    ///                       ╷•             •
+    ///                       │ •           •
+    ///                       │  •••••••••••
+    ///                       │  ╷
+    ///                       │  │
+    ///                       └──┘
+    ///                        w_edge := width of the slanted part of the hexagon
+    ///```
+    ///
+    /// With the relations
+    ///
+    /// ```equation
+    ///     w_mid + 2*w_edge = w_hex
+    ///     w_hex + (1-#cols)*(w_edge + w_mid) = W
+    ///     (implicit: w_delta = w_mid + 2*w_edge)
+    /// ```
+    ///
+    /// Once we habe w_hex, we can compute w_edge and w_mid and use these for building the cell map.
+    fn compute_hex_width(&self, hex_height: f32) -> HexWidths {
+        let hex_width = hex_height * self.hexagon_width / self.hexagon_height;
+        let hex_edge_width = (self.geometry_dimensions.x as f32- self.number_of_columns as f32 * hex_width)/(1.0-self.number_of_columns as f32);
+        let hex_middle_width = hex_width - hex_edge_width;
+        HexWidths{
+            hex_width,
+            hex_middle_width,
+            hex_edge_width
+        }
+    }
+
+}
+
+///```picture
+///                w_mid := width of the straight part of the hexagon
+///             ┌─────────┐
+///             ╵         ╵
+///             •••••••••••
+///            •           •
+///           •             •
+///          •       •       •
+///          ╷•             •
+///          │ •           •
+///          │  •••••••••••
+///          │  ╷
+///          │  │
+///          └──┘
+///           w_edge := width of the slanted part of the hexagon
+/// ```
+struct HexWidths {
+    hex_width: f32,
+    hex_middle_width: f32,
+    hex_edge_width: f32
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -65,130 +234,12 @@ struct HexCell {
     hex_coordinate: HexCellCoordinate,
     neighbor_coordinates: Vec<HexCellCoordinate>,
     center_point: PixelPoint,
-    bounding_polygon: Vec<PixelPoint>,
-}
-
-type HexCellMap = HashMap<HexCellCoordinate, HexCell>;
-
-//TODO: Actually, do this computation ONCE for the flat filled version, rotate the others into this position. Much easier than a thousand ifs
-impl ComputesCellMap for HexagonGeometryDefinition {
-    fn compute_cell_map(&self, map_dimensions: &PixelPoint, map_margin: &PixelPoint) -> CellMap {
-        let map_dimensions_without_margin = PixelPoint {
-            x: map_dimensions.x - 2 * map_margin.x,
-            y: map_dimensions.y - 2 * map_margin.y,
-        };
-        let (map_width, map_height) = (
-            map_dimensions_without_margin.x as f32,
-            map_dimensions_without_margin.y as f32,
-        );
-        let hex_width_height = self.determine_hex_dimensions((map_width, map_height));
-        let (hex_width, hex_height) = (hex_width_height.width, hex_width_height.height);
-
-        let (rotation, geometry) = RotateCounterClockwise::rotate(PixelPoint { x: 0, y: 0 }, self);
-
-        //TODO: This lets us get a precise measure of the angle, actually
-        // The distance a change in the row or column coordinate moves us from the position of hex (0,0).
-        let (rowPositionDelta, columnPositionDelta, offsetDelta) = match self.flat_sides {
-            FlatSides::FlatVerticalSides => (
-                PositionDelta {
-                    x: (map_height - hex_height) / (self.number_of_rows as f32 - 1.0),
-                    y: 0.0,
-                },
-                PositionDelta {
-                    x: hex_width,
-                    y: 0.0,
-                },
-                PositionDelta {
-                    x: hex_width / 2.0,
-                    y: 0.0,
-                },
-            ),
-            FlatSides::FlatHorizontalSides => (
-                PositionDelta {
-                    x: 0.0,
-                    y: hex_height,
-                },
-                PositionDelta {
-                    x: (map_width - hex_width) / (self.number_of_columns as f32 - 1.0),
-                    y: 0.0,
-                },
-                PositionDelta {
-                    x: 0.0,
-                    y: hex_height / 2.0,
-                },
-            ),
-        };
-
-        todo!()
-        //flat: number of cells, length. be it x or y, rows or cols.
-        //non-flat:
-    }
-}
-
-impl HexagonGeometryDefinition {
-    /// The dimension in the direction of flatness can be easily computed, see [compute_flat_cell_dimension].
-    ///
-    /// The other dimension is derived from the ratio that user inputs.
-    fn determine_hex_dimensions(&self, (map_width, map_height): (f32, f32)) -> WidthHeight {
-        match self.flat_sides {
-            FlatSides::FlatVerticalSides => {
-                let width = compute_flat_cell_dimension(map_width, self.number_of_columns as f32);
-                WidthHeight {
-                    height: width * self.hexagon_height / self.hexagon_width,
-                    width,
-                }
-            }
-            FlatSides::FlatHorizontalSides => {
-                let height = compute_flat_cell_dimension(map_height, self.number_of_rows as f32);
-                WidthHeight {
-                    width: height * self.hexagon_width / self.hexagon_height,
-                    height,
-                }
-            }
-        }
-    }
+    bounding_polygon: BoundingPolygon,
 }
 
 struct PositionDelta {
     x: f32,
     y: f32,
-}
-
-struct WidthHeight {
-    height: f32,
-    width: f32,
-}
-
-/// The "flat" cell dimension is the the size of the cell in the direction of flatness.
-///
-/// E.g. if we have [FlatHorizontalSides], then it is the height of the cell.
-///
-/// The first row adds a full cell height, each further row adds just half.
-///
-/// H = h + (row-1)*h/2.
-///
-/// Solving for h,
-///
-/// h = 2H/(1+rows)
-///
-///``` picture
-///                      ┌─────╴     ••••••••••                 ╶──────┐
-///                      │          •          •                       │
-///                      │         •            •                      │
-///      h - cell height │        •              ••••••••••            │
-///                      │         •            •          •           │
-///                      │          •          •            •          │
-///                      └─────╴     ••••••••••              •         │
-///                                 •          •            •          │  H - total height
-///                                •            •          •           │
-///                               •              ••••••••••            │
-///                                •            •                      │
-///                                 •          •                       │
-///                                  ••••••••••                 ╶──────┘
-///```
-///
-fn compute_flat_cell_dimension(total_flat_cell_dimension: f32, number_of_flat_cells: f32) -> f32 {
-    (2.0 * total_flat_cell_dimension) / (number_of_flat_cells + 1.0)
 }
 
 #[derive(Deserialize, Debug, PartialEq, Clone, Copy)]

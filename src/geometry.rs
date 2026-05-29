@@ -1,6 +1,7 @@
 use crate::{PixelBox, PixelPoint};
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::ops::Add;
 
 pub mod hexagons;
 
@@ -25,10 +26,11 @@ pub struct Cell {
     neighbor_coordinates: Vec<String>,
 
     center_point: PixelPoint,
-    /// A list of points defining a polygon that draws this cell in pixel space. This can be approximate.
-    bounding_polygon: Vec<PixelPoint>,
+    bounding_polygon: BoundingPolygon,
 }
 
+/// A list of points defining a polygon in pixel space.
+#[derive(Clone, Debug, PartialEq)]
 pub struct BoundingPolygon {
     points: Vec<PixelPoint>,
 }

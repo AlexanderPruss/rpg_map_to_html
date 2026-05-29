@@ -5,7 +5,7 @@ use crate::geometry::hexagons::{
 };
 
 #[derive(PartialEq, Debug)]
-struct Identity;
+pub struct Identity;
 impl InvertibleTransform for Identity {
     fn inverse_transform_map(&self, cell_map: HexCellMap) -> HexCellMap {
         cell_map
@@ -46,6 +46,7 @@ mod test {
     }
 
     mod inverse_transform_map {
+        use crate::geometry::BoundingPolygon;
         use super::*;
 
         #[test]
@@ -55,7 +56,7 @@ mod test {
                 neighbor_coordinates: vec![HexCellCoordinate { row: 1, column: 0 }],
                 center_point: PixelPoint { x: 100, y: 25 },
                 //Fake data, don't care about it for this test
-                bounding_polygon: vec![PixelPoint { x: 75, y: 50 }],
+                bounding_polygon: BoundingPolygon{points: vec![PixelPoint { x: 75, y: 50 }]},
             }])
             .into_iter()
             .map(|cell| (cell.hex_coordinate, cell))
@@ -69,6 +70,7 @@ mod test {
     }
 
     mod inverse_transform_cell {
+        use crate::geometry::BoundingPolygon;
         use super::*;
 
         #[test]
@@ -78,7 +80,7 @@ mod test {
                 neighbor_coordinates: vec![HexCellCoordinate { row: 1, column: 0 }],
                 center_point: PixelPoint { x: 100, y: 25 },
                 //Fake data, don't care about it for this test
-                bounding_polygon: vec![PixelPoint { x: 75, y: 50 }],
+                bounding_polygon: BoundingPolygon{points: vec![PixelPoint { x: 75, y: 50 }]},
             };
 
             assert_eq!(cell.clone(), Identity {}.inverse_transform_cell(cell));

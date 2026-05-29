@@ -4,7 +4,7 @@ use crate::geometry::hexagons::{HexCellCoordinate, HexagonGeometryDefinition};
 
 #[derive(PartialEq, Debug)]
 pub struct RotateCounterClockwise {
-    rotated_map_dimensions: PixelPoint,
+    pub rotated_map_dimensions: PixelPoint,
     original_number_of_columns: u8,
 }
 
@@ -68,8 +68,8 @@ mod test {
     use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
     use crate::geometry::hexagons::{FilledTopLeftCorner, HexagonGeometryDefinition};
     use crate::geometry::hexagons::{HexCell, HexCellCoordinate, HexCellMap};
-    use FilledTopLeftCorner::FILLED;
     use FilledTopLeftCorner::EMPTY;
+    use FilledTopLeftCorner::FILLED;
     mod rotate_geometry {
         use super::*;
         #[test]
@@ -163,6 +163,7 @@ mod test {
 
     /// Minimal check that we're using the default implementation for transforming maps and cells.
     mod inverse_transform_default_impl {
+        use crate::geometry::BoundingPolygon;
         use super::*;
 
         #[test]
@@ -182,13 +183,13 @@ mod test {
                     neighbor_coordinates: vec![HexCellCoordinate { row: 1, column: 0 }],
                     center_point: PixelPoint { x: 100, y: 25 },
                     //Fake data, don't care about it for this test
-                    bounding_polygon: vec![PixelPoint { x: 75, y: 50 }],
+                    bounding_polygon: BoundingPolygon{points: vec![PixelPoint { x: 75, y: 50 }]},
                 },
                 HexCell {
                     hex_coordinate: HexCellCoordinate { row: 1, column: 0 },
                     neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 0 }],
                     center_point: PixelPoint { x: 100, y: 75 },
-                    bounding_polygon: vec![PixelPoint { x: 50, y: 75 }],
+                    bounding_polygon: BoundingPolygon{points:  vec![PixelPoint { x: 50, y: 75 }]},
                 },
             ])
             .into_iter()
@@ -200,13 +201,13 @@ mod test {
                     neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 0 }],
                     center_point: PixelPoint { x: 75, y: 100 },
                     //Fake data, don't care about it for this test
-                    bounding_polygon: vec![PixelPoint { x: 50, y: 75 }],
+                    bounding_polygon: BoundingPolygon{points: vec![PixelPoint { x: 50, y: 75 }]},
                 },
                 HexCell {
                     hex_coordinate: HexCellCoordinate { row: 0, column: 0 },
                     neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 1 }],
                     center_point: PixelPoint { x: 25, y: 100 },
-                    bounding_polygon: vec![PixelPoint { x: 25, y: 50 }],
+                    bounding_polygon: BoundingPolygon{points: vec![PixelPoint { x: 25, y: 50 }]},
                 },
             ])
             .into_iter()

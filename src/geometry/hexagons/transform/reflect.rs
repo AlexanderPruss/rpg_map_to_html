@@ -3,7 +3,7 @@ use crate::geometry::hexagons::transform::{InvertibleTransform, Transform};
 use crate::geometry::hexagons::{HexCellCoordinate, HexagonGeometryDefinition};
 
 #[derive(PartialEq, Debug)]
-struct ReflectOverXAxis {
+pub struct ReflectOverXAxis {
     map_dimensions: PixelPoint,
     number_of_columns: u8,
 }
@@ -62,12 +62,12 @@ mod test {
     use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
     use crate::geometry::hexagons::{FilledTopLeftCorner, HexagonGeometryDefinition};
     use crate::geometry::hexagons::{HexCell, HexCellCoordinate, HexCellMap};
-    use FilledTopLeftCorner::FILLED;
     use FilledTopLeftCorner::EMPTY;
+    use FilledTopLeftCorner::FILLED;
 
     mod reflect_geometry {
-        use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
         use super::*;
+        use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
         #[test]
         fn reflects_geometries_with_even_columns() {
             let geometry_dimensions = PixelPoint { x: 1000, y: 1500 };
@@ -159,8 +159,9 @@ mod test {
 
     /// Minimal check that we're using the default implementation for transforming maps and cells.
     mod inverse_transform_default_impl {
-        use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
+        use crate::geometry::BoundingPolygon;
         use super::*;
+        use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
 
         #[test]
         fn reflects_hex_cell_map_over_x_axis() {
@@ -179,40 +180,38 @@ mod test {
                     neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 1 }],
                     center_point: PixelPoint { x: 25, y: 100 },
                     //Fake data, don't care about it for this test
-                    bounding_polygon: vec![PixelPoint { x: 75, y: 50 }],
+                    bounding_polygon: BoundingPolygon{points: vec![PixelPoint { x: 75, y: 50 }]},
                 },
                 HexCell {
                     hex_coordinate: HexCellCoordinate { row: 0, column: 1 },
                     neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 0 }],
                     center_point: PixelPoint { x: 75, y: 100 },
-                    bounding_polygon: vec![PixelPoint { x: 55, y: 75 }],
+                    bounding_polygon: BoundingPolygon{points: vec![PixelPoint { x: 55, y: 75 }]},
                 },
             ])
-                .into_iter()
-                .map(|cell| (cell.hex_coordinate, cell))
-                .collect();
+            .into_iter()
+            .map(|cell| (cell.hex_coordinate, cell))
+            .collect();
             let expected_cells_after_inverting_reflection: HexCellMap = Vec::from([
                 HexCell {
                     hex_coordinate: HexCellCoordinate { row: 0, column: 1 },
                     neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 0 }],
                     center_point: PixelPoint { x: 75, y: 100 },
-                    bounding_polygon: vec![PixelPoint { x: 25, y: 50 }],
+                    bounding_polygon: BoundingPolygon{points: vec![PixelPoint { x: 25, y: 50 }]},
                 },
                 HexCell {
                     hex_coordinate: HexCellCoordinate { row: 0, column: 0 },
                     neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 1 }],
                     center_point: PixelPoint { x: 25, y: 100 },
                     //Fake data, don't care about it for this test
-                    bounding_polygon: vec![PixelPoint { x: 45, y: 75 }],
+                    bounding_polygon: BoundingPolygon{points: vec![PixelPoint { x: 45, y: 75 }]},
                 },
-
             ])
-                .into_iter()
-                .map(|cell| (cell.hex_coordinate, cell))
-                .collect();
+            .into_iter()
+            .map(|cell| (cell.hex_coordinate, cell))
+            .collect();
 
-            let (transform, _) =
-                ReflectOverXAxis::reflect(geometry_dimensions, &input_geometry);
+            let (transform, _) = ReflectOverXAxis::reflect(geometry_dimensions, &input_geometry);
             let cells_after_inverse_rotation = transform.inverse_transform_map(reflected_cells);
 
             assert_eq!(
@@ -223,12 +222,12 @@ mod test {
     }
 
     mod inverse_transform_point {
+        use crate::PixelPoint;
         use crate::geometry::hexagons::FilledTopLeftCorner::FILLED;
         use crate::geometry::hexagons::FlatSides::FlatVerticalSides;
         use crate::geometry::hexagons::HexagonGeometryDefinition;
         use crate::geometry::hexagons::transform::InvertibleTransform;
         use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
-        use crate::PixelPoint;
 
         #[test]
         fn reflects_points_over_x_axis() {
@@ -241,8 +240,7 @@ mod test {
                 hexagon_width: 20.0,
                 filled_top_left_corner: FILLED,
             };
-            let (transform, _) =
-                ReflectOverXAxis::reflect(geometry_dimensions, &input_geometry);
+            let (transform, _) = ReflectOverXAxis::reflect(geometry_dimensions, &input_geometry);
 
             let point_on_y_axis = PixelPoint { x: 0, y: 25 };
             assert_eq!(
@@ -265,8 +263,8 @@ mod test {
     }
 
     mod inverse_transform_coordinate {
-        use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
         use super::*;
+        use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
 
         #[test]
         fn rotates_coordinates_clockwise() {
@@ -279,8 +277,7 @@ mod test {
                 hexagon_width: 20.0,
                 filled_top_left_corner: FILLED,
             };
-            let (transform, _) =
-                ReflectOverXAxis::reflect(geometry_dimensions, &input_geometry);
+            let (transform, _) = ReflectOverXAxis::reflect(geometry_dimensions, &input_geometry);
 
             let coordinate_on_y_axis = HexCellCoordinate { row: 0, column: 5 };
             assert_eq!(
