@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-use std::iter::Copied;
 use crate::PixelPoint;
-use crate::geometry::{Cell, CellMap, ComputesCellMap};
-use serde::Deserialize;
 use crate::geometry::hexagons::FilledTopLeftCorner::{EMPTY, FILLED};
 use crate::geometry::hexagons::FlatSides::FlatVerticalSides;
+use crate::geometry::{Cell, CellMap, ComputesCellMap};
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::iter::Copied;
 
 mod transform;
 
@@ -14,13 +14,13 @@ mod transform;
 #[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct HexagonGeometryDefinition {
     flat_sides: FlatSides,
-    number_of_rows: i8,
-    number_of_columns: i8,
+    number_of_rows: u8,
+    number_of_columns: u8,
     /// The units here can be pixels, cm, whatever, so long as they're consistent with [hexagon_width]
     hexagon_height: f32,
     /// The units here can be pixels, cm, whatever, so long as they're consistent with [hexagon_height]
     hexagon_width: f32,
-    filled_top_left_corner: FilledTopLeftCorner
+    filled_top_left_corner: FilledTopLeftCorner,
 }
 
 /// A hex geometry in standard form, meaning that it has flat horizontal sides and the top-left
@@ -42,16 +42,16 @@ pub struct HexagonGeometryDefinition {
 ///             ••••••••••
 /// ```
 struct StandardizedHexGeometryDefinition {
-    number_of_rows: i8,
-    number_of_columns: i8,
+    number_of_rows: u8,
+    number_of_columns: u8,
     hexagon_height: f32,
     hexagon_width: f32,
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 struct HexCellCoordinate {
-    row: i8,
-    column: i8
+    row: u8,
+    column: u8,
 }
 impl HexCellCoordinate {
     fn to_coordinate_string(&self) -> String {
@@ -59,33 +59,22 @@ impl HexCellCoordinate {
     }
 }
 
+#[derive(Debug, PartialEq, Clone)]
 struct HexCell {
     hex_coordinate: HexCellCoordinate,
     neighbor_coordinates: Vec<HexCellCoordinate>,
     center_point: PixelPoint,
-    bounding_polygon: Vec<PixelPoint>
+    bounding_polygon: Vec<PixelPoint>,
 }
 
-struct HexCellMap {
-    cells_by_coordinate: HashMap<HexCellCoordinate, HexCell>
-}
-
-impl HexCellMap {
-    fn to_cell_map<'map>(self) -> CellMap{
-        unimplemented!()
-    }
-}
+type HexCellMap = HashMap<HexCellCoordinate, HexCell>;
 
 //TODO: Actually, do this computation ONCE for the flat filled version, rotate the others into this position. Much easier than a thousand ifs
 impl ComputesCellMap for HexagonGeometryDefinition {
-    fn compute_cell_map(
-        &self,
-        map_dimensions: &PixelPoint,
-        map_margin: &PixelPoint,
-    ) -> CellMap {
+    fn compute_cell_map(&self, map_dimensions: &PixelPoint, map_margin: &PixelPoint) -> CellMap {
         let map_dimensions_without_margin = PixelPoint {
-            x: map_dimensions.x - 2*map_margin.x,
-            y: map_dimensions.y - 2*map_margin.y,
+            x: map_dimensions.x - 2 * map_margin.x,
+            y: map_dimensions.y - 2 * map_margin.y,
         };
         let (map_width, map_height) = (
             map_dimensions_without_margin.x as f32,
@@ -140,20 +129,14 @@ impl HexagonGeometryDefinition {
     fn determine_hex_dimensions(&self, (map_width, map_height): (f32, f32)) -> WidthHeight {
         match self.flat_sides {
             FlatSides::FlatVerticalSides => {
-                let width = compute_flat_cell_dimension(
-                    map_width,
-                    self.number_of_columns as f32,
-                );
+                let width = compute_flat_cell_dimension(map_width, self.number_of_columns as f32);
                 WidthHeight {
                     height: width * self.hexagon_height / self.hexagon_width,
                     width,
                 }
             }
             FlatSides::FlatHorizontalSides => {
-                let height = compute_flat_cell_dimension(
-                    map_height,
-                    self.number_of_rows as f32,
-                );
+                let height = compute_flat_cell_dimension(map_height, self.number_of_rows as f32);
                 WidthHeight {
                     width: height * self.hexagon_width / self.hexagon_height,
                     height,
@@ -250,18 +233,18 @@ pub enum FilledTopLeftCorner {
 
 impl FilledTopLeftCorner {
     fn switch(&self) -> FilledTopLeftCorner {
-        match  self {
+        match self {
             EMPTY => FILLED,
-            FILLED =>EMPTY
+            FILLED => EMPTY,
         }
     }
 }
 
 impl FlatSides {
     fn switch(&self) -> FlatSides {
-        match  self {
+        match self {
             FlatSides::FlatHorizontalSides => FlatVerticalSides,
-            FlatVerticalSides => FlatSides::FlatHorizontalSides
+            FlatVerticalSides => FlatSides::FlatHorizontalSides,
         }
     }
 }

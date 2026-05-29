@@ -13,11 +13,9 @@ mod rotate;
 
 pub trait InvertibleTransform {
     fn transform(&self, geometry: &HexagonGeometryDefinition) -> HexagonGeometryDefinition;
-    
+
     fn inverse_transform_map(&self, cell_map: HexCellMap) -> HexCellMap {
-        HexCellMap {
-            cells_by_coordinate: cell_map
-                .cells_by_coordinate
+         cell_map
                 .into_iter()
                 .map(|(coordinate, cell)| {
                     (
@@ -25,8 +23,7 @@ pub trait InvertibleTransform {
                         self.inverse_transform_cell(cell),
                     )
                 })
-                .collect(),
-        }
+                .collect()
     }
 
     fn inverse_transform_cell(&self, hex_cell: HexCell) -> HexCell {
