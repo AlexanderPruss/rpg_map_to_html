@@ -90,7 +90,7 @@ impl ComputesCellMap for HexagonGeometryDefinition {
 impl InvertibleStandardizedGeometry {
     /// Computes a Hex Cell map, using the assumptions that the Hex Geometry is a
     /// [StandardizedHexGeometryDefinition] with no margins.
-    fn compute_standardized_cell_map(&self) -> StandardizedHexCellMap {
+    fn compute_standardized_cell_map(self) -> StandardizedHexCellMap {
         let hex_height = self.standardized_geometry.compute_hex_height();
         let hex_widths = self.standardized_geometry.compute_hex_width(hex_height);
         let (hex_width, hex_middle_width, hex_edge_with) = (
@@ -178,7 +178,7 @@ impl InvertibleStandardizedGeometry {
         }
         StandardizedHexCellMap{
             standardized_map: hex_cell_map,
-            transforms_applied: self.transforms_applied, //TODO: UGH
+            transforms_applied: self.transforms_applied,
         }
     }
 
