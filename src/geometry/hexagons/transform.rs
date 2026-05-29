@@ -7,23 +7,24 @@ use crate::geometry::hexagons::{
 };
 use std::collections::HashMap;
 
-mod identity;
-mod reflect;
-mod rotate;
+pub mod identity;
+pub mod reflect;
+pub mod rotate;
 
-pub trait InvertibleTransform {
+trait Transform {
     fn transform(&self, geometry: &HexagonGeometryDefinition) -> HexagonGeometryDefinition;
-
+}
+pub trait InvertibleTransform {
     fn inverse_transform_map(&self, cell_map: HexCellMap) -> HexCellMap {
-         cell_map
-                .into_iter()
-                .map(|(coordinate, cell)| {
-                    (
-                        self.inverse_transform_coordinate(coordinate),
-                        self.inverse_transform_cell(cell),
-                    )
-                })
-                .collect()
+        cell_map
+            .into_iter()
+            .map(|(coordinate, cell)| {
+                (
+                    self.inverse_transform_coordinate(coordinate),
+                    self.inverse_transform_cell(cell),
+                )
+            })
+            .collect()
     }
 
     fn inverse_transform_cell(&self, hex_cell: HexCell) -> HexCell {
@@ -52,14 +53,14 @@ pub trait InvertibleTransform {
 /// geometry to be inverted back onto the original one.
 ///
 /// The [crate::geometry::hexagons] module computes a [CellMap] for this standardized geometry.
-pub struct InvertibleStandardizedGeometry {
+struct InvertibleStandardizedGeometry {
     standardized_geometry: StandardizedHexGeometryDefinition,
     /// The transforms applied to the original map in order to standardize it, in order of application.
     transforms_applied: Vec<Box<dyn InvertibleTransform>>,
 }
 
 impl InvertibleStandardizedGeometry {
-    pub fn standardize(
+    fn standardize(
         original_geometry: &HexagonGeometryDefinition,
     ) -> InvertibleStandardizedGeometry {
         let mut standardized_geometry = original_geometry.clone();

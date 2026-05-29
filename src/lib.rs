@@ -1,8 +1,8 @@
-use config::Config;
-use std::error::Error;
-use serde::Deserialize;
 use crate::config::MapImageConfig;
 use crate::geometry::{CellMap, ComputesCellMap};
+use config::Config;
+use serde::Deserialize;
+use std::error::Error;
 
 mod config;
 mod geometry;

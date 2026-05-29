@@ -1,6 +1,6 @@
+use crate::PixelPoint;
 use crate::geometry::Geometry;
 use serde::Deserialize;
-use crate::PixelPoint;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -24,7 +24,7 @@ pub enum GenerationMode {
     /// (Re)creates a map, discarding the previous one if it already exists
     CreateOverwrite,
     /// Updates the images of an existing map, adding new pages as needed
-    Update
+    Update,
 }
 
 pub fn parse_config(args: &[String]) -> Config {

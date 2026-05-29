@@ -1,6 +1,7 @@
 use crate::PixelPoint;
 use crate::geometry::hexagons::FilledTopLeftCorner::{EMPTY, FILLED};
 use crate::geometry::hexagons::FlatSides::FlatVerticalSides;
+use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
 use crate::geometry::{Cell, CellMap, ComputesCellMap};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -82,6 +83,8 @@ impl ComputesCellMap for HexagonGeometryDefinition {
         );
         let hex_width_height = self.determine_hex_dimensions((map_width, map_height));
         let (hex_width, hex_height) = (hex_width_height.width, hex_width_height.height);
+
+        let (rotation, geometry) = RotateCounterClockwise::rotate(PixelPoint { x: 0, y: 0 }, self);
 
         //TODO: This lets us get a precise measure of the angle, actually
         // The distance a change in the row or column coordinate moves us from the position of hex (0,0).

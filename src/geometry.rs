@@ -11,11 +11,13 @@ pub enum Geometry {
     /// A hex map.
     ///
     /// Currently one where all rows have the same number of hexes, and all columns have the same number of hexes
-    Hexagons{definition: hexagons::HexagonGeometryDefinition},
+    Hexagons {
+        definition: hexagons::HexagonGeometryDefinition,
+    },
 }
 
 pub struct CellMap {
-    cells_by_coordinate: HashMap<String, Cell>
+    cells_by_coordinate: HashMap<String, Cell>,
 }
 
 pub struct Cell {
@@ -24,7 +26,7 @@ pub struct Cell {
 
     center_point: PixelPoint,
     /// A list of points defining a polygon that draws this cell in pixel space. This can be approximate.
-    bounding_polygon: Vec<PixelPoint>
+    bounding_polygon: Vec<PixelPoint>,
 }
 
 pub struct BoundingPolygon {
@@ -74,15 +76,11 @@ pub trait ComputesCellMap {
 }
 
 impl ComputesCellMap for Geometry {
-    fn compute_cell_map(
-        &self,
-        map_dimensions: &PixelPoint,
-        map_margin: &PixelPoint,
-    ) -> CellMap {
+    fn compute_cell_map(&self, map_dimensions: &PixelPoint, map_margin: &PixelPoint) -> CellMap {
         match self {
-            Geometry::Hexagons{definition: hex_geometry_defn } => {
-                hex_geometry_defn.compute_cell_map(map_dimensions, map_margin)
-            }
+            Geometry::Hexagons {
+                definition: hex_geometry_defn,
+            } => hex_geometry_defn.compute_cell_map(map_dimensions, map_margin),
         }
     }
 }

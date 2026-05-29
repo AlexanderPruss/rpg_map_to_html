@@ -1,9 +1,9 @@
 use crate::PixelPoint;
-use crate::geometry::hexagons::transform::InvertibleTransform;
+use crate::geometry::hexagons::transform::{InvertibleTransform, Transform};
 use crate::geometry::hexagons::{HexCellCoordinate, HexagonGeometryDefinition};
 
 #[derive(PartialEq, Debug)]
-struct RotateCounterClockwise {
+pub struct RotateCounterClockwise {
     rotated_map_dimensions: PixelPoint,
     original_number_of_columns: u8,
 }
@@ -25,7 +25,7 @@ impl RotateCounterClockwise {
     }
 }
 
-impl InvertibleTransform for RotateCounterClockwise {
+impl Transform for RotateCounterClockwise {
     fn transform(&self, geometry: &HexagonGeometryDefinition) -> HexagonGeometryDefinition {
         let mut filled_top_corner = geometry.filled_top_left_corner;
         if geometry.number_of_columns % 2 == 0 {
@@ -40,7 +40,9 @@ impl InvertibleTransform for RotateCounterClockwise {
             filled_top_left_corner: filled_top_corner,
         }
     }
+}
 
+impl InvertibleTransform for RotateCounterClockwise {
     fn inverse_transform_point(&self, point: PixelPoint) -> PixelPoint {
         PixelPoint {
             x: self.rotated_map_dimensions.y - point.y,
@@ -61,13 +63,13 @@ impl InvertibleTransform for RotateCounterClockwise {
 #[cfg(test)]
 mod test {
     use crate::PixelPoint;
-    use crate::geometry::hexagons::FilledTopLeftCorner::EMPTY;
     use crate::geometry::hexagons::FlatSides::{FlatHorizontalSides, FlatVerticalSides};
     use crate::geometry::hexagons::transform::InvertibleTransform;
     use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
     use crate::geometry::hexagons::{FilledTopLeftCorner, HexagonGeometryDefinition};
     use crate::geometry::hexagons::{HexCell, HexCellCoordinate, HexCellMap};
     use FilledTopLeftCorner::FILLED;
+    use FilledTopLeftCorner::EMPTY;
     mod rotate_geometry {
         use super::*;
         #[test]

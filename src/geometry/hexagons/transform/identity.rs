@@ -1,17 +1,12 @@
 use crate::PixelPoint;
-use crate::geometry::hexagons::transform::InvertibleTransform;
+use crate::geometry::hexagons::transform::{InvertibleTransform, Transform};
 use crate::geometry::hexagons::{
     HexCell, HexCellCoordinate, HexCellMap, HexagonGeometryDefinition,
 };
 
 #[derive(PartialEq, Debug)]
 struct Identity;
-
 impl InvertibleTransform for Identity {
-    fn transform(&self, geometry: &HexagonGeometryDefinition) -> HexagonGeometryDefinition {
-        geometry.clone()
-    }
-
     fn inverse_transform_map(&self, cell_map: HexCellMap) -> HexCellMap {
         cell_map
     }
