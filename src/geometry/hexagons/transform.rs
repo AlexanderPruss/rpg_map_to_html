@@ -1,6 +1,6 @@
 use crate::geometry::BoundingPolygon;
 use crate::PixelPoint;
-use crate::geometry::hexagons::{FilledTopLeftCorner, FlatSides, HexCell, HexCellCoordinate, HexCellMap, HexagonGeometryDefinition, StandardizedHexGeometryDefinition};
+use crate::geometry::hexagons::{FilledTopLeftCorner, FlatSides, HexCell, HexCellCoordinate, HexCellMap, HexagonGeometryDefinition, StandardizedHexCellMap, StandardizedHexGeometryDefinition};
 use crate::geometry::hexagons::transform::identity::Identity;
 use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
 use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;

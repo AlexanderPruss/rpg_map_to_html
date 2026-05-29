@@ -67,6 +67,20 @@ impl BoundingPolygon {
                 .collect(),
         }
     }
+    
+    pub fn clamp(&self, max: PixelPoint) -> BoundingPolygon {
+        BoundingPolygon {
+            points: self
+                .points
+                .iter()
+                .map(|point| 
+                    PixelPoint {
+                    x: point.x.clamp(0, max.x),
+                    y: point.y.clamp(0, max.y),
+                })
+                .collect(),
+        }
+    }
 }
 
 pub trait ComputesCellMap {
