@@ -13,18 +13,16 @@ mod transform;
 mod standardized;
 
 /// A hex map. All rows have the same number of hexes, all columns have the same number of hexes.
-///
-/// It is possible to input
 #[derive(Deserialize, PartialEq, Debug, Clone)]
 pub struct HexagonGeometryDefinition {
-    flat_sides: FlatSides,
-    number_of_rows: u8,
-    number_of_columns: u8,
+    pub flat_sides: FlatSides,
+    pub number_of_rows: u8,
+    pub number_of_columns: u8,
     /// The units here can be pixels, cm, whatever, so long as they're consistent with [hexagon_width]
-    hexagon_height: f32,
+    pub hexagon_height: f32,
     /// The units here can be pixels, cm, whatever, so long as they're consistent with [hexagon_height]
-    hexagon_width: f32,
-    filled_top_left_corner: FilledTopLeftCorner,
+    pub hexagon_width: f32,
+    pub filled_top_left_corner: FilledTopLeftCorner,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
