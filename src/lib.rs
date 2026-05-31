@@ -46,9 +46,9 @@ impl Add<PixelPoint> for PixelPoint {
 /// A Box in pixel space, defined by two opposite corners.
 ///
 /// Remember that the top-left corner of an image has X,Y coordinate (0,0).
-struct PixelBox {
-    top_left_corner: PixelPoint,
-    bottom_right_corner: PixelPoint,
+pub struct PixelBox {
+    pub top_left_corner: PixelPoint,
+    pub bottom_right_corner: PixelPoint,
 }
 
 #[derive(Debug, Clone, Copy)]

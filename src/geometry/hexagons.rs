@@ -6,6 +6,7 @@ use crate::geometry::hexagons::transform::InvertibleStandardizedGeometry;
 use crate::geometry::{BoundingPolygon, Cell, CellMap, ComputesCellMap};
 use serde::Deserialize;
 use std::collections::HashMap;
+use FlatSides::FlatHorizontalSides;
 
 mod transform;
 
@@ -100,16 +101,16 @@ impl FilledTopLeftCorner {
 impl FlatSides {
     fn switch(&self) -> FlatSides {
         match self {
-            FlatSides::FlatHorizontalSides => FlatVerticalSides,
-            FlatVerticalSides => FlatSides::FlatHorizontalSides,
+            FlatHorizontalSides => FlatVerticalSides,
+            FlatVerticalSides => FlatHorizontalSides,
         }
     }
 }
 
 type HexCellMap = HashMap<HexCellCoordinate, HexCell>;
 
-fn offset_map(hex_cell_map: HexCellMap, map_margin: PixelPoint) -> HexCellMap {
-    if (map_margin == PixelPoint { x: 0, y: 0 }) {
+fn offset_map(hex_cell_map: HexCellMap, offset: PixelPoint) -> HexCellMap {
+    if (offset == PixelPoint { x: 0, y: 0 }) {
         return hex_cell_map;
     }
     hex_cell_map
@@ -118,8 +119,8 @@ fn offset_map(hex_cell_map: HexCellMap, map_margin: PixelPoint) -> HexCellMap {
             let cell_shifted_by_margin = HexCell {
                 hex_coordinate: cell.hex_coordinate,
                 neighbor_coordinates: cell.neighbor_coordinates,
-                center_point: cell.center_point + map_margin,
-                bounding_polygon: cell.bounding_polygon.offset_by(map_margin),
+                center_point: cell.center_point + offset,
+                bounding_polygon: cell.bounding_polygon.offset_by(offset),
             };
             (coordinate, cell_shifted_by_margin)
         })
@@ -163,5 +164,51 @@ impl ComputesCellMap for HexagonGeometryDefinition {
         let hex_cell_map = standardized_hex_cell_map.invert_standardization();
         let hex_cell_map = offset_map(hex_cell_map, map_margin);
         to_cell_map(hex_cell_map)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    mod hex_cell_coordinate {
+        #[test]
+        fn stringifies_the_coordinate(){
+            unimplemented!()
+        }
+    }
+    
+    mod offset_map {
+        
+        #[test]
+        fn offsets_all_pixels_of_the_cell_map(){
+            unimplemented!()
+        }
+        
+        #[test]
+        fn changes_nothing_if_the_offset_is_empty(){
+            unimplemented!()
+        }
+    }
+    
+    mod to_cell_map {
+        #[test]
+        fn stringifies_hex_coordinates() {
+            unimplemented!()
+
+        }
+    }
+    
+    mod compute_cell_map {
+        
+        #[test]
+        fn computes_a_cell_map_for_standardized_geometries(){
+            unimplemented!()
+        }
+
+        #[test]
+        fn computes_a_cell_map_for_unstandardized_geometries(){
+            unimplemented!()
+        }
     }
 }

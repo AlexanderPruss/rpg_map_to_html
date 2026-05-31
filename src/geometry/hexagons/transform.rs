@@ -5,8 +5,9 @@ use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
 use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
 use crate::geometry::hexagons::{
     FilledTopLeftCorner, FlatSides, HexCell, HexCellCoordinate, HexCellMap,
-    HexagonGeometryDefinition, StandardizedHexCellMap, StandardizedHexGeometryDefinition,
+    HexagonGeometryDefinition,
 };
+use crate::geometry::hexagons::standardized::StandardizedHexGeometryDefinition;
 
 pub mod identity;
 pub mod reflect;
