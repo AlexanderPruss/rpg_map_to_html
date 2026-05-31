@@ -99,41 +99,29 @@ impl ComputesCellMap for Geometry {
 #[cfg(test)]
 mod test {
     use super::*;
-    //TODO: These serialization tests need to be integration tests with assertions
 
-    #[test]
-    #[ignore]
-    fn should_deserialize_complete_hex_geometry<'map>() {
-        let serialized = r#"
-            {
-                "type": "Hexagons",
-                "flat_sides": "FlatVerticalSides",
-                "number_of_rows": 2,
-                "number_of_columns": 3,
-                "hexagon_height": 40.2,
-                "hexagon_width": 50.1,
-                "row_details": "UNIFORM",
-                "column_details": "UNIFORM",
-                "filled_top_left_corner": "EMPTY"
+    mod bounding_polygon {
+
+        mod restrict_to_bounding_box {
+            #[test]
+            fn clamps_all_polygon_points() {
+                unimplemented!()
             }
-        "#;
-        let _hex_geometry: Geometry = serde_json::from_str(&serialized).unwrap();
+        }
+
+        mod offset_by {
+            #[test]
+            fn offsets_the_polygon_in_pixel_space() {
+                unimplemented!()
+            }
+        }
+
+        mod clamp {
+            #[test]
+            fn clamps_with_an_implicit_lower_bound(){
+                unimplemented!()
+            }
+        }
     }
 
-    #[test]
-    #[ignore]
-    fn should_deserialize_hex_geometry_without_optional_fields() {
-        let serialized = r#"
-            {
-                "type": "Hexagons",
-                "flat_sides": "FlatVerticalSides",
-                "number_of_rows": 2,
-                "number_of_columns": 3,
-                "hexagon_height": 40.2,
-                "hexagon_width": 50.1,
-                "filled_top_left_corner": "EMPTY"
-            }
-        "#;
-        let _hex_geometry: Geometry = serde_json::from_str(&serialized).unwrap();
-    }
 }

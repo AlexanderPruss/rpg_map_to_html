@@ -171,26 +171,66 @@ impl ComputesCellMap for HexagonGeometryDefinition {
 mod test {
     use super::*;
 
+    mod deserialization {
+        use crate::geometry::Geometry;
+        use crate::geometry::hexagons::FilledTopLeftCorner::EMPTY;
+        use crate::geometry::hexagons::FlatSides::FlatVerticalSides;
+        use crate::geometry::hexagons::HexagonGeometryDefinition;
+
+        #[test]
+        fn should_deserialize_complete_hex_geometry<'map>() {
+            let serialized = r#"
+            {
+                "type": "Hexagons",
+                "definition": {
+                    "flat_sides": "FlatVerticalSides",
+                    "number_of_rows": 2,
+                    "number_of_columns": 3,
+                    "hexagon_height": 40.2,
+                    "hexagon_width": 50.1,
+                    "filled_top_left_corner": "EMPTY"
+                }
+            }
+        "#;
+            let hex_geometry: Geometry = serde_json::from_str(&serialized).unwrap();
+            match hex_geometry {
+                Geometry::Hexagons { definition } => {
+                    assert_eq!(definition, HexagonGeometryDefinition {
+                        flat_sides: FlatVerticalSides,
+                        number_of_rows: 2,
+                        number_of_columns: 3,
+                        hexagon_height: 40.2,
+                        hexagon_width: 50.1,
+                        filled_top_left_corner: EMPTY
+                    })
+                }
+                _ => panic!("Expected to deserialize a hexagon geometry.")
+            }
+
+        }
+
+    }
+
     mod hex_cell_coordinate {
         #[test]
         fn stringifies_the_coordinate(){
             unimplemented!()
         }
     }
-    
+
     mod offset_map {
-        
+
         #[test]
         fn offsets_all_pixels_of_the_cell_map(){
             unimplemented!()
         }
-        
+
         #[test]
         fn changes_nothing_if_the_offset_is_empty(){
             unimplemented!()
         }
     }
-    
+
     mod to_cell_map {
         #[test]
         fn stringifies_hex_coordinates() {
@@ -198,9 +238,9 @@ mod test {
 
         }
     }
-    
+
     mod compute_cell_map {
-        
+
         #[test]
         fn computes_a_cell_map_for_standardized_geometries(){
             unimplemented!()
