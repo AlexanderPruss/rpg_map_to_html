@@ -1,7 +1,6 @@
 use crate::{PixelBox, PixelPoint};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::ops::Add;
 
 pub mod hexagons;
 
@@ -67,13 +66,13 @@ impl BoundingPolygon {
                 .collect(),
         }
     }
-    
+
     pub fn clamp(&self, max: PixelPoint) -> BoundingPolygon {
         BoundingPolygon {
             points: self
                 .points
                 .iter()
-                .map(|point| 
+                .map(|point|
                     PixelPoint {
                     x: point.x.clamp(0, max.x),
                     y: point.y.clamp(0, max.y),
@@ -86,13 +85,13 @@ impl BoundingPolygon {
 pub trait ComputesCellMap {
     fn compute_cell_map<'map>(
         &self,
-        map_dimensions: &PixelPoint,
-        map_margin: &PixelPoint,
+        map_dimensions: PixelPoint,
+        map_margin: PixelPoint,
     ) -> CellMap;
 }
 
 impl ComputesCellMap for Geometry {
-    fn compute_cell_map(&self, map_dimensions: &PixelPoint, map_margin: &PixelPoint) -> CellMap {
+    fn compute_cell_map(&self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap {
         match self {
             Geometry::Hexagons {
                 definition: hex_geometry_defn,

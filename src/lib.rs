@@ -1,8 +1,8 @@
 use crate::config::MapImageConfig;
 use crate::geometry::{CellMap, ComputesCellMap};
-use config::Config;
 use serde::Deserialize;
 use std::error::Error;
+use std::ops::Add;
 
 mod config;
 mod geometry;
@@ -11,6 +11,17 @@ mod geometry;
 struct PixelPoint {
     x: i32,
     y: i32,
+}
+
+impl Add<PixelPoint> for PixelPoint {
+    type Output = PixelPoint;
+
+    fn add(self, rhs: PixelPoint) -> PixelPoint {
+        PixelPoint{
+            x: self.x + rhs.x,
+            y: self.y + rhs.y
+        }
+    }
 }
 
 /// A Box in pixel space, defined by two opposite corners.
@@ -26,6 +37,11 @@ fn generate_map(args: &[String]) -> Result<(), Box<dyn Error>> {
     unimplemented!()
 }
 
-fn compute_map_geometry(map_image_config: &MapImageConfig) -> CellMap {
-    todo!();
+pub fn compute_map_geometry(map_image_config: &MapImageConfig) -> CellMap {
+    let map_margin = map_image_config.image_margins.unwrap_or( PixelPoint { x: 0, y: 0 });
+    map_image_config.geometry.compute_cell_map(temp_get_image_dimensions(&map_image_config.image_file), map_margin)
+}
+
+fn temp_get_image_dimensions(image_path : &String) -> PixelPoint {
+    unimplemented!()
 }

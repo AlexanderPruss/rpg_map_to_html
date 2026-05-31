@@ -2,7 +2,7 @@ use crate::PixelPoint;
 use crate::geometry::hexagons::FilledTopLeftCorner::{EMPTY, FILLED};
 use crate::geometry::hexagons::FlatSides::FlatVerticalSides;
 use crate::geometry::hexagons::transform::{InvertibleStandardizedGeometry, InvertibleTransform};
-use crate::geometry::{BoundingPolygon, CellMap, ComputesCellMap};
+use crate::geometry::{BoundingPolygon, Cell, CellMap, ComputesCellMap};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::ops::{Add, Mul};
@@ -51,11 +51,33 @@ struct StandardizedHexGeometryDefinition {
 }
 
 type HexCellMap = HashMap<HexCellCoordinate, HexCell>;
-fn offset_map(hex_cell_map: HexCellMap, map_margin: &PixelPoint) -> HexCellMap {
-    unimplemented!()
+
+fn offset_map(hex_cell_map: HexCellMap, map_margin: PixelPoint) -> HexCellMap {
+    if(map_margin == PixelPoint{x: 0, y: 0}) {
+        return hex_cell_map
+    }
+    hex_cell_map.into_iter().map(|(coordinate, cell)| {
+        let cell_shifted_by_margin = HexCell {
+            hex_coordinate: cell.hex_coordinate,
+            neighbor_coordinates: cell.neighbor_coordinates,
+            center_point: cell.center_point + map_margin,
+            bounding_polygon: cell.bounding_polygon.offset_by(map_margin),
+        };
+        (coordinate, cell_shifted_by_margin)
+    }).collect()
 }
 fn to_cell_map(hex_cell_map: HexCellMap) -> CellMap {
-    unimplemented!()
+    CellMap{
+        cells_by_coordinate: hex_cell_map.into_iter().map(|(hex_coordinate, hex_cell)| {
+            (hex_coordinate.to_coordinate_string(),
+            Cell{
+                coordinate: hex_cell.hex_coordinate.to_coordinate_string(),
+                neighbor_coordinates: hex_cell.neighbor_coordinates.into_iter().map(|hex_coordinate| hex_coordinate.to_coordinate_string()).collect(),
+                center_point: hex_cell.center_point,
+                bounding_polygon: hex_cell.bounding_polygon,
+            })
+        }).collect()
+    }
 }
 
 struct StandardizedHexCellMap {
@@ -64,13 +86,22 @@ struct StandardizedHexCellMap {
 }
 
 impl StandardizedHexCellMap {
-    pub(crate) fn invert_standardization(&self) -> HexCellMap {
-        todo!()
+    
+    /// Consumes the [StandardizedHexCellMap] but inverting the transforms that standardized it. 
+    /// 
+    /// This results in a [HexCellMap] for the original geometry.
+    fn invert_standardization(self) -> HexCellMap {
+        self.transforms_applied.iter().rev().fold(
+            self.standardized_map,
+            |current_map, invertible_transform| {
+                invertible_transform.inverse_transform_map(current_map)
+            },
+        )
     }
 }
 
 impl ComputesCellMap for HexagonGeometryDefinition {
-    fn compute_cell_map(&self, map_dimensions: &PixelPoint, map_margin: &PixelPoint) -> CellMap {
+    fn compute_cell_map(&self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap {
         let map_dimensions_without_margin = PixelPoint {
             x: map_dimensions.x - 2 * map_margin.x,
             y: map_dimensions.y - 2 * map_margin.y,
@@ -119,33 +150,11 @@ impl InvertibleStandardizedGeometry {
         let bounding_polygon_centered_on_origin =
             Self::compute_bounding_polygon_around_origin(hex_height, hex_width, hex_middle_width);
         let maximum_coordinate = HexCellCoordinate {
-            row: self.standardized_geometry.number_of_rows -1,
-            column: self.standardized_geometry.number_of_columns-1,
+            row: self.standardized_geometry.number_of_rows - 1,
+            column: self.standardized_geometry.number_of_columns - 1,
         };
-        //TODO: fxn
-        let even_column_neighbor_offsets = OffsetNeighborCoordinates {
-            coordinates: Vec::from([
-                OffsetNeighborCoordinate { row: -1, column: 0 },
-                OffsetNeighborCoordinate { row: -1, column: 1},
-                OffsetNeighborCoordinate { row: 0, column: 1},
-                OffsetNeighborCoordinate { row: 1, column: 0},
-                OffsetNeighborCoordinate { row: 0, column: -1},
-                OffsetNeighborCoordinate { row: -1, column: -1}
-
-            ]),
-            maximum_coordinate
-        };
-        let odd_column_neighbor_offsets = OffsetNeighborCoordinates {
-            coordinates: Vec::from([
-                OffsetNeighborCoordinate { row: -1, column: 0 },
-                OffsetNeighborCoordinate { row: 0, column: 1},
-                OffsetNeighborCoordinate { row: 1, column: 1},
-                OffsetNeighborCoordinate { row: 1, column: 0},
-                OffsetNeighborCoordinate { row: 0, column: -1},
-                OffsetNeighborCoordinate { row: 1, column: -1}
-            ]),
-            maximum_coordinate
-        };
+        let (even_column_neighbor_offsets, odd_column_neighbor_offsets) =
+            Self::compute_offset_neighbor_coordinates(maximum_coordinate);
 
         let mut hex_cell_map: HexCellMap = HashMap::new();
         for row_coordinate in 0..self.standardized_geometry.number_of_rows {
@@ -160,7 +169,7 @@ impl InvertibleStandardizedGeometry {
                         + column_position_delta * column_coordinate
                         + odd_column_offset * (column_coordinate % 2),
                 );
-                let neighbor_coordinates = if(column_coordinate %2 == 0) {
+                let neighbor_coordinates = if (column_coordinate % 2 == 0) {
                     &even_column_neighbor_offsets + hex_coordinate
                 } else {
                     &odd_column_neighbor_offsets + hex_coordinate
@@ -176,10 +185,41 @@ impl InvertibleStandardizedGeometry {
                 hex_cell_map.insert(hex_coordinate, cell);
             }
         }
-        StandardizedHexCellMap{
+        StandardizedHexCellMap {
             standardized_map: hex_cell_map,
             transforms_applied: self.transforms_applied,
         }
+    }
+
+    fn compute_offset_neighbor_coordinates(
+        maximum_coordinate: HexCellCoordinate,
+    ) -> (OffsetNeighborCoordinates, OffsetNeighborCoordinates) {
+        let even_column_neighbor_offsets = OffsetNeighborCoordinates {
+            coordinates: Vec::from([
+                OffsetNeighborCoordinate { row: -1, column: 0 },
+                OffsetNeighborCoordinate { row: -1, column: 1 },
+                OffsetNeighborCoordinate { row: 0, column: 1 },
+                OffsetNeighborCoordinate { row: 1, column: 0 },
+                OffsetNeighborCoordinate { row: 0, column: -1 },
+                OffsetNeighborCoordinate {
+                    row: -1,
+                    column: -1,
+                },
+            ]),
+            maximum_coordinate,
+        };
+        let odd_column_neighbor_offsets = OffsetNeighborCoordinates {
+            coordinates: Vec::from([
+                OffsetNeighborCoordinate { row: -1, column: 0 },
+                OffsetNeighborCoordinate { row: 0, column: 1 },
+                OffsetNeighborCoordinate { row: 1, column: 1 },
+                OffsetNeighborCoordinate { row: 1, column: 0 },
+                OffsetNeighborCoordinate { row: 1, column: -1 },
+                OffsetNeighborCoordinate { row: 0, column: -1 },
+            ]),
+            maximum_coordinate,
+        };
+        (even_column_neighbor_offsets, odd_column_neighbor_offsets)
     }
 
     fn compute_bounding_polygon_around_origin(
@@ -237,7 +277,7 @@ impl Add<HexCellCoordinate> for &OffsetNeighborCoordinates {
     fn add(self, rhs: HexCellCoordinate) -> Vec<HexCellCoordinate> {
         self.coordinates
             .iter()
-            .map(|offset| self.addIfValid(offset, rhs))
+            .map(|offset| self.add_if_valid(offset, rhs))
             .filter(|option| option.is_some())
             .map(|option| option.unwrap())
             .collect()
@@ -246,7 +286,7 @@ impl Add<HexCellCoordinate> for &OffsetNeighborCoordinates {
 
 impl OffsetNeighborCoordinates {
     /// Only non-negative coordinates within the allowed [maximum_coordinate] are allowed.
-    fn addIfValid(
+    fn add_if_valid(
         &self,
         offset: &OffsetNeighborCoordinate,
         coordinate: HexCellCoordinate,
