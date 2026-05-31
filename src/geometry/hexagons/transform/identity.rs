@@ -46,8 +46,8 @@ mod test {
     }
 
     mod inverse_transform_map {
-        use crate::geometry::BoundingPolygon;
         use super::*;
+        use crate::geometry::BoundingPolygon;
 
         #[test]
         fn returns_the_unchanged_map() {
@@ -56,7 +56,9 @@ mod test {
                 neighbor_coordinates: vec![HexCellCoordinate { row: 1, column: 0 }],
                 center_point: PixelPoint { x: 100, y: 25 },
                 //Fake data, don't care about it for this test
-                bounding_polygon: BoundingPolygon{points: vec![PixelPoint { x: 75, y: 50 }]},
+                bounding_polygon: BoundingPolygon {
+                    points: vec![PixelPoint { x: 75, y: 50 }],
+                },
             }])
             .into_iter()
             .map(|cell| (cell.hex_coordinate, cell))
@@ -70,8 +72,8 @@ mod test {
     }
 
     mod inverse_transform_cell {
-        use crate::geometry::BoundingPolygon;
         use super::*;
+        use crate::geometry::BoundingPolygon;
 
         #[test]
         fn returns_the_unchanged_cell() {
@@ -80,7 +82,9 @@ mod test {
                 neighbor_coordinates: vec![HexCellCoordinate { row: 1, column: 0 }],
                 center_point: PixelPoint { x: 100, y: 25 },
                 //Fake data, don't care about it for this test
-                bounding_polygon: BoundingPolygon{points: vec![PixelPoint { x: 75, y: 50 }]},
+                bounding_polygon: BoundingPolygon {
+                    points: vec![PixelPoint { x: 75, y: 50 }],
+                },
             };
 
             assert_eq!(cell.clone(), Identity {}.inverse_transform_cell(cell));

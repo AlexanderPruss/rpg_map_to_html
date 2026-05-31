@@ -13,11 +13,16 @@ fn generate_map(args: &[String]) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn compute_cell_map(map_image_config: &MapImageConfig) -> CellMap {
-    let map_margin = map_image_config.image_margins.unwrap_or( PixelPoint { x: 0, y: 0 });
-    map_image_config.geometry.compute_cell_map(temp_get_image_dimensions(&map_image_config.image_file), map_margin)
+    let map_margin = map_image_config
+        .image_margins
+        .unwrap_or(PixelPoint { x: 0, y: 0 });
+    map_image_config.geometry.compute_cell_map(
+        temp_get_image_dimensions(&map_image_config.image_file),
+        map_margin,
+    )
 }
 
-fn temp_get_image_dimensions(image_path : &String) -> PixelPoint {
+fn temp_get_image_dimensions(image_path: &String) -> PixelPoint {
     unimplemented!()
 }
 
@@ -31,9 +36,9 @@ impl Add<PixelPoint> for PixelPoint {
     type Output = PixelPoint;
 
     fn add(self, rhs: PixelPoint) -> PixelPoint {
-        PixelPoint{
+        PixelPoint {
             x: self.x + rhs.x,
-            y: self.y + rhs.y
+            y: self.y + rhs.y,
         }
     }
 }

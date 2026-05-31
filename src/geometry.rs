@@ -72,8 +72,7 @@ impl BoundingPolygon {
             points: self
                 .points
                 .iter()
-                .map(|point|
-                    PixelPoint {
+                .map(|point| PixelPoint {
                     x: point.x.clamp(0, max.x),
                     y: point.y.clamp(0, max.y),
                 })
@@ -83,11 +82,8 @@ impl BoundingPolygon {
 }
 
 pub trait ComputesCellMap {
-    fn compute_cell_map<'map>(
-        &self,
-        map_dimensions: PixelPoint,
-        map_margin: PixelPoint,
-    ) -> CellMap;
+    fn compute_cell_map<'map>(&self, map_dimensions: PixelPoint, map_margin: PixelPoint)
+    -> CellMap;
 }
 
 impl ComputesCellMap for Geometry {

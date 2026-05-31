@@ -1,12 +1,11 @@
-use crate::{PixelPoint};
+use crate::PixelPoint;
 use crate::geometry::hexagons::FilledTopLeftCorner::{EMPTY, FILLED};
 use crate::geometry::hexagons::FlatSides::FlatVerticalSides;
-use crate::geometry::hexagons::transform::{InvertibleStandardizedGeometry};
+use crate::geometry::hexagons::standardized::StandardizedHexCellMap;
+use crate::geometry::hexagons::transform::InvertibleStandardizedGeometry;
 use crate::geometry::{BoundingPolygon, Cell, CellMap, ComputesCellMap};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::ops::{Mul};
-use crate::geometry::hexagons::standardized::StandardizedHexCellMap;
 
 mod transform;
 
@@ -107,34 +106,45 @@ impl FlatSides {
     }
 }
 
-
 type HexCellMap = HashMap<HexCellCoordinate, HexCell>;
 
 fn offset_map(hex_cell_map: HexCellMap, map_margin: PixelPoint) -> HexCellMap {
-    if(map_margin == PixelPoint{x: 0, y: 0}) {
-        return hex_cell_map
+    if (map_margin == PixelPoint { x: 0, y: 0 }) {
+        return hex_cell_map;
     }
-    hex_cell_map.into_iter().map(|(coordinate, cell)| {
-        let cell_shifted_by_margin = HexCell {
-            hex_coordinate: cell.hex_coordinate,
-            neighbor_coordinates: cell.neighbor_coordinates,
-            center_point: cell.center_point + map_margin,
-            bounding_polygon: cell.bounding_polygon.offset_by(map_margin),
-        };
-        (coordinate, cell_shifted_by_margin)
-    }).collect()
+    hex_cell_map
+        .into_iter()
+        .map(|(coordinate, cell)| {
+            let cell_shifted_by_margin = HexCell {
+                hex_coordinate: cell.hex_coordinate,
+                neighbor_coordinates: cell.neighbor_coordinates,
+                center_point: cell.center_point + map_margin,
+                bounding_polygon: cell.bounding_polygon.offset_by(map_margin),
+            };
+            (coordinate, cell_shifted_by_margin)
+        })
+        .collect()
 }
 fn to_cell_map(hex_cell_map: HexCellMap) -> CellMap {
-    CellMap{
-        cells_by_coordinate: hex_cell_map.into_iter().map(|(hex_coordinate, hex_cell)| {
-            (hex_coordinate.to_coordinate_string(),
-            Cell{
-                coordinate: hex_cell.hex_coordinate.to_coordinate_string(),
-                neighbor_coordinates: hex_cell.neighbor_coordinates.into_iter().map(|hex_coordinate| hex_coordinate.to_coordinate_string()).collect(),
-                center_point: hex_cell.center_point,
-                bounding_polygon: hex_cell.bounding_polygon,
+    CellMap {
+        cells_by_coordinate: hex_cell_map
+            .into_iter()
+            .map(|(hex_coordinate, hex_cell)| {
+                (
+                    hex_coordinate.to_coordinate_string(),
+                    Cell {
+                        coordinate: hex_cell.hex_coordinate.to_coordinate_string(),
+                        neighbor_coordinates: hex_cell
+                            .neighbor_coordinates
+                            .into_iter()
+                            .map(|hex_coordinate| hex_coordinate.to_coordinate_string())
+                            .collect(),
+                        center_point: hex_cell.center_point,
+                        bounding_polygon: hex_cell.bounding_polygon,
+                    },
+                )
             })
-        }).collect()
+            .collect(),
     }
 }
 

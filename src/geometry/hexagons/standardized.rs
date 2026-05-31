@@ -1,9 +1,9 @@
+use crate::geometry::BoundingPolygon;
+use crate::geometry::hexagons::transform::{InvertibleStandardizedGeometry, InvertibleTransform};
+use crate::geometry::hexagons::{HexCell, HexCellCoordinate, HexCellMap};
+use crate::{PixelPoint, PositionDelta};
 use std::collections::HashMap;
 use std::ops::Add;
-use crate::geometry::hexagons::{HexCell, HexCellCoordinate, HexCellMap};
-use crate::geometry::hexagons::transform::{InvertibleStandardizedGeometry, InvertibleTransform};
-use crate::{PixelPoint, PositionDelta};
-use crate::geometry::BoundingPolygon;
 
 /// A hex geometry in standard form, meaning that it has flat horizontal sides and the top-left
 /// corner is filled.
@@ -37,7 +37,6 @@ pub struct StandardizedHexCellMap {
 }
 
 impl StandardizedHexCellMap {
-
     /// Consumes the [StandardizedHexCellMap] by inverting the transforms that standardized it.
     ///
     /// This results in a [HexCellMap] for the original geometry.
@@ -50,7 +49,6 @@ impl StandardizedHexCellMap {
         )
     }
 }
-
 
 impl InvertibleStandardizedGeometry {
     /// Computes a Hex Cell map, using the assumptions that the Hex Geometry is a
