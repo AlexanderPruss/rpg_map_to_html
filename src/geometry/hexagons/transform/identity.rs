@@ -46,6 +46,7 @@ mod test {
     }
 
     mod inverse_transform_map {
+        use std::collections::HashSet;
         use super::*;
         use crate::geometry::BoundingPolygon;
 
@@ -53,7 +54,7 @@ mod test {
         fn returns_the_unchanged_map() {
             let hex_cell_map: HexCellMap = Vec::from([HexCell {
                 hex_coordinate: HexCellCoordinate { row: 0, column: 0 },
-                neighbor_coordinates: vec![HexCellCoordinate { row: 1, column: 0 }],
+                neighbor_coordinates: HashSet::from([HexCellCoordinate { row: 1, column: 0 }]),
                 center_point: PixelPoint { x: 100, y: 25 },
                 //Fake data, don't care about it for this test
                 bounding_polygon: BoundingPolygon {
@@ -72,6 +73,7 @@ mod test {
     }
 
     mod inverse_transform_cell {
+        use std::collections::HashSet;
         use super::*;
         use crate::geometry::BoundingPolygon;
 
@@ -79,7 +81,7 @@ mod test {
         fn returns_the_unchanged_cell() {
             let cell = HexCell {
                 hex_coordinate: HexCellCoordinate { row: 0, column: 0 },
-                neighbor_coordinates: vec![HexCellCoordinate { row: 1, column: 0 }],
+                neighbor_coordinates: HashSet::from([HexCellCoordinate { row: 1, column: 0 }]),
                 center_point: PixelPoint { x: 100, y: 25 },
                 //Fake data, don't care about it for this test
                 bounding_polygon: BoundingPolygon {

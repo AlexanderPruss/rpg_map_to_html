@@ -5,7 +5,7 @@ use crate::geometry::hexagons::standardized::StandardizedHexCellMap;
 use crate::geometry::hexagons::transform::InvertibleStandardizedGeometry;
 use crate::geometry::{BoundingPolygon, Cell, CellMap, ComputesCellMap};
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use FlatSides::FlatHorizontalSides;
 
 mod transform;
@@ -25,21 +25,34 @@ pub struct HexagonGeometryDefinition {
     pub filled_top_left_corner: FilledTopLeftCorner,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
 struct HexCellCoordinate {
     row: u8,
     column: u8,
 }
 impl HexCellCoordinate {
+    ///This representation is identical to the one used in Hexographer/Worldographer.
     fn to_coordinate_string(&self) -> String {
-        format!("{}-{}", self.column, self.row)
+        format!("{}.{}", Self::pad_coordinate(self.column), Self::pad_coordinate(self.row))
+    }
+
+    /// Pads a number so that it is at least three digits long.
+    fn pad_coordinate(coordinate: u8) -> String {
+        let prefix = if coordinate < 10 {
+            "00"
+        } else if coordinate < 100{
+            "0"
+        } else {
+            ""
+        };
+        format!("{}{}",prefix,coordinate)
     }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 struct HexCell {
     hex_coordinate: HexCellCoordinate,
-    neighbor_coordinates: Vec<HexCellCoordinate>,
+    neighbor_coordinates: HashSet<HexCellCoordinate>,
     center_point: PixelPoint,
     bounding_polygon: BoundingPolygon,
 }
@@ -51,8 +64,6 @@ pub enum FlatSides {
 }
 
 /// Whether the top left corner of the map is filled in by a hex.
-///
-/// This is equivalent to asking if hex (0, 0) exists in the map.
 #[derive(Deserialize, Debug, PartialEq, Clone, Copy)]
 pub enum FilledTopLeftCorner {
     /// There's an empty hex at the top left of the map. For flat top hexes, the corner looks like this:
@@ -64,7 +75,7 @@ pub enum FilledTopLeftCorner {
     ///             ••••••••••     (0,1)    •
     ///            •          •            •
     ///           •            •          •
-    ///          •     (1,0)    ••••••••••
+    ///          •     (0,0)    ••••••••••
     ///           •            •
     ///            •          •
     ///             ••••••••••
@@ -169,6 +180,19 @@ impl ComputesCellMap for HexagonGeometryDefinition {
 mod test {
     use super::*;
 
+    pub mod fixtures;
+
+    #[test]
+    fn wtf_is_up_with_hashmaps(){
+        let mut map : HashMap<HexCellCoordinate, String> = HashMap::new();
+        let coordinate = HexCellCoordinate{row:0, column:0};
+        let collision_option = map.insert(coordinate, "what is going on".to_string());
+        map.iter().for_each(|(key, value)|
+              println!("original coordinate:{:?}\n, key from map:{:?}",coordinate, *key)
+        );
+        assert_eq!(collision_option, None);
+    }
+
     mod deserialization {
         use crate::geometry::Geometry;
         use crate::geometry::hexagons::FilledTopLeftCorner::EMPTY;
@@ -210,43 +234,219 @@ mod test {
     }
 
     mod hex_cell_coordinate {
+        use crate::geometry::hexagons::HexCellCoordinate;
+
         #[test]
-        fn stringifies_the_coordinate(){
-            unimplemented!()
+        fn stringifies_short_coordinates(){
+            let origin = HexCellCoordinate{row: 0, column: 0};
+            let some_hex_coordinate = HexCellCoordinate{row: 3, column: 5};
+
+            assert_eq!("000.000", origin.to_coordinate_string());
+            assert_eq!("005.003", some_hex_coordinate.to_coordinate_string());
         }
+
+        #[test]
+        fn stringifies_two_digit_coordinates(){
+            let medium_coordinate = HexCellCoordinate{row: 11, column: 22};
+            assert_eq!("022.011", medium_coordinate.to_coordinate_string());
+        }
+
+        #[test]
+        fn stringifies_three_digit_coordinates(){
+            let long_coordinate = HexCellCoordinate{row: 111, column: 222};
+            assert_eq!("222.111", long_coordinate.to_coordinate_string());
+        }
+
     }
 
     mod offset_map {
+        use super::super::*;
 
         #[test]
         fn offsets_all_pixels_of_the_cell_map(){
-            unimplemented!()
+            let offset = PixelPoint{x: 10, y: 100};
+            let cells : Vec<HexCell> = Vec::from([
+                HexCell{
+                    hex_coordinate: HexCellCoordinate {
+                        row: 0,
+                        column: 0,
+                    },
+                    neighbor_coordinates: HashSet::new(),
+                    center_point: PixelPoint {x:1, y:2},
+                    bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x: 3, y: 4}] },
+                },
+                HexCell{
+                    hex_coordinate: HexCellCoordinate {
+                        row: 1,
+                        column: 2,
+                    },
+                    neighbor_coordinates: HashSet::new(),
+                    center_point: PixelPoint {x:5, y:6},
+                    bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x: 7, y: 8}] },
+                }
+            ]);
+            let expected_cells : Vec<HexCell> = Vec::from([
+                HexCell{
+                    hex_coordinate: HexCellCoordinate {
+                        row: 0,
+                        column: 0,
+                    },
+                    neighbor_coordinates: HashSet::new(),
+                    center_point: PixelPoint {x:11, y:102},
+                    bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x: 13, y: 104}] },
+                },
+                HexCell{
+                    hex_coordinate: HexCellCoordinate {
+                        row: 1,
+                        column: 2,
+                    },
+                    neighbor_coordinates: HashSet::new(),
+                    center_point: PixelPoint {x:15, y:106},
+                    bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x: 17, y: 108}] },
+                }
+            ]);
+            let hex_cell_map: HexCellMap = cells.into_iter().map(|cell| (cell.hex_coordinate, cell)).collect();
+            let expected_hex_cell_map : HexCellMap= expected_cells.into_iter().map(|cell| (cell.hex_coordinate, cell)).collect();
+
+            assert_eq!(expected_hex_cell_map, offset_map(hex_cell_map, offset));
         }
 
         #[test]
         fn changes_nothing_if_the_offset_is_empty(){
-            unimplemented!()
+            let offset = PixelPoint{x: 0, y: 0};
+            let cells : Vec<HexCell> = Vec::from([
+                HexCell{
+                    hex_coordinate: HexCellCoordinate {
+                        row: 0,
+                        column: 0,
+                    },
+                    neighbor_coordinates: HashSet::new(),
+                    center_point: PixelPoint {x:1, y:2},
+                    bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x: 3, y: 4}] },
+                },
+                HexCell{
+                    hex_coordinate: HexCellCoordinate {
+                        row: 1,
+                        column: 2,
+                    },
+                    neighbor_coordinates: HashSet::new(),
+                    center_point: PixelPoint {x:5, y:6},
+                    bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x: 7, y: 8}] },
+                }
+            ]);
+            let hex_cell_map: HexCellMap = cells.iter().map(|cell| (cell.hex_coordinate, cell.clone())).collect();
+            let expected_hex_cell_map : HexCellMap= cells.into_iter().map(|cell| (cell.hex_coordinate, cell)).collect();
+
+            assert_eq!(expected_hex_cell_map, offset_map(hex_cell_map, offset));
         }
     }
 
     mod to_cell_map {
+        use std::collections::HashSet;
+        use crate::geometry::{BoundingPolygon, Cell, CellMap};
+        use crate::geometry::hexagons::{to_cell_map, HexCell, HexCellCoordinate, HexCellMap};
+        use crate::PixelPoint;
+
         #[test]
         fn stringifies_hex_coordinates() {
-            unimplemented!()
+            let hex_cells : Vec<HexCell> = Vec::from([
+                HexCell{
+                    hex_coordinate: HexCellCoordinate {
+                        row: 0,
+                        column: 0,
+                    },
+                    neighbor_coordinates: HashSet::from([HexCellCoordinate{row:9, column: 10}]),
+                    center_point: PixelPoint {x:1, y:2},
+                    bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x: 3, y: 4}] },
+                },
+                HexCell{
+                    hex_coordinate: HexCellCoordinate {
+                        row: 1,
+                        column: 2,
+                    },
+                    neighbor_coordinates: HashSet::from([HexCellCoordinate{row:11, column: 12}]),
+                    center_point: PixelPoint {x:5, y:6},
+                    bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x: 7, y: 8}] },
+                }
+            ]);
+            let expected_cells: Vec<Cell> = Vec::from([
+                Cell{
+                    coordinate: String::from("000.000"),
+                    neighbor_coordinates: HashSet::from([String::from("010.009")]),
+                    center_point: PixelPoint {x:1, y:2},
+                    bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x: 3, y: 4}] },
+                },
+                Cell{
+                    coordinate: String::from("002.001"),
+                    neighbor_coordinates: HashSet::from([String::from("012.011")]),
+                    center_point: PixelPoint {x:5, y:6},
+                    bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x: 7, y: 8}] },
+                }
+            ]);
+            let hex_cell_map: HexCellMap = hex_cells.into_iter().map(|cell| (cell.hex_coordinate, cell)).collect();
+            let expected_cell_map = CellMap{
+               cells_by_coordinate: expected_cells.into_iter().map(|cell| (cell.coordinate.clone(), cell)).collect()
+            };
 
+            assert_eq!(expected_cell_map, to_cell_map(hex_cell_map));
         }
     }
 
     mod compute_cell_map {
+        use crate::geometry::ComputesCellMap;
+        use crate::geometry::Geometry::Hexagons;
+        use crate::geometry::hexagons::test::fixtures::{assert_cells_equal, FourByFour, HexGeometrySnapshot, ToSnapshot};
+        use crate::geometry::hexagons::{offset_map, to_cell_map};
+        use crate::PixelPoint;
 
         #[test]
         fn computes_a_cell_map_for_standardized_geometries(){
-            unimplemented!()
+            let standardized_snapshot = FourByFour::Standardized.to_snapshot();
+            let geometry = Hexagons { definition: standardized_snapshot.geometry_definition};
+            let expected_cell_map = to_cell_map(standardized_snapshot.hex_cell_map);
+            let no_margin = PixelPoint{x: 0, y: 0};
+
+            let cell_map = geometry.compute_cell_map(standardized_snapshot.dimensions, no_margin);
+
+            assert_eq!(expected_cell_map, cell_map);
         }
 
         #[test]
         fn computes_a_cell_map_for_unstandardized_geometries(){
-            unimplemented!()
+            let snapshots: Vec<HexGeometrySnapshot> = Vec::from([
+                FourByFour::MustBeReflected.to_snapshot(),
+                FourByFour::MustBeRotated.to_snapshot(),
+                FourByFour::MustBeRotatedAndReflected.to_snapshot()
+            ]);
+            let no_margin = PixelPoint{x: 0, y: 0};
+            for snapshot in snapshots{
+                let geometry = Hexagons { definition: snapshot.geometry_definition};
+                let expected_cell_map = to_cell_map(snapshot.hex_cell_map);
+
+                let cell_map = geometry.compute_cell_map(snapshot.dimensions, no_margin);
+
+                assert_eq!(expected_cell_map, cell_map);
+            }
+        }
+
+        #[test]
+        fn offsets_computed_maps_by_the_map_margin(){
+            let snapshots: Vec<HexGeometrySnapshot> = Vec::from([
+                FourByFour::Standardized.to_snapshot(),
+                FourByFour::MustBeReflected.to_snapshot(),
+                FourByFour::MustBeRotated.to_snapshot(),
+                FourByFour::MustBeRotatedAndReflected.to_snapshot()
+            ]);
+            let margin = PixelPoint{x: 100, y: 200};
+            for snapshot in snapshots{
+                let geometry = Hexagons { definition: snapshot.geometry_definition};
+                let expected_cell_map = to_cell_map(
+                    offset_map(snapshot.hex_cell_map, margin));
+
+                let cell_map = geometry.compute_cell_map(snapshot.dimensions + margin*2, margin);
+
+                assert_eq!(expected_cell_map, cell_map);
+            }
         }
     }
 }

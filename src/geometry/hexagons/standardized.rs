@@ -2,7 +2,8 @@ use crate::geometry::BoundingPolygon;
 use crate::geometry::hexagons::transform::{InvertibleStandardizedGeometry, InvertibleTransform};
 use crate::geometry::hexagons::{HexCell, HexCellCoordinate, HexCellMap};
 use crate::{PixelPoint, PositionDelta};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
 use std::ops::Add;
 
 /// A hex geometry in standard form, meaning that it has flat horizontal sides and the top-left
@@ -79,8 +80,8 @@ impl InvertibleStandardizedGeometry {
             y: hex_height / 2.0,
         };
 
-        let bounding_polygon_centered_on_origin =
-            Self::compute_bounding_polygon_around_origin(hex_height, hex_width, hex_middle_width);
+        let bounding_polygon_centered_on_hex_0_0 =
+            Self::compute_bounding_polygon_around_hex_0_0(hex_height, hex_widths);
         let maximum_coordinate = HexCellCoordinate {
             row: self.standardized_geometry.number_of_rows - 1,
             column: self.standardized_geometry.number_of_columns - 1,
@@ -88,7 +89,7 @@ impl InvertibleStandardizedGeometry {
         let (even_column_neighbor_offsets, odd_column_neighbor_offsets) =
             Self::compute_offset_neighbor_coordinates(maximum_coordinate);
 
-        let mut hex_cell_map: HexCellMap = HashMap::new();
+        let mut hex_cell_map: HashMap<HexCellCoordinate, HexCell> = HashMap::new();
         for row_coordinate in 0..self.standardized_geometry.number_of_rows {
             for column_coordinate in 0..self.standardized_geometry.number_of_columns {
                 let hex_coordinate = HexCellCoordinate {
@@ -107,14 +108,16 @@ impl InvertibleStandardizedGeometry {
                     &odd_column_neighbor_offsets + hex_coordinate
                 };
                 let cell = HexCell {
-                    center_point,
                     hex_coordinate,
+                    center_point,
                     neighbor_coordinates,
-                    bounding_polygon: bounding_polygon_centered_on_origin
-                        .offset_by(center_point)
+                    bounding_polygon: bounding_polygon_centered_on_hex_0_0
+                        .offset_by(center_point - hex_0_0_center)
                         .clamp(self.standardized_geometry.geometry_dimensions),
                 };
-                hex_cell_map.insert(hex_coordinate, cell);
+
+               let inserted =  hex_cell_map.insert(hex_coordinate, cell);
+                assert_eq!(inserted, None);
             }
         }
         StandardizedHexCellMap {
@@ -123,43 +126,42 @@ impl InvertibleStandardizedGeometry {
         }
     }
 
-    fn compute_bounding_polygon_around_origin(
+    fn compute_bounding_polygon_around_hex_0_0(
         hex_height: f32,
-        hex_width: f32,
-        hex_middle_width: f32,
+        hex_widths: HexWidths
     ) -> BoundingPolygon {
-        let hex_middle_width_i32 = hex_middle_width as i32;
-        let hex_height_i32 = hex_height as i32;
-        let hex_width_i32 = hex_width as i32;
-        let bounding_polygon_centered_on_origin = BoundingPolygon {
+        let hex_width = hex_widths.hex_width as i32;
+        let hex_edge_width = hex_widths.hex_edge_width as i32;
+        let hex_height = hex_height as i32;
+        let bounding_polygon_centered_on_hex_0_0 = BoundingPolygon {
             points: Vec::from([
                 PixelPoint {
-                    x: hex_middle_width_i32 / 2,
-                    y: hex_height_i32,
-                },
-                PixelPoint {
-                    x: hex_width_i32,
+                    x: hex_width - hex_edge_width,
                     y: 0,
                 },
                 PixelPoint {
-                    x: hex_middle_width_i32 / 2,
-                    y: -hex_height_i32,
+                    x: hex_width,
+                    y: hex_height/2,
                 },
                 PixelPoint {
-                    x: -hex_middle_width_i32 / 2,
-                    y: -hex_height_i32,
+                    x: hex_width-hex_edge_width,
+                    y: hex_height,
                 },
                 PixelPoint {
-                    x: -hex_width_i32,
+                    x: hex_edge_width,
+                    y: hex_height,
+                },
+                PixelPoint {
+                    x: 0,
+                    y: hex_height/2,
+                },
+                PixelPoint {
+                    x: hex_edge_width,
                     y: 0,
-                },
-                PixelPoint {
-                    x: -hex_middle_width_i32,
-                    y: hex_height_i32,
                 },
             ]),
         };
-        bounding_polygon_centered_on_origin
+        bounding_polygon_centered_on_hex_0_0
     }
 
     fn compute_offset_neighbor_coordinates(
@@ -194,19 +196,19 @@ impl InvertibleStandardizedGeometry {
     }
 }
 
-struct OffsetNeighborCoordinates {
-    coordinates: Vec<OffsetNeighborCoordinate>,
-    maximum_coordinate: HexCellCoordinate,
+pub(super) struct OffsetNeighborCoordinates {
+    pub coordinates: Vec<OffsetNeighborCoordinate>,
+    pub maximum_coordinate: HexCellCoordinate,
 }
 #[derive(Debug, Clone, Copy)]
-struct OffsetNeighborCoordinate {
-    row: i16,
-    column: i16,
+pub(super) struct OffsetNeighborCoordinate {
+    pub row: i16,
+    pub column: i16,
 }
 impl Add<HexCellCoordinate> for &OffsetNeighborCoordinates {
-    type Output = Vec<HexCellCoordinate>;
+    type Output = HashSet<HexCellCoordinate>;
 
-    fn add(self, rhs: HexCellCoordinate) -> Vec<HexCellCoordinate> {
+    fn add(self, rhs: HexCellCoordinate) -> HashSet<HexCellCoordinate> {
         self.coordinates
             .iter()
             .map(|offset| self.offset_coordinate_if_valid(offset, rhs))
@@ -240,13 +242,13 @@ impl OffsetNeighborCoordinates {
 }
 
 impl StandardizedHexGeometryDefinition {
-    /// The first row adds a full cell height, each further row adds just half.
+    /// The first row adds three halves full cell height, each further row adds one more.
     ///
-    /// H = h + (row-1)*h/2.
+    /// H = 3*h/2 + (row-1)*h.
     ///
     /// Solving for h,
     ///
-    /// h = 2H/(1+rows)
+    /// h = 2H/(1+2*rows)
     ///
     ///``` picture
     ///                  ┌─────╴     ••••••••••                 ╶──────┐
@@ -265,7 +267,7 @@ impl StandardizedHexGeometryDefinition {
     ///```
     fn compute_hex_height(&self) -> f32 {
         let total_height = self.geometry_dimensions.y as f32;
-        (2.0 * total_height) / (self.number_of_rows as f32 + 1.0)
+        (2.0 * total_height) / (2.0*self.number_of_rows as f32 + 1.0)
     }
 
     /// The ratio of width to height is part of the geometry definition, so computing one from the
@@ -318,7 +320,7 @@ impl StandardizedHexGeometryDefinition {
         let hex_edge_width = (self.geometry_dimensions.x as f32
             - self.number_of_columns as f32 * hex_width)
             / (1.0 - self.number_of_columns as f32);
-        let hex_middle_width = hex_width - hex_edge_width;
+        let hex_middle_width = hex_width - 2.0*hex_edge_width;
         HexWidths {
             hex_width,
             hex_middle_width,

@@ -59,9 +59,8 @@ mod test {
     use crate::PixelPoint;
     use crate::geometry::hexagons::FlatSides::{FlatHorizontalSides, FlatVerticalSides};
     use crate::geometry::hexagons::transform::InvertibleTransform;
-    use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
     use crate::geometry::hexagons::{FilledTopLeftCorner, HexagonGeometryDefinition};
-    use crate::geometry::hexagons::{HexCell, HexCellCoordinate, HexCellMap};
+    use crate::geometry::hexagons::{HexCell, HexCellCoordinate};
     use FilledTopLeftCorner::EMPTY;
     use FilledTopLeftCorner::FILLED;
 
@@ -113,7 +112,7 @@ mod test {
         }
 
         #[test]
-        fn rotates_geometries_with_odd_columns() {
+        fn reflects_geometries_with_odd_columns() {
             let geometry_dimensions = PixelPoint { x: 1000, y: 1500 };
 
             for test_case in 0..4 {
@@ -160,73 +159,26 @@ mod test {
     /// Minimal check that we're using the default implementation for transforming maps and cells.
     mod inverse_transform_default_impl {
         use super::*;
-        use crate::geometry::BoundingPolygon;
         use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
+
+        use crate::geometry::hexagons::test::fixtures::{FourByFour, ToSnapshot};
 
         #[test]
         fn reflects_hex_cell_map_over_x_axis() {
-            let geometry_dimensions = PixelPoint { x: 100, y: 200 };
-            let input_geometry = HexagonGeometryDefinition {
-                flat_sides: FlatVerticalSides,
-                number_of_rows: 1,
-                number_of_columns: 2,
-                hexagon_height: 40.0,
-                hexagon_width: 20.0,
-                filled_top_left_corner: FILLED,
-            };
-            let reflected_cells: HexCellMap = Vec::from([
-                HexCell {
-                    hex_coordinate: HexCellCoordinate { row: 0, column: 0 },
-                    neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 1 }],
-                    center_point: PixelPoint { x: 25, y: 100 },
-                    //Fake data, don't care about it for this test
-                    bounding_polygon: BoundingPolygon {
-                        points: vec![PixelPoint { x: 75, y: 50 }],
-                    },
-                },
-                HexCell {
-                    hex_coordinate: HexCellCoordinate { row: 0, column: 1 },
-                    neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 0 }],
-                    center_point: PixelPoint { x: 75, y: 100 },
-                    bounding_polygon: BoundingPolygon {
-                        points: vec![PixelPoint { x: 55, y: 75 }],
-                    },
-                },
-            ])
-            .into_iter()
-            .map(|cell| (cell.hex_coordinate, cell))
-            .collect();
-            let expected_cells_after_inverting_reflection: HexCellMap = Vec::from([
-                HexCell {
-                    hex_coordinate: HexCellCoordinate { row: 0, column: 1 },
-                    neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 0 }],
-                    center_point: PixelPoint { x: 75, y: 100 },
-                    bounding_polygon: BoundingPolygon {
-                        points: vec![PixelPoint { x: 25, y: 50 }],
-                    },
-                },
-                HexCell {
-                    hex_coordinate: HexCellCoordinate { row: 0, column: 0 },
-                    neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 1 }],
-                    center_point: PixelPoint { x: 25, y: 100 },
-                    //Fake data, don't care about it for this test
-                    bounding_polygon: BoundingPolygon {
-                        points: vec![PixelPoint { x: 45, y: 75 }],
-                    },
-                },
-            ])
-            .into_iter()
-            .map(|cell| (cell.hex_coordinate, cell))
-            .collect();
+            let standardized_cell_map = FourByFour::Standardized.to_snapshot().hex_cell_map;
+            let needs_reflection = FourByFour::MustBeReflected.to_snapshot();
+            let expected_cell_map = needs_reflection.hex_cell_map;
 
-            let (transform, _) = ReflectOverXAxis::reflect(geometry_dimensions, &input_geometry);
-            let cells_after_inverse_rotation = transform.inverse_transform_map(reflected_cells);
-
-            assert_eq!(
-                cells_after_inverse_rotation,
-                expected_cells_after_inverting_reflection
+            let (transform, _) = ReflectOverXAxis::reflect(
+                needs_reflection.dimensions,
+                &needs_reflection.geometry_definition,
             );
+            let cells_after_inverse_rotation =
+                transform.inverse_transform_map(standardized_cell_map);
+
+            assert_eq!(expected_cell_map, cells_after_inverse_rotation)
         }
+
     }
 
     mod inverse_transform_point {

@@ -164,146 +164,96 @@ mod test {
     /// Minimal check that we're using the default implementation for transforming maps and cells.
     mod inverse_transform_default_impl {
         use super::*;
-        use crate::geometry::BoundingPolygon;
+        use crate::geometry::hexagons::test::fixtures::{FourByFour, ToSnapshot};
 
         #[test]
         fn rotates_hex_cell_map_clockwise() {
-            let geometry_dimensions = PixelPoint { x: 100, y: 200 };
-            let input_geometry = HexagonGeometryDefinition {
-                flat_sides: FlatVerticalSides,
-                number_of_rows: 1,
-                number_of_columns: 2,
-                hexagon_height: 40.0,
-                hexagon_width: 20.0,
-                filled_top_left_corner: FILLED,
-            };
-            let rotated_cells: HexCellMap = Vec::from([
-                HexCell {
-                    hex_coordinate: HexCellCoordinate { row: 0, column: 0 },
-                    neighbor_coordinates: vec![HexCellCoordinate { row: 1, column: 0 }],
-                    center_point: PixelPoint { x: 100, y: 25 },
-                    //Fake data, don't care about it for this test
-                    bounding_polygon: BoundingPolygon {
-                        points: vec![PixelPoint { x: 75, y: 50 }],
-                    },
-                },
-                HexCell {
-                    hex_coordinate: HexCellCoordinate { row: 1, column: 0 },
-                    neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 0 }],
-                    center_point: PixelPoint { x: 100, y: 75 },
-                    bounding_polygon: BoundingPolygon {
-                        points: vec![PixelPoint { x: 50, y: 75 }],
-                    },
-                },
-            ])
-            .into_iter()
-            .map(|cell| (cell.hex_coordinate, cell))
-            .collect();
-            let expected_cells_after_inverting_rotation: HexCellMap = Vec::from([
-                HexCell {
-                    hex_coordinate: HexCellCoordinate { row: 0, column: 1 },
-                    neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 0 }],
-                    center_point: PixelPoint { x: 75, y: 100 },
-                    //Fake data, don't care about it for this test
-                    bounding_polygon: BoundingPolygon {
-                        points: vec![PixelPoint { x: 50, y: 75 }],
-                    },
-                },
-                HexCell {
-                    hex_coordinate: HexCellCoordinate { row: 0, column: 0 },
-                    neighbor_coordinates: vec![HexCellCoordinate { row: 0, column: 1 }],
-                    center_point: PixelPoint { x: 25, y: 100 },
-                    bounding_polygon: BoundingPolygon {
-                        points: vec![PixelPoint { x: 25, y: 50 }],
-                    },
-                },
-            ])
-            .into_iter()
-            .map(|cell| (cell.hex_coordinate, cell))
-            .collect();
+            let standardized_cell_map = FourByFour::Standardized.to_snapshot().hex_cell_map;
+            let needs_rotation = FourByFour::MustBeRotated.to_snapshot();
+            let expected_cell_map = needs_rotation.hex_cell_map;
 
-            let (transform, _) =
-                RotateCounterClockwise::rotate(geometry_dimensions, &input_geometry);
-            let cells_after_inverse_rotation = transform.inverse_transform_map(rotated_cells);
-
-            assert_eq!(
-                cells_after_inverse_rotation,
-                expected_cells_after_inverting_rotation
+            let (transform, _) = RotateCounterClockwise::rotate(
+                needs_rotation.dimensions,
+                &needs_rotation.geometry_definition,
             );
+            let cells_after_inverse_rotation =
+                transform.inverse_transform_map(standardized_cell_map);
+
+            assert_eq!(expected_cell_map, cells_after_inverse_rotation)
         }
-    }
 
-    mod inverse_transform_point {
-        use super::*;
+        mod inverse_transform_point {
+            use super::*;
 
-        #[test]
-        fn rotates_points_clockwise() {
-            let geometry_dimensions = PixelPoint { x: 100, y: 200 };
-            let input_geometry = HexagonGeometryDefinition {
-                flat_sides: FlatVerticalSides,
-                number_of_rows: 1,
-                number_of_columns: 2,
-                hexagon_height: 40.0,
-                hexagon_width: 20.0,
-                filled_top_left_corner: FILLED,
-            };
-            let (transform, _) =
-                RotateCounterClockwise::rotate(geometry_dimensions, &input_geometry);
+            #[test]
+            fn rotates_points_clockwise() {
+                let geometry_dimensions = PixelPoint { x: 100, y: 200 };
+                let input_geometry = HexagonGeometryDefinition {
+                    flat_sides: FlatVerticalSides,
+                    number_of_rows: 1,
+                    number_of_columns: 2,
+                    hexagon_height: 40.0,
+                    hexagon_width: 20.0,
+                    filled_top_left_corner: FILLED,
+                };
+                let (transform, _) =
+                    RotateCounterClockwise::rotate(geometry_dimensions, &input_geometry);
 
-            let point_on_y_axis = PixelPoint { x: 0, y: 25 };
-            assert_eq!(
-                transform.inverse_transform_point(point_on_y_axis),
-                PixelPoint { x: 75, y: 0 }
-            );
+                let point_on_y_axis = PixelPoint { x: 0, y: 25 };
+                assert_eq!(
+                    transform.inverse_transform_point(point_on_y_axis),
+                    PixelPoint { x: 75, y: 0 }
+                );
 
-            let point_on_x_axis = PixelPoint { x: 25, y: 0 };
-            assert_eq!(
-                transform.inverse_transform_point(point_on_x_axis),
-                PixelPoint { x: 100, y: 25 }
-            );
+                let point_on_x_axis = PixelPoint { x: 25, y: 0 };
+                assert_eq!(
+                    transform.inverse_transform_point(point_on_x_axis),
+                    PixelPoint { x: 100, y: 25 }
+                );
 
-            let point_near_middle = PixelPoint { x: 110, y: 60 };
-            assert_eq!(
-                transform.inverse_transform_point(point_near_middle),
-                PixelPoint { x: 40, y: 110 }
-            )
+                let point_near_middle = PixelPoint { x: 110, y: 60 };
+                assert_eq!(
+                    transform.inverse_transform_point(point_near_middle),
+                    PixelPoint { x: 40, y: 110 }
+                )
+            }
         }
-    }
 
-    mod inverse_transform_coordinate {
-        use super::*;
+        mod inverse_transform_coordinate {
+            use super::*;
 
-        #[test]
-        fn rotates_coordinates_clockwise() {
-            let geometry_dimensions = PixelPoint { x: 100, y: 200 };
-            let input_geometry = HexagonGeometryDefinition {
-                flat_sides: FlatVerticalSides,
-                number_of_rows: 10,
-                number_of_columns: 20,
-                hexagon_height: 40.0,
-                hexagon_width: 20.0,
-                filled_top_left_corner: FILLED,
-            };
-            let (transform, _) =
-                RotateCounterClockwise::rotate(geometry_dimensions, &input_geometry);
+            #[test]
+            fn rotates_coordinates_clockwise() {
+                let geometry_dimensions = PixelPoint { x: 100, y: 200 };
+                let input_geometry = HexagonGeometryDefinition {
+                    flat_sides: FlatVerticalSides,
+                    number_of_rows: 10,
+                    number_of_columns: 20,
+                    hexagon_height: 40.0,
+                    hexagon_width: 20.0,
+                    filled_top_left_corner: FILLED,
+                };
+                let (transform, _) =
+                    RotateCounterClockwise::rotate(geometry_dimensions, &input_geometry);
 
-            let coordinate_on_y_axis = HexCellCoordinate { row: 0, column: 5 };
-            assert_eq!(
-                transform.inverse_transform_coordinate(coordinate_on_y_axis),
-                HexCellCoordinate { row: 5, column: 19 }
-            );
+                let coordinate_on_y_axis = HexCellCoordinate { row: 0, column: 5 };
+                assert_eq!(
+                    transform.inverse_transform_coordinate(coordinate_on_y_axis),
+                    HexCellCoordinate { row: 5, column: 19 }
+                );
 
-            let coordinate_on_x_axis = HexCellCoordinate { row: 5, column: 0 };
-            assert_eq!(
-                transform.inverse_transform_coordinate(coordinate_on_x_axis),
-                HexCellCoordinate { row: 0, column: 14 }
-            );
+                let coordinate_on_x_axis = HexCellCoordinate { row: 5, column: 0 };
+                assert_eq!(
+                    transform.inverse_transform_coordinate(coordinate_on_x_axis),
+                    HexCellCoordinate { row: 0, column: 14 }
+                );
 
-            let coordinate_near_middle = HexCellCoordinate { row: 4, column: 6 };
-            assert_eq!(
-                transform.inverse_transform_coordinate(coordinate_near_middle),
-                HexCellCoordinate { row: 6, column: 15 }
-            )
+                let coordinate_near_middle = HexCellCoordinate { row: 4, column: 6 };
+                assert_eq!(
+                    transform.inverse_transform_coordinate(coordinate_near_middle),
+                    HexCellCoordinate { row: 6, column: 15 }
+                )
+            }
         }
     }
 }
