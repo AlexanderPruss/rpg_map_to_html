@@ -8,7 +8,7 @@ pub mod config;
 pub mod geometry;
 
 fn generate_map(args: &[String]) -> Result<(), Box<dyn Error>> {
-    let parsed_config = config::parse_config(args);
+    let _parsed_config = config::parse_config(args);
     unimplemented!()
 }
 
@@ -22,7 +22,7 @@ pub fn compute_cell_map(map_image_config: &MapImageConfig) -> CellMap {
     )
 }
 
-fn temp_get_image_dimensions(image_path: &String) -> PixelPoint {
+fn temp_get_image_dimensions(_image_path: &String) -> PixelPoint {
     unimplemented!()
 }
 

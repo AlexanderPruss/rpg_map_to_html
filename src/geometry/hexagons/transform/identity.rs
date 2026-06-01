@@ -1,7 +1,7 @@
 use crate::PixelPoint;
-use crate::geometry::hexagons::transform::{InvertibleTransform, Transform};
+use crate::geometry::hexagons::transform::InvertibleTransform;
 use crate::geometry::hexagons::{
-    HexCell, HexCellCoordinate, HexCellMap, HexagonGeometryDefinition,
+    HexCell, HexCellCoordinate, HexCellMap,
 };
 
 #[derive(PartialEq, Debug)]
@@ -31,10 +31,11 @@ mod test {
     use crate::geometry::hexagons::FlatSides::FlatHorizontalSides;
     use FilledTopLeftCorner::FILLED;
     mod transform {
+        use crate::geometry::hexagons::HexagonGeometryDefinition;
         use super::*;
         #[test]
         fn returns_a_clone_of_the_geometry() {
-            let input_geometry = HexagonGeometryDefinition {
+            let _input_geometry = HexagonGeometryDefinition {
                 flat_sides: FlatHorizontalSides,
                 number_of_rows: 5,
                 number_of_columns: 6,
@@ -42,6 +43,7 @@ mod test {
                 hexagon_width: 8.0,
                 filled_top_left_corner: FILLED,
             };
+            unimplemented!();
         }
     }
 

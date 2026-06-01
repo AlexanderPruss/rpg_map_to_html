@@ -3,7 +3,6 @@ use crate::geometry::hexagons::transform::{InvertibleStandardizedGeometry, Inver
 use crate::geometry::hexagons::{HexCell, HexCellCoordinate, HexCellMap};
 use crate::{PixelPoint, PositionDelta};
 use std::collections::{HashMap, HashSet};
-use std::hash::Hash;
 use std::ops::Add;
 
 /// A hex geometry in standard form, meaning that it has flat horizontal sides and the top-left
@@ -102,7 +101,7 @@ impl InvertibleStandardizedGeometry {
                         + column_position_delta * column_coordinate
                         + odd_column_offset * (column_coordinate % 2),
                 );
-                let neighbor_coordinates = if (column_coordinate % 2 == 0) {
+                let neighbor_coordinates = if column_coordinate % 2 == 0  {
                     &even_column_neighbor_offsets + hex_coordinate
                 } else {
                     &odd_column_neighbor_offsets + hex_coordinate

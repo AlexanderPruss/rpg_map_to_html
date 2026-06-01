@@ -45,6 +45,6 @@ pub enum GenerationMode {
     Update,
 }
 
-pub fn parse_config(args: &[String]) -> Config {
+pub fn parse_config(_args: &[String]) -> Config {
     unimplemented!()
 }
