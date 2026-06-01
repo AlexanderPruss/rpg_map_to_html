@@ -41,16 +41,17 @@ pub struct BoundingPolygon {
 impl PartialEq for BoundingPolygon {
     fn eq(&self, other: &Self) -> bool {
         if self.points.len() != other.points.iter().len() {
-            return false
+            return false;
         }
         if self.points.len() == 0 {
-            return false
+            return false;
         }
         let first_point = self.points.first().unwrap();
-        let index_of_first_point_in_other = other.points.iter().position(|point| *point == *first_point);
+        let index_of_first_point_in_other =
+            other.points.iter().position(|point| *point == *first_point);
         let mut matching_index = match index_of_first_point_in_other {
             None => return false,
-            Some(index) => index
+            Some(index) => index,
         };
         let mut match_in_same_direction = true;
         let backward_matching_index = matching_index;
@@ -62,10 +63,10 @@ impl PartialEq for BoundingPolygon {
                 match_in_same_direction = false;
                 break;
             }
-            matching_index+=1;
+            matching_index += 1;
         }
         if match_in_same_direction {
-            return true
+            return true;
         }
         let mut match_in_reverse_direction = true;
         let mut matching_index = backward_matching_index;
@@ -76,7 +77,7 @@ impl PartialEq for BoundingPolygon {
             }
             matching_index = match matching_index {
                 0 => self.points.len() - 1,
-                _ => matching_index - 1
+                _ => matching_index - 1,
             };
         }
         match_in_reverse_direction
@@ -156,9 +157,56 @@ mod test {
     mod bounding_polygon {
 
         mod restrict_to_bounding_box {
+            use crate::geometry::BoundingPolygon;
+            use crate::{PixelBox, PixelPoint};
+
             #[test]
             fn clamps_all_polygon_points() {
-                unimplemented!()
+                let bounding_box = PixelBox {
+                    top_left_corner: PixelPoint { x: 1, y: 1 },
+                    bottom_right_corner: PixelPoint { x: 10, y: 10 },
+                };
+                let unclamped = PixelPoint { x: 5, y: 5 };
+                let x_too_small = PixelPoint { x: 0, y: 2 };
+                let x_too_small_clamped = PixelPoint { x: 1, y: 2 };
+                let y_too_small = PixelPoint { x: 2, y: 0 };
+                let y_too_small_clamped = PixelPoint { x: 2, y: 1 };
+                let x_too_big = PixelPoint { x: 11, y: 7 };
+                let x_too_big_clamped = PixelPoint { x: 10, y: 7 };
+                let y_too_big = PixelPoint { x: 7, y: 11 };
+                let y_too_big_clamped = PixelPoint { x: 7, y: 10 };
+                let both_too_big = PixelPoint { x: 20, y: 20 };
+                let both_too_big_clamped = PixelPoint { x: 10, y: 10 };
+                let both_too_small = PixelPoint { x: 0, y: 0 };
+                let both_too_small_clamped = PixelPoint { x: 1, y: 1 };
+
+                let polygon = BoundingPolygon {
+                    points: vec![
+                        unclamped,
+                        x_too_small,
+                        y_too_small,
+                        x_too_big,
+                        y_too_big,
+                        both_too_big,
+                        both_too_small,
+                    ],
+                };
+                let restricted_polygon = polygon.restrict_to_bounding_box(bounding_box);
+
+                assert_eq!(
+                    restricted_polygon,
+                    BoundingPolygon {
+                        points: vec![
+                            unclamped,
+                            x_too_small_clamped,
+                            y_too_small_clamped,
+                            x_too_big_clamped,
+                            y_too_big_clamped,
+                            both_too_big_clamped,
+                            both_too_small_clamped
+                        ],
+                    }
+                )
             }
         }
 
@@ -171,7 +219,7 @@ mod test {
 
         mod clamp {
             #[test]
-            fn clamps_with_an_implicit_lower_bound(){
+            fn clamps_with_an_implicit_lower_bound() {
                 unimplemented!()
             }
         }
@@ -179,35 +227,34 @@ mod test {
         mod equality {
 
             #[test]
-            fn equals_polygons_with_identical_point_lists(){
+            fn equals_polygons_with_identical_point_lists() {
                 unimplemented!()
             }
 
             #[test]
-            fn equals_polygons_with_identical_points_but_a_different_starting_point(){
+            fn equals_polygons_with_identical_points_but_a_different_starting_point() {
                 unimplemented!()
             }
 
             #[test]
-            fn does_not_equal_polygons_with_a_different_size(){
+            fn does_not_equal_polygons_with_a_different_size() {
                 unimplemented!()
             }
 
             #[test]
-            fn does_not_equal_polygons_with_different_points(){
+            fn does_not_equal_polygons_with_different_points() {
                 unimplemented!()
             }
 
             #[test]
-            fn does_not_equal_polygons_with_identical_points_in_a_different_iteration_order(){
+            fn does_not_equal_polygons_with_identical_points_in_a_different_iteration_order() {
                 unimplemented!()
             }
 
             #[test]
-            fn does_not_panic_when_either_list_is_empty(){
+            fn does_not_panic_when_either_list_is_empty() {
                 unimplemented!()
             }
         }
     }
-
 }

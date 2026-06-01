@@ -116,7 +116,7 @@ impl InvertibleStandardizedGeometry {
                         .clamp(self.standardized_geometry.geometry_dimensions),
                 };
 
-               let inserted =  hex_cell_map.insert(hex_coordinate, cell);
+                let inserted = hex_cell_map.insert(hex_coordinate, cell);
                 assert_eq!(inserted, None);
             }
         }
@@ -128,7 +128,7 @@ impl InvertibleStandardizedGeometry {
 
     fn compute_bounding_polygon_around_hex_0_0(
         hex_height: f32,
-        hex_widths: HexWidths
+        hex_widths: HexWidths,
     ) -> BoundingPolygon {
         let hex_width = hex_widths.hex_width as i32;
         let hex_edge_width = hex_widths.hex_edge_width as i32;
@@ -141,10 +141,10 @@ impl InvertibleStandardizedGeometry {
                 },
                 PixelPoint {
                     x: hex_width,
-                    y: hex_height/2,
+                    y: hex_height / 2,
                 },
                 PixelPoint {
-                    x: hex_width-hex_edge_width,
+                    x: hex_width - hex_edge_width,
                     y: hex_height,
                 },
                 PixelPoint {
@@ -153,7 +153,7 @@ impl InvertibleStandardizedGeometry {
                 },
                 PixelPoint {
                     x: 0,
-                    y: hex_height/2,
+                    y: hex_height / 2,
                 },
                 PixelPoint {
                     x: hex_edge_width,
@@ -267,7 +267,7 @@ impl StandardizedHexGeometryDefinition {
     ///```
     fn compute_hex_height(&self) -> f32 {
         let total_height = self.geometry_dimensions.y as f32;
-        (2.0 * total_height) / (2.0*self.number_of_rows as f32 + 1.0)
+        (2.0 * total_height) / (2.0 * self.number_of_rows as f32 + 1.0)
     }
 
     /// The ratio of width to height is part of the geometry definition, so computing one from the
@@ -320,7 +320,7 @@ impl StandardizedHexGeometryDefinition {
         let hex_edge_width = (self.geometry_dimensions.x as f32
             - self.number_of_columns as f32 * hex_width)
             / (1.0 - self.number_of_columns as f32);
-        let hex_middle_width = hex_width - 2.0*hex_edge_width;
+        let hex_middle_width = hex_width - 2.0 * hex_edge_width;
         HexWidths {
             hex_width,
             hex_middle_width,
@@ -369,7 +369,7 @@ mod test {
         }
 
         #[test]
-        fn computes_a_bounding_polygon_around_the_origin() {
+        fn computes_a_bounding_polygon_around_hex_0_0() {
             unimplemented!()
         }
     }
@@ -419,13 +419,12 @@ mod test {
     mod standardized_geometry_definition {
 
         #[test]
-        fn computes_cell_height()
-        {
+        fn computes_cell_height() {
             unimplemented!()
         }
 
         #[test]
-        fn computes_cell_width(){
+        fn computes_cell_width() {
             unimplemented!()
         }
     }

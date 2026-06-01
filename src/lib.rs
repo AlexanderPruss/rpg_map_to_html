@@ -46,10 +46,10 @@ impl Add<PixelPoint> for PixelPoint {
 impl Sub<PixelPoint> for PixelPoint {
     type Output = PixelPoint;
 
-    fn sub(self, rhs: PixelPoint) -> PixelPoint{
-        PixelPoint{
+    fn sub(self, rhs: PixelPoint) -> PixelPoint {
+        PixelPoint {
             x: self.x - rhs.x,
-            y: self.y - rhs.y
+            y: self.y - rhs.y,
         }
     }
 }
@@ -58,9 +58,9 @@ impl Sub<PositionDelta> for PixelPoint {
     type Output = PixelPoint;
 
     fn sub(self, rhs: PositionDelta) -> PixelPoint {
-        PixelPoint{
+        PixelPoint {
             x: self.x - rhs.x as i32,
-            y: self.y - rhs.y as i32
+            y: self.y - rhs.y as i32,
         }
     }
 }
@@ -69,9 +69,9 @@ impl Mul<i32> for PixelPoint {
     type Output = PixelPoint;
 
     fn mul(self, rhs: i32) -> PixelPoint {
-        PixelPoint{
+        PixelPoint {
             x: self.x * rhs,
-            y: self.y * rhs
+            y: self.y * rhs,
         }
     }
 }

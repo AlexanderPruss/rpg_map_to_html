@@ -178,7 +178,6 @@ mod test {
 
             assert_eq!(expected_cell_map, cells_after_inverse_rotation)
         }
-
     }
 
     mod inverse_transform_point {

@@ -46,9 +46,9 @@ mod test {
     }
 
     mod inverse_transform_map {
-        use std::collections::HashSet;
         use super::*;
         use crate::geometry::BoundingPolygon;
+        use std::collections::HashSet;
 
         #[test]
         fn returns_the_unchanged_map() {
@@ -73,9 +73,9 @@ mod test {
     }
 
     mod inverse_transform_cell {
-        use std::collections::HashSet;
         use super::*;
         use crate::geometry::BoundingPolygon;
+        use std::collections::HashSet;
 
         #[test]
         fn returns_the_unchanged_cell() {

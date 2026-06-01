@@ -19,13 +19,13 @@ pub struct MapImageConfig {
     /// Describes the structure of the map.
     pub geometry: Geometry,
     /// Per default, cells that are mostly white around their center are skipped.
-    pub skip_empty_cells: Option<SkipEmptyCells>
+    pub skip_empty_cells: Option<SkipEmptyCells>,
 }
 
 /// The program can try to automatically determine which cells have no content.
 #[derive(Deserialize, Debug)]
 
-pub struct  SkipEmptyCells {
+pub struct SkipEmptyCells {
     /// Whether to determine and skip empty cells.
     pub skip: bool,
     /// The multiplier should be in the range (0, 1.0). It scales the [BoundingPolygon] around the
@@ -34,7 +34,7 @@ pub struct  SkipEmptyCells {
     /// Defaults to 50%.
     pub polygon_multiplier: f32,
     /// What color is considered empty. Defaults to white.
-    pub empty_color: i32
+    pub empty_color: i32,
 }
 
 #[derive(Deserialize, Debug)]
