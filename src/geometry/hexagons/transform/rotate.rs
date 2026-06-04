@@ -2,7 +2,7 @@ use crate::PixelPoint;
 use crate::geometry::hexagons::transform::{InvertibleTransform, Transform};
 use crate::geometry::hexagons::{HexCellCoordinate, HexagonGeometryDefinition};
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct RotateCounterClockwise {
     pub rotated_map_dimensions: PixelPoint,
     original_number_of_columns: u8,
@@ -57,6 +57,10 @@ impl InvertibleTransform for RotateCounterClockwise {
             //An extra -1 is needed because our coordinates are 0-indexed.
             column: self.original_number_of_columns - coordinate.row - 1,
         }
+    }
+
+    fn _eq_string(&self) -> String {
+        format!("{:?}", self)
     }
 }
 

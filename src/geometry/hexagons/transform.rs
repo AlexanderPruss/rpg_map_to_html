@@ -100,29 +100,193 @@ pub trait InvertibleTransform {
     }
     fn inverse_transform_point(&self, point: PixelPoint) -> PixelPoint;
     fn inverse_transform_coordinate(&self, coordinate: HexCellCoordinate) -> HexCellCoordinate;
+
+    /// Should be a unique string for each unique instance of an InvertibleTransform, allowing a
+    /// good-enough equality comparison.
+    fn _eq_string(&self) -> String;
+}
+
+#[cfg(test)]
+pub mod transform_equality {
+    use crate::geometry::hexagons::transform::InvertibleTransform;
+
+    pub fn assert_transforms_equal(
+        expected: Vec<Box<dyn InvertibleTransform>>,
+        actual: Vec<Box<dyn InvertibleTransform>>,
+    ) {
+        assert_eq!(
+            expected.len(),
+            actual.len(),
+            "Transforms had different lengths."
+        );
+        if expected.len() == 0 {
+            return;
+        }
+        for index in 0..expected.len() {
+            assert_eq!(
+                expected[index]._eq_string(),
+                actual[index]._eq_string(),
+                "Transforms differed at index {}",
+                index
+            )
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
     mod standardize_geometry {
+        use crate::geometry::hexagons::standardized::StandardizedHexGeometryDefinition;
+        use crate::geometry::hexagons::test::fixtures::{FourByFour, ToSnapshot};
+        use crate::geometry::hexagons::transform::identity::Identity;
+        use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
+        use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
+        use crate::geometry::hexagons::transform::transform_equality::assert_transforms_equal;
+        use crate::geometry::hexagons::transform::{
+            InvertibleStandardizedGeometry, InvertibleTransform,
+        };
+
         #[test]
         fn standardizes_already_standardized_geometry() {
-            unimplemented!()
+            let standardized_snapshot = FourByFour::Standardized.to_snapshot();
+            let expected = InvertibleStandardizedGeometry {
+                standardized_geometry: StandardizedHexGeometryDefinition {
+                    number_of_rows: standardized_snapshot.geometry_definition.number_of_rows,
+                    number_of_columns: standardized_snapshot.geometry_definition.number_of_columns,
+                    hexagon_height: standardized_snapshot.geometry_definition.hexagon_height,
+                    hexagon_width: standardized_snapshot.geometry_definition.hexagon_width,
+                    geometry_dimensions: standardized_snapshot.dimensions,
+                },
+                transforms_applied: vec![Box::new(Identity {})],
+            };
+
+            let invertible_standardized_geometry = InvertibleStandardizedGeometry::standardize(
+                &standardized_snapshot.geometry_definition,
+                standardized_snapshot.dimensions,
+            );
+
+            assert_eq!(
+                expected.standardized_geometry,
+                invertible_standardized_geometry.standardized_geometry
+            );
+            assert_transforms_equal(
+                expected.transforms_applied,
+                invertible_standardized_geometry.transforms_applied,
+            );
         }
         #[test]
         fn standardizes_geometry_that_must_be_rotated() {
-            unimplemented!()
+            let standardized_snapshot = FourByFour::Standardized.to_snapshot();
+            let must_be_rotated_snapshot = FourByFour::MustBeRotated.to_snapshot();
+            let expected_rotation = RotateCounterClockwise::rotate(
+                must_be_rotated_snapshot.dimensions,
+                &must_be_rotated_snapshot.geometry_definition,
+            )
+            .0;
+            let expected = InvertibleStandardizedGeometry {
+                standardized_geometry: StandardizedHexGeometryDefinition {
+                    number_of_rows: standardized_snapshot.geometry_definition.number_of_rows,
+                    number_of_columns: standardized_snapshot.geometry_definition.number_of_columns,
+                    hexagon_height: standardized_snapshot.geometry_definition.hexagon_height,
+                    hexagon_width: standardized_snapshot.geometry_definition.hexagon_width,
+                    geometry_dimensions: standardized_snapshot.dimensions,
+                },
+                transforms_applied: vec![Box::new(Identity {}), Box::new(expected_rotation)],
+            };
+
+            let invertible_standardized_geometry = InvertibleStandardizedGeometry::standardize(
+                &must_be_rotated_snapshot.geometry_definition,
+                must_be_rotated_snapshot.dimensions,
+            );
+
+            assert_eq!(
+                expected.standardized_geometry,
+                invertible_standardized_geometry.standardized_geometry
+            );
+            assert_transforms_equal(
+                expected.transforms_applied,
+                invertible_standardized_geometry.transforms_applied,
+            );
         }
 
         #[test]
         fn standardizes_geometry_that_must_be_reflected() {
-            unimplemented!()
+            let standardized_snapshot = FourByFour::Standardized.to_snapshot();
+            let must_be_reflected_snapshot = FourByFour::MustBeReflected.to_snapshot();
+            let expected_reflection = ReflectOverXAxis::reflect(
+                must_be_reflected_snapshot.dimensions,
+                &must_be_reflected_snapshot.geometry_definition,
+            )
+            .0;
+            let expected = InvertibleStandardizedGeometry {
+                standardized_geometry: StandardizedHexGeometryDefinition {
+                    number_of_rows: standardized_snapshot.geometry_definition.number_of_rows,
+                    number_of_columns: standardized_snapshot.geometry_definition.number_of_columns,
+                    hexagon_height: standardized_snapshot.geometry_definition.hexagon_height,
+                    hexagon_width: standardized_snapshot.geometry_definition.hexagon_width,
+                    geometry_dimensions: standardized_snapshot.dimensions,
+                },
+                transforms_applied: vec![Box::new(Identity {}), Box::new(expected_reflection)],
+            };
+
+            let invertible_standardized_geometry = InvertibleStandardizedGeometry::standardize(
+                &must_be_reflected_snapshot.geometry_definition,
+                must_be_reflected_snapshot.dimensions,
+            );
+
+            assert_eq!(
+                expected.standardized_geometry,
+                invertible_standardized_geometry.standardized_geometry
+            );
+            assert_transforms_equal(
+                expected.transforms_applied,
+                invertible_standardized_geometry.transforms_applied,
+            );
         }
 
         #[test]
         fn standardizes_geometry_that_must_be_rotated_and_reflected() {
-            unimplemented!()
+            let standardized_snapshot = FourByFour::Standardized.to_snapshot();
+            let must_be_reflected_and_rotated_snapshot =
+                FourByFour::MustBeRotatedAndReflected.to_snapshot();
+            let (expected_rotation, rotated_geometry) = RotateCounterClockwise::rotate(
+                must_be_reflected_and_rotated_snapshot.dimensions,
+                &must_be_reflected_and_rotated_snapshot.geometry_definition,
+            );
+            let expected_reflection = ReflectOverXAxis::reflect(
+                expected_rotation.rotated_map_dimensions,
+                &rotated_geometry,
+            )
+            .0;
+            let expected = InvertibleStandardizedGeometry {
+                standardized_geometry: StandardizedHexGeometryDefinition {
+                    number_of_rows: standardized_snapshot.geometry_definition.number_of_rows,
+                    number_of_columns: standardized_snapshot.geometry_definition.number_of_columns,
+                    hexagon_height: standardized_snapshot.geometry_definition.hexagon_height,
+                    hexagon_width: standardized_snapshot.geometry_definition.hexagon_width,
+                    geometry_dimensions: standardized_snapshot.dimensions,
+                },
+                transforms_applied: vec![
+                    Box::new(Identity {}),
+                    Box::new(expected_rotation),
+                    Box::new(expected_reflection),
+                ],
+            };
+
+            let invertible_standardized_geometry = InvertibleStandardizedGeometry::standardize(
+                &must_be_reflected_and_rotated_snapshot.geometry_definition,
+                must_be_reflected_and_rotated_snapshot.dimensions,
+            );
+
+            assert_eq!(
+                expected.standardized_geometry,
+                invertible_standardized_geometry.standardized_geometry
+            );
+            assert_transforms_equal(
+                expected.transforms_applied,
+                invertible_standardized_geometry.transforms_applied,
+            );
         }
     }
 }

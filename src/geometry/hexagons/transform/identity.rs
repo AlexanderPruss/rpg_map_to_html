@@ -1,8 +1,6 @@
 use crate::PixelPoint;
 use crate::geometry::hexagons::transform::InvertibleTransform;
-use crate::geometry::hexagons::{
-    HexCell, HexCellCoordinate, HexCellMap,
-};
+use crate::geometry::hexagons::{HexCell, HexCellCoordinate, HexCellMap};
 
 #[derive(PartialEq, Debug)]
 pub struct Identity;
@@ -22,30 +20,15 @@ impl InvertibleTransform for Identity {
     fn inverse_transform_coordinate(&self, coordinate: HexCellCoordinate) -> HexCellCoordinate {
         coordinate
     }
+
+    fn _eq_string(&self) -> String {
+        "Identity".to_string()
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::geometry::hexagons::FilledTopLeftCorner;
-    use crate::geometry::hexagons::FlatSides::FlatHorizontalSides;
-    use FilledTopLeftCorner::FILLED;
-    mod transform {
-        use crate::geometry::hexagons::HexagonGeometryDefinition;
-        use super::*;
-        #[test]
-        fn returns_a_clone_of_the_geometry() {
-            let _input_geometry = HexagonGeometryDefinition {
-                flat_sides: FlatHorizontalSides,
-                number_of_rows: 5,
-                number_of_columns: 6,
-                hexagon_height: 7.0,
-                hexagon_width: 8.0,
-                filled_top_left_corner: FILLED,
-            };
-            unimplemented!();
-        }
-    }
 
     mod inverse_transform_map {
         use super::*;

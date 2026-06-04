@@ -23,6 +23,7 @@ use std::ops::Add;
 ///            •          •
 ///             ••••••••••
 /// ```
+#[derive(PartialEq, Debug)]
 pub struct StandardizedHexGeometryDefinition {
     pub number_of_rows: u8,
     pub number_of_columns: u8,
@@ -101,7 +102,7 @@ impl InvertibleStandardizedGeometry {
                         + column_position_delta * column_coordinate
                         + odd_column_offset * (column_coordinate % 2),
                 );
-                let neighbor_coordinates = if column_coordinate % 2 == 0  {
+                let neighbor_coordinates = if column_coordinate % 2 == 0 {
                     &even_column_neighbor_offsets + hex_coordinate
                 } else {
                     &odd_column_neighbor_offsets + hex_coordinate
@@ -195,11 +196,12 @@ impl InvertibleStandardizedGeometry {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub(super) struct OffsetNeighborCoordinates {
     pub coordinates: Vec<OffsetNeighborCoordinate>,
     pub maximum_coordinate: HexCellCoordinate,
 }
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub(super) struct OffsetNeighborCoordinate {
     pub row: i16,
     pub column: i16,
@@ -344,6 +346,7 @@ impl StandardizedHexGeometryDefinition {
 ///          └──┘
 ///           w_edge := width of the slanted part of the hexagon
 /// ```
+#[derive(Debug, PartialEq)]
 struct HexWidths {
     hex_width: f32,
     hex_middle_width: f32,
@@ -355,76 +358,293 @@ mod test {
     use super::*;
 
     mod standardized_hex_cell_map {
+        use crate::geometry::hexagons::standardized::StandardizedHexCellMap;
+        use crate::geometry::hexagons::test::fixtures::{FourByFour, ToSnapshot};
+        use crate::geometry::hexagons::transform::identity::Identity;
+        use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
+        use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
+
         #[test]
         fn inverts_its_hex_map_by_reversing_the_applied_transforms_in_reverse_order() {
-            unimplemented!()
+            let standardized_snapshot = FourByFour::Standardized.to_snapshot();
+            let must_be_reflected_and_rotated_snapshot =
+                FourByFour::MustBeRotatedAndReflected.to_snapshot();
+            let (rotation, rotated_geometry) = RotateCounterClockwise::rotate(
+                must_be_reflected_and_rotated_snapshot.dimensions,
+                &must_be_reflected_and_rotated_snapshot.geometry_definition,
+            );
+            let reflection =
+                ReflectOverXAxis::reflect(rotation.rotated_map_dimensions, &rotated_geometry).0;
+            let standardized_hex_cell_map = StandardizedHexCellMap {
+                standardized_map: standardized_snapshot.hex_cell_map,
+                transforms_applied: vec![
+                    Box::new(Identity {}),
+                    Box::new(rotation),
+                    Box::new(reflection),
+                ],
+            };
+
+            let inverted_map = standardized_hex_cell_map.invert_standardization();
+
+            assert_eq!(
+                must_be_reflected_and_rotated_snapshot.hex_cell_map,
+                inverted_map
+            );
         }
     }
 
     mod invertible_standardized_geometry {
+        use crate::geometry::hexagons::HexCellCoordinate;
+        use crate::geometry::hexagons::standardized::{
+            HexWidths, StandardizedHexGeometryDefinition,
+        };
+        use crate::geometry::hexagons::test::fixtures::{FourByFour, ToSnapshot};
+        use crate::geometry::hexagons::transform::identity::Identity;
+        use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
+        use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
+        use crate::geometry::hexagons::transform::transform_equality::assert_transforms_equal;
+        use crate::geometry::hexagons::transform::{
+            InvertibleStandardizedGeometry, InvertibleTransform,
+        };
+
         #[test]
         fn computes_cell_maps_for_standardized_geometries() {
-            unimplemented!()
+            let standardized_snapshot = FourByFour::Standardized.to_snapshot();
+            let must_be_reflected_and_rotated_snapshot =
+                FourByFour::MustBeRotatedAndReflected.to_snapshot();
+            let (expected_rotation, rotated_geometry) = RotateCounterClockwise::rotate(
+                must_be_reflected_and_rotated_snapshot.dimensions,
+                &must_be_reflected_and_rotated_snapshot.geometry_definition,
+            );
+            let expected_reflection = ReflectOverXAxis::reflect(
+                expected_rotation.rotated_map_dimensions,
+                &rotated_geometry,
+            )
+            .0;
+            let expected_transforms: Vec<Box<dyn InvertibleTransform>> = vec![
+                Box::new(Identity {}),
+                Box::new(expected_rotation.clone()),
+                Box::new(expected_reflection.clone()),
+            ];
+            let invertible_geometry = InvertibleStandardizedGeometry {
+                standardized_geometry: StandardizedHexGeometryDefinition {
+                    number_of_rows: standardized_snapshot.geometry_definition.number_of_rows,
+                    number_of_columns: standardized_snapshot.geometry_definition.number_of_columns,
+                    hexagon_height: standardized_snapshot.geometry_definition.hexagon_height,
+                    hexagon_width: standardized_snapshot.geometry_definition.hexagon_width,
+                    geometry_dimensions: standardized_snapshot.dimensions,
+                },
+                transforms_applied: vec![
+                    Box::new(Identity {}),
+                    Box::new(expected_rotation),
+                    Box::new(expected_reflection),
+                ],
+            };
+
+            let standardized_hex_cell_map = invertible_geometry.compute_standardized_cell_map();
+
+            assert_eq!(
+                standardized_snapshot.hex_cell_map,
+                standardized_hex_cell_map.standardized_map
+            );
+            assert_transforms_equal(
+                expected_transforms,
+                standardized_hex_cell_map.transforms_applied,
+            );
         }
 
         #[test]
         fn computes_a_bounding_polygon_around_hex_0_0() {
-            unimplemented!()
+            let standardized_snapshot = FourByFour::Standardized.to_snapshot();
+            let hex_height = 50.0;
+            let hex_widths = HexWidths {
+                hex_width: 100.0,
+                hex_middle_width: 50.0,
+                hex_edge_width: 25.0,
+            };
+            let expected_polygon = &standardized_snapshot
+                .hex_cell_map
+                .get(&HexCellCoordinate { row: 0, column: 0 })
+                .unwrap()
+                .bounding_polygon;
+
+            let bounding_polygon =
+                InvertibleStandardizedGeometry::compute_bounding_polygon_around_hex_0_0(
+                    hex_height, hex_widths,
+                );
+
+            assert_eq!(*expected_polygon, bounding_polygon);
         }
     }
 
     mod offset_neighbor_coordinates {
 
         mod add_coordinate_trait {
+            use crate::geometry::hexagons::HexCellCoordinate;
+            use crate::geometry::hexagons::standardized::{
+                OffsetNeighborCoordinate, OffsetNeighborCoordinates,
+            };
+            use std::collections::HashSet;
+
             #[test]
             fn offsets_its_coordinates_by_the_added_value() {
-                unimplemented!()
+                let rhs = HexCellCoordinate { row: 1, column: 2 };
+                let maximum = HexCellCoordinate {
+                    row: 100,
+                    column: 100,
+                };
+                let coordinates = OffsetNeighborCoordinates {
+                    coordinates: vec![
+                        OffsetNeighborCoordinate { row: 0, column: 1 },
+                        OffsetNeighborCoordinate {
+                            row: 80,
+                            column: 90,
+                        },
+                    ],
+                    maximum_coordinate: maximum,
+                };
+                let expected: HashSet<HexCellCoordinate> = HashSet::from([
+                    HexCellCoordinate { row: 1, column: 3 },
+                    HexCellCoordinate {
+                        row: 81,
+                        column: 92,
+                    },
+                ]);
+
+                let added = &coordinates + rhs;
+
+                assert_eq!(expected, added);
             }
 
             #[test]
             fn removes_coordinates_that_become_invalid() {
-                unimplemented!()
-            }
-        }
+                let rhs = HexCellCoordinate {
+                    row: 10,
+                    column: 20,
+                };
+                let maximum = HexCellCoordinate {
+                    row: 100,
+                    column: 100,
+                };
 
-        mod offset_coordinate_if_valid {
-            #[test]
-            fn offsets_the_coordinate() {
-                unimplemented!()
-            }
+                let will_stay_valid = OffsetNeighborCoordinate {
+                    row: -1,
+                    column: -1,
+                };
+                let rejected_row_too_small = OffsetNeighborCoordinate {
+                    row: -100,
+                    column: 10,
+                };
+                let rejected_column_too_small = OffsetNeighborCoordinate {
+                    row: 10,
+                    column: -21,
+                };
+                let rejected_both_too_small = OffsetNeighborCoordinate {
+                    row: -11,
+                    column: -21,
+                };
+                let rejected_row_too_large = OffsetNeighborCoordinate {
+                    row: 95,
+                    column: 10,
+                };
+                let rejected_column_too_large = OffsetNeighborCoordinate {
+                    row: 10,
+                    column: 95,
+                };
+                let rejected_both_too_large = OffsetNeighborCoordinate {
+                    row: 99,
+                    column: 99,
+                };
+                let coordinates = OffsetNeighborCoordinates {
+                    coordinates: vec![
+                        will_stay_valid,
+                        rejected_row_too_small,
+                        rejected_column_too_small,
+                        rejected_both_too_small,
+                        rejected_row_too_large,
+                        rejected_column_too_large,
+                        rejected_both_too_large,
+                    ],
+                    maximum_coordinate: maximum,
+                };
+                let expected: HashSet<HexCellCoordinate> =
+                    HashSet::from([HexCellCoordinate { row: 9, column: 19 }]);
 
-            #[test]
-            fn rejects_the_coordinate_if_x_becomes_negative() {
-                unimplemented!()
-            }
+                let added = &coordinates + rhs;
 
-            #[test]
-            fn rejects_the_coordinate_if_y_becomes_negative() {
-                unimplemented!()
-            }
-
-            #[test]
-            fn rejects_the_coordinate_if_x_becomes_too_large() {
-                unimplemented!()
-            }
-
-            #[test]
-            fn rejects_the_coordinate_if_y_becomes_too_large() {
-                unimplemented!()
+                assert_eq!(expected, added);
             }
         }
     }
 
     mod standardized_geometry_definition {
+        use crate::PixelPoint;
+        use crate::geometry::hexagons::standardized::{
+            HexWidths, StandardizedHexGeometryDefinition,
+        };
+        use crate::geometry::hexagons::test::fixtures::{
+            FourByFour, HexGeometrySnapshot, ToSnapshot,
+        };
+
+        fn standardized_geometry_from_snapshot(
+            snapshot: HexGeometrySnapshot,
+        ) -> StandardizedHexGeometryDefinition {
+            StandardizedHexGeometryDefinition {
+                number_of_rows: snapshot.geometry_definition.number_of_rows,
+                number_of_columns: snapshot.geometry_definition.number_of_columns,
+                hexagon_height: snapshot.geometry_definition.hexagon_height,
+                hexagon_width: snapshot.geometry_definition.hexagon_width,
+                geometry_dimensions: snapshot.dimensions,
+            }
+        }
 
         #[test]
         fn computes_cell_height() {
-            unimplemented!()
+            let from_fixture =
+                standardized_geometry_from_snapshot(FourByFour::Standardized.to_snapshot());
+            let one_more = StandardizedHexGeometryDefinition {
+                number_of_rows: 11,
+                number_of_columns: 21,
+                hexagon_height: 100.0,
+                hexagon_width: 300.0,
+                geometry_dimensions: PixelPoint { x: 2000, y: 1150 },
+            };
+
+            assert_eq!(50.0, from_fixture.compute_hex_height());
+            assert_eq!(100.0, one_more.compute_hex_height());
         }
 
         #[test]
         fn computes_cell_width() {
-            unimplemented!()
+            let from_fixture =
+                standardized_geometry_from_snapshot(FourByFour::Standardized.to_snapshot());
+            let one_more = StandardizedHexGeometryDefinition {
+                number_of_rows: 11,
+                number_of_columns: 21,
+                hexagon_height: 100.0,
+                hexagon_width: 300.0,
+                geometry_dimensions: PixelPoint { x: 5000, y: 1150 },
+            };
+
+            let fixture_widths = HexWidths {
+                hex_width: 100.0,
+                hex_middle_width: 50.0,
+                hex_edge_width: 25.0,
+            };
+            let one_more_widths = HexWidths {
+                hex_width: 300.0,
+                hex_middle_width: 170.0,
+                hex_edge_width: 65.0,
+            };
+
+            assert_eq!(
+                fixture_widths,
+                from_fixture.compute_hex_width(from_fixture.compute_hex_height())
+            );
+            assert_eq!(
+                one_more_widths,
+                one_more.compute_hex_width(one_more.compute_hex_height())
+            );
         }
     }
 }

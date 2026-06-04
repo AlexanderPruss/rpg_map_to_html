@@ -7,7 +7,7 @@ use std::ops::{Add, Mul, Sub};
 pub mod config;
 pub mod geometry;
 
-fn generate_map(args: &[String]) -> Result<(), Box<dyn Error>> {
+fn _generate_map(args: &[String]) -> Result<(), Box<dyn Error>> {
     let _parsed_config = config::parse_config(args);
     unimplemented!()
 }
