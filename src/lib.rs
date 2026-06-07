@@ -3,14 +3,24 @@ use crate::geometry::{CellMap, ComputesCellMap};
 use serde::Deserialize;
 use std::error::Error;
 use std::ops::{Add, Mul, Sub};
+use std::path::PathBuf;
+use ::image::DynamicImage;
 
 pub mod config;
 pub mod geometry;
+
+mod image_handling;
+mod document;
 
 fn _generate_map(args: &[String]) -> Result<(), Box<dyn Error>> {
     let _parsed_config = config::parse_config(args);
     unimplemented!()
 }
+
+fn _load_map(path: String) -> DynamicImage {
+    image::open(path).unwrap()
+}
+
 
 pub fn compute_cell_map(map_image_config: &MapImageConfig) -> CellMap {
     let map_margin = map_image_config
@@ -22,7 +32,7 @@ pub fn compute_cell_map(map_image_config: &MapImageConfig) -> CellMap {
     )
 }
 
-fn temp_get_image_dimensions(_image_path: &String) -> PixelPoint {
+fn temp_get_image_dimensions(_image_path: &PathBuf) -> PixelPoint {
     unimplemented!()
 }
 
@@ -31,6 +41,8 @@ pub struct PixelPoint {
     pub x: i32,
     pub y: i32,
 }
+
+
 
 impl Add<PixelPoint> for PixelPoint {
     type Output = PixelPoint;
@@ -72,6 +84,17 @@ impl Mul<i32> for PixelPoint {
         PixelPoint {
             x: self.x * rhs,
             y: self.y * rhs,
+        }
+    }
+}
+
+impl Mul<f32> for PixelPoint {
+    type Output = PixelPoint;
+
+    fn mul(self, rhs: f32) -> PixelPoint {
+        PixelPoint {
+            x: (self.x as f32 * rhs) as i32,
+            y: (self.y as f32 * rhs) as i32,
         }
     }
 }

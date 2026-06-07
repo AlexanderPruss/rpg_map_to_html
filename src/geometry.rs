@@ -16,24 +16,40 @@ pub enum Geometry {
     },
 }
 
+pub trait ComputesCellMap {
+    fn compute_cell_map<'map>(&self, map_dimensions: PixelPoint, map_margin: PixelPoint)
+                              -> CellMap;
+}
+
+impl ComputesCellMap for Geometry {
+    fn compute_cell_map(&self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap {
+        match self {
+            Geometry::Hexagons {
+                definition: hex_geometry_defn,
+            } => hex_geometry_defn.compute_cell_map(map_dimensions, map_margin),
+        }
+    }
+}
+
+
 #[derive(Debug, PartialEq)]
 pub struct CellMap {
-    cells_by_coordinate: HashMap<String, Cell>,
+    pub cells_by_coordinate: HashMap<String, Cell>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Cell {
-    coordinate: String,
-    neighbor_coordinates: HashSet<String>,
+    pub coordinate: String,
+    pub neighbor_coordinates: HashSet<String>,
 
-    center_point: PixelPoint,
-    bounding_polygon: BoundingPolygon,
+    pub center_point: PixelPoint,
+    pub bounding_polygon: BoundingPolygon,
 }
 
 /// A list of points defining a polygon in pixel space.
 #[derive(Clone, Debug)]
 pub struct BoundingPolygon {
-    points: Vec<PixelPoint>,
+    pub points: Vec<PixelPoint>,
 }
 
 ///The starting point and direction of the polygon is irrelevant for equality.
@@ -134,23 +150,8 @@ impl BoundingPolygon {
                 .collect(),
         }
     }
-}
 
-pub trait ComputesCellMap {
-    fn compute_cell_map<'map>(&self, map_dimensions: PixelPoint, map_margin: PixelPoint)
-    -> CellMap;
 }
-
-impl ComputesCellMap for Geometry {
-    fn compute_cell_map(&self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap {
-        match self {
-            Geometry::Hexagons {
-                definition: hex_geometry_defn,
-            } => hex_geometry_defn.compute_cell_map(map_dimensions, map_margin),
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -412,4 +413,6 @@ mod test {
             assert_ne!(polygon, empty_polygon);
         }
     }
+
+
 }

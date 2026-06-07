@@ -322,6 +322,9 @@ impl StandardizedHexGeometryDefinition {
             - self.number_of_columns as f32 * hex_width)
             / (1.0 - self.number_of_columns as f32);
         let hex_middle_width = hex_width - 2.0 * hex_edge_width;
+        if hex_width < 0.0 || hex_middle_width < 0.0 || hex_edge_width < 0.0 {
+            panic!("Computed negative hex widths. This means the input geometry and dimensions are not consistent.\n (hex_width, hex_edge_with, hex_middle_width): ({}, {}, {})", hex_width, hex_edge_width, hex_middle_width)
+        }
         HexWidths {
             hex_width,
             hex_middle_width,
