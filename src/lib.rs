@@ -1,16 +1,16 @@
 use crate::config::MapImageConfig;
 use crate::geometry::{CellMap, ComputesCellMap};
+use ::image::DynamicImage;
 use serde::Deserialize;
 use std::error::Error;
 use std::ops::{Add, Mul, Sub};
 use std::path::PathBuf;
-use ::image::DynamicImage;
 
 pub mod config;
 pub mod geometry;
 
-mod image_handling;
 mod document;
+mod image_handling;
 
 fn _generate_map(args: &[String]) -> Result<(), Box<dyn Error>> {
     let _parsed_config = config::parse_config(args);
@@ -20,7 +20,6 @@ fn _generate_map(args: &[String]) -> Result<(), Box<dyn Error>> {
 fn _load_map(path: String) -> DynamicImage {
     image::open(path).unwrap()
 }
-
 
 pub fn compute_cell_map(map_image_config: &MapImageConfig) -> CellMap {
     let map_margin = map_image_config
@@ -41,8 +40,6 @@ pub struct PixelPoint {
     pub x: i32,
     pub y: i32,
 }
-
-
 
 impl Add<PixelPoint> for PixelPoint {
     type Output = PixelPoint;

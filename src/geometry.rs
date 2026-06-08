@@ -1,4 +1,5 @@
 use crate::{PixelBox, PixelPoint};
+use imageproc::point::Point;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 
@@ -18,7 +19,7 @@ pub enum Geometry {
 
 pub trait ComputesCellMap {
     fn compute_cell_map<'map>(&self, map_dimensions: PixelPoint, map_margin: PixelPoint)
-                              -> CellMap;
+    -> CellMap;
 }
 
 impl ComputesCellMap for Geometry {
@@ -30,7 +31,6 @@ impl ComputesCellMap for Geometry {
         }
     }
 }
-
 
 #[derive(Debug, PartialEq)]
 pub struct CellMap {
@@ -150,7 +150,6 @@ impl BoundingPolygon {
                 .collect(),
         }
     }
-
 }
 #[cfg(test)]
 mod test {
@@ -413,6 +412,4 @@ mod test {
             assert_ne!(polygon, empty_polygon);
         }
     }
-
-
 }
