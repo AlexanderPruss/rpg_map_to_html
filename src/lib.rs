@@ -99,6 +99,7 @@ impl Mul<f32> for PixelPoint {
 /// A Box in pixel space, defined by two opposite corners.
 ///
 /// Remember that the top-left corner of an image has X,Y coordinate (0,0).
+#[derive(Debug, PartialEq)]
 pub struct PixelBox {
     pub top_left_corner: PixelPoint,
     pub bottom_right_corner: PixelPoint,

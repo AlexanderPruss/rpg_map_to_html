@@ -68,10 +68,10 @@ impl InvertibleTransform for RotateCounterClockwise {
 mod test {
     use crate::PixelPoint;
     use crate::geometry::hexagons::FlatSides::{FlatHorizontalSides, FlatVerticalSides};
+    use crate::geometry::hexagons::HexCellCoordinate;
     use crate::geometry::hexagons::transform::InvertibleTransform;
     use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
     use crate::geometry::hexagons::{FilledTopLeftCorner, HexagonGeometryDefinition};
-    use crate::geometry::hexagons::{HexCell, HexCellCoordinate, HexCellMap};
     use FilledTopLeftCorner::EMPTY;
     use FilledTopLeftCorner::FILLED;
     mod rotate_geometry {
@@ -168,7 +168,7 @@ mod test {
     /// Minimal check that we're using the default implementation for transforming maps and cells.
     mod inverse_transform_default_impl {
         use super::*;
-        use crate::geometry::hexagons::test::fixtures::{FourByFour, ToSnapshot};
+        use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
 
         #[test]
         fn rotates_hex_cell_map_clockwise() {

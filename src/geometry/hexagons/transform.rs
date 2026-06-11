@@ -135,17 +135,10 @@ pub mod transform_equality {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     mod standardize_geometry {
-        use crate::geometry::hexagons::standardized::StandardizedHexGeometryDefinition;
-        use crate::geometry::hexagons::test::fixtures::{FourByFour, ToSnapshot};
-        use crate::geometry::hexagons::transform::identity::Identity;
-        use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
-        use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
+        use super::super::*;
+        use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
         use crate::geometry::hexagons::transform::transform_equality::assert_transforms_equal;
-        use crate::geometry::hexagons::transform::{
-            InvertibleStandardizedGeometry, InvertibleTransform,
-        };
 
         #[test]
         fn standardizes_already_standardized_geometry() {

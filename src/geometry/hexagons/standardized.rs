@@ -361,11 +361,10 @@ struct HexWidths {
 
 #[cfg(test)]
 mod test {
-    use super::*;
 
     mod standardized_hex_cell_map {
+        use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
         use crate::geometry::hexagons::standardized::StandardizedHexCellMap;
-        use crate::geometry::hexagons::test::fixtures::{FourByFour, ToSnapshot};
         use crate::geometry::hexagons::transform::identity::Identity;
         use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
         use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
@@ -401,10 +400,10 @@ mod test {
 
     mod invertible_standardized_geometry {
         use crate::geometry::hexagons::HexCellCoordinate;
+        use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
         use crate::geometry::hexagons::standardized::{
             HexWidths, StandardizedHexGeometryDefinition,
         };
-        use crate::geometry::hexagons::test::fixtures::{FourByFour, ToSnapshot};
         use crate::geometry::hexagons::transform::identity::Identity;
         use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
         use crate::geometry::hexagons::transform::rotate::RotateCounterClockwise;
@@ -585,11 +584,9 @@ mod test {
 
     mod standardized_geometry_definition {
         use crate::PixelPoint;
+        use crate::geometry::hexagons::fixtures::{FourByFour, HexGeometrySnapshot, ToSnapshot};
         use crate::geometry::hexagons::standardized::{
             HexWidths, StandardizedHexGeometryDefinition,
-        };
-        use crate::geometry::hexagons::test::fixtures::{
-            FourByFour, HexGeometrySnapshot, ToSnapshot,
         };
 
         fn standardized_geometry_from_snapshot(

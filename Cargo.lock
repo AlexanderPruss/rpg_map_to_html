@@ -1077,6 +1077,7 @@ checksum = "47b34b781b31e5d73e9fbc8689c70551fd1ade9a19e3e28cfec8580a79290cc4"
 name = "rpg_map_to_html"
 version = "0.1.0"
 dependencies = [
+ "ab_glyph",
  "image",
  "imageproc",
  "serde",

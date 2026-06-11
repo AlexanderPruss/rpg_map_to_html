@@ -62,9 +62,9 @@ impl InvertibleTransform for ReflectOverXAxis {
 mod test {
     use crate::PixelPoint;
     use crate::geometry::hexagons::FlatSides::{FlatHorizontalSides, FlatVerticalSides};
+    use crate::geometry::hexagons::HexCellCoordinate;
     use crate::geometry::hexagons::transform::InvertibleTransform;
     use crate::geometry::hexagons::{FilledTopLeftCorner, HexagonGeometryDefinition};
-    use crate::geometry::hexagons::{HexCell, HexCellCoordinate};
     use FilledTopLeftCorner::EMPTY;
     use FilledTopLeftCorner::FILLED;
 
@@ -165,7 +165,7 @@ mod test {
         use super::*;
         use crate::geometry::hexagons::transform::reflect::ReflectOverXAxis;
 
-        use crate::geometry::hexagons::test::fixtures::{FourByFour, ToSnapshot};
+        use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
 
         #[test]
         fn reflects_hex_cell_map_over_x_axis() {

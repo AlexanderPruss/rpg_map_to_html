@@ -181,30 +181,14 @@ impl ComputesCellMap for HexagonGeometryDefinition {
 }
 
 #[cfg(test)]
+pub mod fixtures;
+
+#[cfg(test)]
 mod test {
-    use super::*;
-
-    pub mod fixtures;
-
-    #[test]
-    fn wtf_is_up_with_hashmaps() {
-        let mut map: HashMap<HexCellCoordinate, String> = HashMap::new();
-        let coordinate = HexCellCoordinate { row: 0, column: 0 };
-        let collision_option = map.insert(coordinate, "what is going on".to_string());
-        map.iter().for_each(|(key, value)| {
-            println!(
-                "original coordinate:{:?}\n, key from map:{:?}",
-                coordinate, *key
-            )
-        });
-        assert_eq!(collision_option, None);
-    }
 
     mod deserialization {
+        use super::super::*;
         use crate::geometry::Geometry;
-        use crate::geometry::hexagons::FilledTopLeftCorner::EMPTY;
-        use crate::geometry::hexagons::FlatSides::FlatVerticalSides;
-        use crate::geometry::hexagons::HexagonGeometryDefinition;
 
         #[test]
         fn should_deserialize_complete_hex_geometry<'map>() {
@@ -236,13 +220,12 @@ mod test {
                         }
                     )
                 }
-                _ => panic!("Expected to deserialize a hexagon geometry."),
             }
         }
     }
 
     mod hex_cell_coordinate {
-        use crate::geometry::hexagons::HexCellCoordinate;
+        use super::super::*;
 
         #[test]
         fn stringifies_short_coordinates() {
@@ -426,9 +409,7 @@ mod test {
         use crate::PixelPoint;
         use crate::geometry::ComputesCellMap;
         use crate::geometry::Geometry::Hexagons;
-        use crate::geometry::hexagons::test::fixtures::{
-            FourByFour, HexGeometrySnapshot, ToSnapshot,
-        };
+        use crate::geometry::hexagons::fixtures::{FourByFour, HexGeometrySnapshot, ToSnapshot};
         use crate::geometry::hexagons::{offset_map, to_cell_map};
 
         #[test]

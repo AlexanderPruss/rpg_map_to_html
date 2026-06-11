@@ -1,5 +1,4 @@
 use crate::{PixelBox, PixelPoint};
-use imageproc::point::Point;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 
@@ -153,7 +152,6 @@ impl BoundingPolygon {
 }
 #[cfg(test)]
 mod test {
-    use super::*;
 
     mod bounding_polygon {
 

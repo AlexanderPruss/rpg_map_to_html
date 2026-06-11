@@ -4,10 +4,9 @@ use crate::geometry::hexagons::standardized::{
 };
 use crate::geometry::hexagons::{
     FilledTopLeftCorner, FlatSides, HexCell, HexCellCoordinate, HexCellMap,
-    HexagonGeometryDefinition,
+    HexagonGeometryDefinition, to_cell_map,
 };
 use crate::geometry::{BoundingPolygon, Cell, CellMap};
-use std::collections::HashSet;
 
 pub enum FourByFour {
     Standardized,
@@ -248,10 +247,16 @@ impl FourByFour {
 }
 
 /// Helpful for debugging test failures, since it fails on the concrete cell that doesn't map properly.
-pub fn assert_hex_cells_equal(expected: HexCellMap, actual: HexCellMap) {
-    let mut expected_cells: Vec<HexCell> = expected.into_iter().map(|(key, value)| value).collect();
+pub(super) fn _assert_hex_cells_equal(expected: HexCellMap, actual: HexCellMap) {
+    let mut expected_cells: Vec<HexCell> = expected
+        .into_iter()
+        .map(|(_coordinate, value)| value)
+        .collect();
     expected_cells.sort_by(|first, second| first.hex_coordinate.cmp(&second.hex_coordinate));
-    let mut actual_cells: Vec<HexCell> = actual.into_iter().map(|(key, value)| value).collect();
+    let mut actual_cells: Vec<HexCell> = actual
+        .into_iter()
+        .map(|(_coordinate, value)| value)
+        .collect();
     actual_cells.sort_by(|first, second| first.hex_coordinate.cmp(&second.hex_coordinate));
     for i in 0..15 {
         let expected_cell = &expected_cells[i];
@@ -286,7 +291,8 @@ pub fn assert_cells_equal(expected: CellMap, actual: CellMap) {
 pub struct HexGeometrySnapshot {
     pub dimensions: PixelPoint,
     pub geometry_definition: HexagonGeometryDefinition,
-    pub hex_cell_map: HexCellMap,
+    pub(super) hex_cell_map: HexCellMap,
+    pub cell_map: CellMap,
 }
 
 pub trait ToSnapshot {
@@ -316,7 +322,8 @@ impl ToSnapshot for FourByFour {
                     hexagon_width: 100.0,
                     filled_top_left_corner: FilledTopLeftCorner::FILLED,
                 },
-                hex_cell_map,
+                hex_cell_map: hex_cell_map.clone(),
+                cell_map: to_cell_map(hex_cell_map),
             },
             FourByFour::MustBeReflected => HexGeometrySnapshot {
                 dimensions: PixelPoint { x: 325, y: 225 },
@@ -328,7 +335,8 @@ impl ToSnapshot for FourByFour {
                     hexagon_width: 100.0,
                     filled_top_left_corner: FilledTopLeftCorner::EMPTY,
                 },
-                hex_cell_map,
+                hex_cell_map: hex_cell_map.clone(),
+                cell_map: to_cell_map(hex_cell_map),
             },
             FourByFour::MustBeRotatedAndReflected => HexGeometrySnapshot {
                 dimensions: PixelPoint { x: 225, y: 325 },
@@ -340,7 +348,8 @@ impl ToSnapshot for FourByFour {
                     hexagon_width: 50.0,
                     filled_top_left_corner: FilledTopLeftCorner::FILLED,
                 },
-                hex_cell_map,
+                hex_cell_map: hex_cell_map.clone(),
+                cell_map: to_cell_map(hex_cell_map),
             },
             FourByFour::MustBeRotated => HexGeometrySnapshot {
                 dimensions: PixelPoint { x: 225, y: 325 },
@@ -352,7 +361,8 @@ impl ToSnapshot for FourByFour {
                     hexagon_width: 50.0,
                     filled_top_left_corner: FilledTopLeftCorner::EMPTY,
                 },
-                hex_cell_map,
+                hex_cell_map: hex_cell_map.clone(),
+                cell_map: to_cell_map(hex_cell_map),
             },
         }
     }

@@ -1,8 +1,7 @@
 use crate::PixelPoint;
 use crate::geometry::Geometry;
-use image::Rgba;
 use serde::Deserialize;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -55,8 +54,8 @@ pub struct MapCutoutConfig {
     pub minimum_map_margin: Option<PixelPoint>,
     /// The cell owning the cutout is outlined to make it clearer which cell is being documented.
     ///
-    /// Defaults to yellow.
-    pub cell_outline_color: Option<[u8; 4]>, //TODO: Maybe also thickness of the outline? Try it out first
+    /// Defaults to red.
+    pub cell_outline_color: Option<[u8; 4]>,
 }
 
 /// Allows customizing the generated map file by replacing the templates used.
@@ -79,7 +78,7 @@ pub struct TemplateConfig {
     /// The size, in pixels, of the generated map cutouts on the cell pages.
     ///
     /// Defaults to 325x340.
-    pub zoomed_in_map_image_size: Option<PixelPoint>, //TODO: But also - color, thickness of the outline, buffer size
+    pub zoomed_in_map_image_size: Option<PixelPoint>,
 }
 
 #[derive(Deserialize, Debug)]
