@@ -1,0 +1,25 @@
+<div class="cell-page" id="{{COORDINATE}}">
+    <div class="page-header">
+        <h1 class="header-title">
+            {{COORDINATE}}
+        </h1>
+        <h4 class="header-description">
+            Description
+        </h4>
+        <div class="header-separator"></div>
+    </div>
+    <div class="page-contents">
+        <div class="left-column column">
+            {{LEFT_COLUMN}}
+            <div class="filler-woods"></div>
+        </div>
+        <div class="column">
+            <div class="map-container">
+                <img class= "zoomed-in-map" src="{{IMAGE}}" alt="{{COORDINATE}} Map Cutout"/>
+                {{SVG_POLYGON_LINKS}}
+            </div>
+            {{RIGHT_COLUMN}}
+            <div class="filler-hexagons"></div>
+        </div>
+    </div>
+</div>

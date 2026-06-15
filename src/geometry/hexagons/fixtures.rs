@@ -271,13 +271,13 @@ pub fn assert_cells_equal(expected: CellMap, actual: CellMap) {
     let mut expected_cells: Vec<Cell> = expected
         .cells_by_coordinate
         .into_iter()
-        .map(|(key, value)| value)
+        .map(|(_coordinate, value)| value)
         .collect();
     expected_cells.sort_by(|first, second| first.coordinate.cmp(&second.coordinate));
     let mut actual_cells: Vec<Cell> = actual
         .cells_by_coordinate
         .into_iter()
-        .map(|(key, value)| value)
+        .map(|(_coordinate, value)| value)
         .collect();
     actual_cells.sort_by(|first, second| first.coordinate.cmp(&second.coordinate));
     for i in 0..15 {

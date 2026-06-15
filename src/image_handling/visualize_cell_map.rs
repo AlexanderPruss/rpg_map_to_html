@@ -9,7 +9,7 @@ use std::path::PathBuf;
 pub fn save_cell_map_visualization(
     cell_map: CellMap,
     original_image: &DynamicImage,
-    target_directory: PathBuf,
+    target_directory: &PathBuf,
     visualization_color: Rgba<u8>,
 ) {
     let mut visualization_image = original_image.clone();
@@ -72,7 +72,7 @@ mod test {
         save_cell_map_visualization(
             snapshot.cell_map,
             &original_map_image,
-            target_directory,
+            &target_directory,
             red,
         );
         let saved_image = image::open(target_file).unwrap();

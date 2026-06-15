@@ -21,7 +21,7 @@ pub fn create_cutout_images(
     cell_map: CellMap,
     original_image: &DynamicImage,
     image_margins: PixelPoint,
-    target_directory: PathBuf,
+    target_directory: &PathBuf,
     skip_empty_cells: SkipEmptyCells,
     map_cutout: MapCutout,
 ) -> CutoutImageMap {
@@ -52,7 +52,7 @@ pub fn create_cutout_images(
                         &padded_image,
                         padding,
                         cell,
-                        &target_directory,
+                        target_directory,
                         &map_cutout,
                     ),
                 )
@@ -189,7 +189,7 @@ mod test {
                 snapshot.cell_map,
                 &image,
                 PixelPoint { x: 0, y: 0 },
-                target_directory,
+                &target_directory,
                 skip_empty_cells,
                 map_cutout,
             );

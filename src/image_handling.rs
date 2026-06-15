@@ -4,10 +4,11 @@ use image::{DynamicImage, Rgba};
 use imageproc::drawing::draw_line_segment_mut;
 use std::ops::Add;
 
-mod empty_cell_detection;
-mod image_config;
 pub mod map_cutout;
 pub mod visualize_cell_map;
+mod empty_cell_detection;
+mod image_config;
+
 
 impl BoundingPolygon {
     /// Draws the polygon's line segments onto the given [image] in-place.
