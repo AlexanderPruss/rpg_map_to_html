@@ -12,6 +12,10 @@ Result:
 # Cell 1
 # Cell 2
 
+## Title - Cell 2
+
+Short Description
+
 ## Left Column
 
 ### Cthulhu Fhtagn
@@ -59,6 +63,10 @@ fm'latgh sll'ha.
 
 # Extra Cell 2
 
+## Title - Cell 2 (continued)
+
+Short Description
+
 ## Left Column
 
 ### Cthulhu Fhtagn
@@ -76,6 +84,10 @@ Azathoth chafh'drn. Athg bug Shub-Niggurath r'luh h'kadishtu orr'e 'ai shogg cha
 r'luh.
 # Cell 3
 # Cell 4
+
+## Title - Cell 4 (continued)
+
+Short Description
 
 ## Left Column
 
@@ -124,6 +136,10 @@ fm'latgh sll'ha.
 
 # Extra Cell 4
 
+## Title - Cell 4 (continued)
+
+Short Description
+
 ## Left Column
 
 ### Cthulhu Fhtagn
@@ -141,6 +157,10 @@ Azathoth chafh'drn. Athg bug Shub-Niggurath r'luh h'kadishtu orr'e 'ai shogg cha
 r'luh.
 
 # Cell 5
+
+## Title - Cell 5
+
+Short Description
 
 ## Left Column
 
@@ -189,6 +209,10 @@ fm'latgh sll'ha.
 
 # Extra Cell 5
 
+## Title - Cell 5 (continued)
+
+Short Description
+
 ## Left Column
 
 ### Cthulhu Fhtagn
@@ -211,6 +235,10 @@ This cell is out of order, it will remain before Cell 6.
 
 # Cell 6
 # Cell 8
+
+## Title - Cell 8
+
+Short Description
 
 ## Left Column
 
@@ -259,6 +287,10 @@ fm'latgh sll'ha.
 
 # Extra Cell 8
 
+## Title - Cell 8 (continued)
+
+Short Description
+
 ## Left Column
 
 ### Cthulhu Fhtagn
@@ -276,6 +308,10 @@ Azathoth chafh'drn. Athg bug Shub-Niggurath r'luh h'kadishtu orr'e 'ai shogg cha
 r'luh.
 
 # Cell 9
+
+## Title - Cell 9
+
+Short Description
 
 ## Left Column
 
@@ -323,6 +359,10 @@ shogg naflftaghu nggrah'n zhro n'ghft Yoggoth vulgtmor, athg h'goka nnnzhro Dago
 fm'latgh sll'ha. 
 
 # Extra Cell 9
+
+## Title - Cell 9 (continued)
+
+Short Description
 
 ## Left Column
 

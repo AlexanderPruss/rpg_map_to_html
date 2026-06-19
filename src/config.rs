@@ -5,10 +5,11 @@ use std::path::PathBuf;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    /// New files - images and html - will be saved in a child directory of [target_directory].
+    /// Generated files - images and html - will be saved in a child directory of [target_directory].
     pub target_directory: String,
+    pub title: String,
     pub map_image: MapImageConfig,
-    pub map_cutout: Option<MapCutoutConfig>,
+    pub image_handling_config: Option<ImageHandlingConfig>,
     pub template: Option<TemplateConfig>,
 }
 
@@ -42,11 +43,16 @@ pub struct SkipEmptyCellsConfig {
 
 /// Allows customizing how the zoomed-in map cutouts on each cell's page are generated.
 #[derive(Deserialize, Debug)]
-pub struct MapCutoutConfig {
+pub struct ImageHandlingConfig {
     /// The size, in pixels, of the generated map cutouts on the cell pages.
     ///
     /// Defaults to 325x340.
     pub zoomed_in_map_image_size: Option<PixelPoint>,
+    /// The maximum size of the map images that appear at the start of the generated document in
+    /// table of contents-like map that allows you to click and jump to any cell.
+    ///
+    /// Defaults to 900x1200, which fits an A4 page pretty well.
+    pub max_table_of_contents_image_size: Option<PixelPoint>,
     /// Points on the edge of the map look nicer if they're at least somewhat centered, so the map
     /// is padded out to a minimum. This does nothing if the map's margin is already larger.
     ///
@@ -63,18 +69,21 @@ pub struct MapCutoutConfig {
 pub struct TemplateConfig {
     /// A .css file replacing the default styles.
     pub styles_override: Option<PathBuf>,
+    /// The overall html document that is rendered, including references to all other templates.
+    pub document_html_override: Option<PathBuf>,
     /// An .html file that is rendered at the start of the output document.
     ///
-    /// The default introduction is a two-page map where all cells are hyperlinked to their
+    /// The default introduction is a visual table of contents where all cells are hyperlinked to their
     /// document page.
-    pub introduction_html_override: Option<PathBuf>,
+    pub table_of_contents_html_override: Option<PathBuf>,
     /// An .html file rendered for every cell.
     ///
     /// Defaults to a Dolmenwood-esque two-column description.
-    ///
-    /// Any custom overrides should have a div with the class //TODO not yet specified
-    /// which is where the generated zoomed-in map is placed.
     pub cell_page_html_override: Option<PathBuf>,
+    /// An .html file rendered for every extra page needed for a cell.
+    ///
+    /// Defaults to a Dolmenwood-esque two-column description, but without the image.
+    pub extra_cell_page_html_override: Option<PathBuf>,
     /// The size, in pixels, of the generated map cutouts on the cell pages.
     ///
     /// Defaults to 325x340.

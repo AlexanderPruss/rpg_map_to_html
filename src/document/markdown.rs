@@ -1,17 +1,34 @@
-use crate::geometry::CellMap;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
-static MARKDOWN_TEMPLATE_FILENAME: &str = "map_content.md";
+pub static MARKDOWN_TEMPLATE_FILENAME: &str = "map_content.md";
 static TEMP_PREFIX: &str = "temp_";
-/// Cell page headers look like '# Cell {{COORDINATE}}'
-static CELL_PAGE_MD_HEADER_PREFIX: &str = "# Cell ";
-static CELL_PAGE_MD_HEADER_PREFIX_LENGTH: usize = 7;
 
-/// Gets the Markdown file where map content will be written and edited. Creates this
-/// file if it doesn't yet exist.
+pub static CELL_PAGE_MD_HEADER_PREFIX: &str = "# Cell ";
+pub static EXTRA_CELL_PAGE_MD_HEADER_PREFIX: &str = "# Extra Cell ";
+
+/// Each page generates an h1 header that identifies it and its cell coordinate.
+pub enum MarkdownHeaders {
+    /// Cell page headers look like '# Cell {{COORDINATE}}'
+    CellPage,
+    /// Extra cell page headers look like '# Extra Cell {{COORDINATE}}'
+    ExtraCellPage,
+}
+
+impl MarkdownHeaders {
+    fn get_prefix(&self) -> &str {
+        match self {
+            MarkdownHeaders::CellPage => CELL_PAGE_MD_HEADER_PREFIX,
+            MarkdownHeaders::ExtraCellPage => EXTRA_CELL_PAGE_MD_HEADER_PREFIX,
+        }
+    }
+}
+
+/// Gets the Markdown file where map content will be written and edited by users.
+///
+/// Creates this file if it doesn't yet exist. The file is returned in read-only mode.
 pub fn get_markdown_content_read_file(target_directory: &PathBuf) -> File {
     let mut path = PathBuf::from(target_directory);
     path.push(MARKDOWN_TEMPLATE_FILENAME);
@@ -28,7 +45,7 @@ pub fn get_markdown_content_read_file(target_directory: &PathBuf) -> File {
 /// Tries to order the added pages alphabetically, but this can fail if the markdown file itself
 /// is not alphabetically ordered anymore. Failure means we'll have some partially-ordered pages inside
 /// the unordered document.
-pub fn add_md_content_for_missing_cells(coordinates: Vec<&String>, target_directory: &PathBuf) {
+pub fn add_md_content_for_missing_cells(target_directory: &PathBuf, coordinates: Vec<&String>) {
     let markdown_file = get_markdown_content_read_file(target_directory);
     let mut temp_path = PathBuf::from(target_directory);
     temp_path.push(TEMP_PREFIX.to_string() + MARKDOWN_TEMPLATE_FILENAME);
@@ -45,7 +62,7 @@ pub fn add_md_content_for_missing_cells(coordinates: Vec<&String>, target_direct
     let mut next_cell_coordinate_to_add = ordered_cells_iter.next();
 
     for line in BufReader::new(markdown_file).lines().map_while(Result::ok) {
-        let found_coordinate_option = cell_header_to_coordinate(&line);
+        let found_coordinate_option = cell_header_to_coordinate(&line, MarkdownHeaders::CellPage);
         // Before we write in an existing page, first write in any new coordinates that come before it
         if let Some(found_coordinate) = found_coordinate_option {
             while let Some(coordinate) = next_cell_coordinate_to_add
@@ -89,16 +106,21 @@ fn get_existing_cell_page_coordinates(target_directory: &PathBuf) -> HashSet<Str
     BufReader::new(markdown_file)
         .lines()
         .map_while(Result::ok)
-        .map(|header| cell_header_to_coordinate(&header).unwrap_or_default())
+        .map(|header| {
+            cell_header_to_coordinate(&header, MarkdownHeaders::CellPage).unwrap_or_default()
+        })
         .collect()
 }
 
 /// Given a cell_page_header, retrieves the coordinate encoded inside it, stripping whitespace.
-pub fn cell_header_to_coordinate(cell_page_header: &String) -> Option<String> {
-    if !cell_page_header.starts_with(CELL_PAGE_MD_HEADER_PREFIX) {
+pub fn cell_header_to_coordinate(
+    cell_page_header: &String,
+    header_type: MarkdownHeaders,
+) -> Option<String> {
+    if !cell_page_header.starts_with(header_type.get_prefix()) {
         return None;
     }
-    let mut coordinate = cell_page_header[CELL_PAGE_MD_HEADER_PREFIX_LENGTH..].to_string();
+    let mut coordinate = cell_page_header[header_type.get_prefix().len()..].to_string();
     coordinate.retain(|c| !c.is_whitespace());
     Some(coordinate)
 }
@@ -107,10 +129,10 @@ pub fn cell_header_to_coordinate(cell_page_header: &String) -> Option<String> {
 mod test {
 
     mod add_md_content_for_missing_cells {
-        use std::fs;
-        use std::path::{PathBuf};
         use crate::document::markdown::add_md_content_for_missing_cells;
         use crate::document::test::fixtures::{assert_files_equal, get_test_cases_path};
+        use std::fs;
+        use std::path::PathBuf;
 
         #[test]
         fn create_and_fills_a_content_md_if_none_exists() {
@@ -130,7 +152,7 @@ mod test {
                 fs::remove_file(&result_file).unwrap();
             }
 
-            add_md_content_for_missing_cells(vec![&"1".to_string(), &"3".to_string()], &result_dir);
+            add_md_content_for_missing_cells(&result_dir, vec![&"1".to_string(), &"3".to_string()]);
 
             assert_files_equal(&expected_file, &result_file);
         }
@@ -154,7 +176,7 @@ mod test {
             }
 
             let coords: Vec<String> = (0..=9).map(|coord| coord.to_string()).collect();
-            add_md_content_for_missing_cells(coords.iter().collect(), &result_dir);
+            add_md_content_for_missing_cells(&result_dir, coords.iter().collect());
 
             assert_files_equal(&expected_file, &result_file);
         }
@@ -179,26 +201,43 @@ mod test {
     }
 
     mod cell_header_to_coordinate {
+        use crate::document::markdown::MarkdownHeaders::{CellPage, ExtraCellPage};
         use crate::document::markdown::cell_header_to_coordinate;
 
         #[test]
         fn retrieves_coordinates_from_cell_headers() {
             let header = "# Cell 012.345".to_string();
-            let coordinate = cell_header_to_coordinate(&header);
+            let coordinate = cell_header_to_coordinate(&header, CellPage);
+            assert_eq!("012.345".to_string(), coordinate.unwrap())
+        }
+
+        #[test]
+        fn retrieves_coordinates_from_extr_cell_headers() {
+            let header = "# Extra Cell 012.345".to_string();
+            let coordinate = cell_header_to_coordinate(&header, ExtraCellPage);
             assert_eq!("012.345".to_string(), coordinate.unwrap())
         }
 
         #[test]
         fn retrieves_coordinates_from_cell_headers_stripping_whitespace() {
             let header = "# Cell   012  .345  ".to_string();
-            let coordinate = cell_header_to_coordinate(&header);
+            let coordinate = cell_header_to_coordinate(&header, CellPage);
+            assert_eq!("012.345".to_string(), coordinate.unwrap())
+        }
+
+        #[test]
+        fn retrieves_coordinates_from_extra_cell_headers_stripping_whitespace() {
+            let header = "# Extra Cell   012  .345  ".to_string();
+            let coordinate = cell_header_to_coordinate(&header, ExtraCellPage);
             assert_eq!("012.345".to_string(), coordinate.unwrap())
         }
 
         #[test]
         fn returns_none_if_the_header_is_invalid() {
             let header = "# Wrong 012.345".to_string();
-            let coordinate = cell_header_to_coordinate(&header);
+            let coordinate = cell_header_to_coordinate(&header, CellPage);
+            assert_eq!(None, coordinate);
+            let coordinate = cell_header_to_coordinate(&header, ExtraCellPage);
             assert_eq!(None, coordinate)
         }
     }

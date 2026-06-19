@@ -1,5 +1,9 @@
 # Cell 1
 
+## Title - Cell 1
+
+Short Description
+
 ## Left Column
 
 ### Cthulhu Fhtagn
@@ -47,6 +51,10 @@ fm'latgh sll'ha.
 
 # Extra Cell 1
 
+## Title - Cell 1 (continued)
+
+Short Description
+
 ## Left Column
 
 ### Cthulhu Fhtagn
@@ -64,6 +72,10 @@ Azathoth chafh'drn. Athg bug Shub-Niggurath r'luh h'kadishtu orr'e 'ai shogg cha
 r'luh.
 
 # Cell 3
+
+## Title - Cell 3
+
+Short Description
 
 ## Left Column
 
@@ -111,6 +123,10 @@ shogg naflftaghu nggrah'n zhro n'ghft Yoggoth vulgtmor, athg h'goka nnnzhro Dago
 fm'latgh sll'ha.
 
 # Extra Cell 3
+
+## Title - Cell 3 (continued)
+
+Short Description
 
 ## Left Column
 

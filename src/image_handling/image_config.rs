@@ -1,20 +1,21 @@
 use crate::PixelPoint;
-use crate::config::{MapCutoutConfig, SkipEmptyCellsConfig};
+use crate::config::{ImageHandlingConfig, SkipEmptyCellsConfig};
 use image::Rgba;
 
 /// Resolve the input config into a config filled with values, using default values where needed.
 pub fn resolve_config(
     skip_config: Option<SkipEmptyCellsConfig>,
-    cutout_config: Option<MapCutoutConfig>,
-) -> (SkipEmptyCells, MapCutout) {
+    cutout_config: Option<ImageHandlingConfig>,
+) -> (SkipEmptyCells, ImageHandling) {
     let mut skip_empty_cells = SkipEmptyCells {
         skipping_enabled: true,
         polygon_multiplier: 0.3,
         //White
         empty_color_rgba: Rgba::from([255, 255, 255, 255]),
     };
-    let mut map_cutout = MapCutout {
+    let mut map_cutout = ImageHandling {
         zoomed_in_map_image_size: PixelPoint { x: 325, y: 340 },
+        max_table_of_contents_map_image_size: PixelPoint { x: 900, y: 1200 },
         minimum_map_margin: PixelPoint { x: 50, y: 50 },
         //Red
         cell_outline_color: Rgba::from([255, 0, 0, 255]),
@@ -39,10 +40,13 @@ pub fn resolve_config(
             None => None,
             Some(rgba_array) => Some(Rgba::from(rgba_array)),
         };
-        map_cutout = MapCutout {
+        map_cutout = ImageHandling {
             zoomed_in_map_image_size: input_config
                 .zoomed_in_map_image_size
                 .unwrap_or(map_cutout.zoomed_in_map_image_size),
+            max_table_of_contents_map_image_size: input_config
+                .max_table_of_contents_image_size
+                .unwrap_or(map_cutout.max_table_of_contents_map_image_size),
             minimum_map_margin: input_config
                 .minimum_map_margin
                 .unwrap_or(map_cutout.minimum_map_margin),
@@ -59,9 +63,10 @@ pub struct SkipEmptyCells {
     pub empty_color_rgba: Rgba<u8>,
 }
 
-/// A [MapCutoutConfig] realized with default values where needed.
-pub struct MapCutout {
+/// A [ImageHandlingConfig] realized with default values where needed.
+pub struct ImageHandling {
     pub zoomed_in_map_image_size: PixelPoint,
+    pub max_table_of_contents_map_image_size: PixelPoint,
     pub minimum_map_margin: PixelPoint,
     pub cell_outline_color: Rgba<u8>,
 }

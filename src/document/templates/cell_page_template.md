@@ -1,5 +1,9 @@
 # Cell {{COORDINATE}}
 
+## Title - Cell {{COORDINATE}}
+
+Short Description
+
 ## Left Column
 
 ### Cthulhu Fhtagn
@@ -46,6 +50,10 @@ shogg naflftaghu nggrah'n zhro n'ghft Yoggoth vulgtmor, athg h'goka nnnzhro Dago
 fm'latgh sll'ha. 
 
 # Extra Cell {{COORDINATE}}
+
+## Title - Cell {{COORDINATE}} (continued)
+
+Short Description
 
 ## Left Column
 

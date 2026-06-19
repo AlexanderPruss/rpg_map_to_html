@@ -5,10 +5,11 @@ use imageproc::drawing::draw_line_segment_mut;
 use std::ops::Add;
 
 pub mod map_cutout;
+pub mod table_of_contents;
 pub mod visualize_cell_map;
+
 mod empty_cell_detection;
 mod image_config;
-
 
 impl BoundingPolygon {
     /// Draws the polygon's line segments onto the given [image] in-place.
@@ -56,13 +57,13 @@ impl Add<&PixelPoint> for &PixelPoint {
 
 #[cfg(test)]
 mod test {
-    use crate::image_handling::test::fixtures::FourByFourImages;
+    use crate::image_handling::test::fixtures::{FourByFourImages, get_test_resources_path};
     use image::DynamicImage;
 
-    pub mod fixtures;
+    pub(crate) mod fixtures;
 
     pub fn _save_to_out(image: &DynamicImage) {
-        let mut output_path = FourByFourImages::get_test_resources_path();
+        let mut output_path = get_test_resources_path();
         output_path.push("out.png");
         image.save(output_path).unwrap()
     }

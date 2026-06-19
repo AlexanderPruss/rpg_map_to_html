@@ -7,9 +7,9 @@ use std::path::PathBuf;
 /// Draws the [cell_map] onto a copy of the [original_image], saving the result. This allows
 /// a visual inspection of what was generated.
 pub fn save_cell_map_visualization(
+    target_directory: &PathBuf,
     cell_map: CellMap,
     original_image: &DynamicImage,
-    target_directory: &PathBuf,
     visualization_color: Rgba<u8>,
 ) {
     let mut visualization_image = original_image.clone();
@@ -70,9 +70,9 @@ mod test {
 
         let red = Rgba::from([255u8, 0, 0, 255]);
         save_cell_map_visualization(
+            &target_directory,
             snapshot.cell_map,
             &original_map_image,
-            &target_directory,
             red,
         );
         let saved_image = image::open(target_file).unwrap();

@@ -2,6 +2,11 @@
     break-after: page;
 }
 
+.extra-cell-page {
+    break-after: page;
+}
+
+
 .zoomed-in-map{
     {{CUTOUT_WIDTH_HEIGHT}}
 }

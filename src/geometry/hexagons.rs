@@ -181,7 +181,7 @@ impl ComputesCellMap for HexagonGeometryDefinition {
 }
 
 #[cfg(test)]
-pub mod fixtures;
+pub(crate) mod fixtures;
 
 #[cfg(test)]
 mod test {
