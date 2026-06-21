@@ -19,61 +19,33 @@ enum TemplateFiles {
 }
 
 impl TemplateFiles {
-    fn get_template_lines(
-        &self,
-        template_config: &Option<TemplateConfig>,
-    ) -> Box<dyn Iterator<Item = std::io::Result<String>>> {
+
+    fn get_template_lines(&self, template_config: &Option<TemplateConfig>) -> Box<dyn Iterator<Item = std::io::Result<String>>> {
+        if let Some(override_path) = self.get_override_path(template_config) {
+            let override_file = File::open(override_path).unwrap();
+            return Box::new(BufReader::new(override_file).lines());
+        }
         match self {
-            TemplateFiles::Styles => {
-                if let Some(config) = template_config
-                    && let Some(file_override) = &config.styles_override
-                {
-                    let file = File::open(file_override).unwrap();
-                    Box::new(BufReader::new(file).lines())
-                } else {
-                    Box::new(include_bytes!("templates/styles_template.css").lines())
-                }
-            }
-            TemplateFiles::MapDocs => {
-                if let Some(config) = template_config
-                    && let Some(file_override) = &config.document_html_override
-                {
-                    let file = File::open(file_override).unwrap();
-                    Box::new(BufReader::new(file).lines())
-                } else {
-                    Box::new(include_bytes!("templates/map_docs_template.html").lines())
-                }
-            }
-            TemplateFiles::TableOfContents => {
-                if let Some(config) = template_config
-                    && let Some(file_override) = &config.table_of_contents_html_override
-                {
-                    let file = File::open(file_override).unwrap();
-                    Box::new(BufReader::new(file).lines())
-                } else {
-                    Box::new(include_bytes!("templates/table_of_contents_template.html").lines())
-                }
-            }
-            TemplateFiles::CellPage => {
-                if let Some(config) = template_config
-                    && let Some(file_override) = &config.cell_page_html_override
-                {
-                    let file = File::open(file_override).unwrap();
-                    Box::new(BufReader::new(file).lines())
-                } else {
-                    Box::new(include_bytes!("templates/cell_page_template.html").lines())
-                }
-            }
-            TemplateFiles::ExtraPage => {
-                if let Some(config) = template_config
-                    && let Some(file_override) = &config.extra_cell_page_html_override
-                {
-                    let file = File::open(file_override).unwrap();
-                    Box::new(BufReader::new(file).lines())
-                } else {
-                    Box::new(include_bytes!("templates/extra_page_template.html").lines())
-                }
-            }
+            TemplateFiles::Styles => Box::new(include_bytes!("templates/styles_template.css").lines()),
+            TemplateFiles::MapDocs => Box::new(include_bytes!("templates/table_of_contents_template.html").lines()),
+            TemplateFiles::TableOfContents => Box::new(include_bytes!("templates/table_of_contents_template.html").lines()),
+            TemplateFiles::CellPage => Box::new(include_bytes!("templates/cell_page_template.html").lines()),
+            TemplateFiles::ExtraPage => Box::new(include_bytes!("templates/extra_page_template.html").lines())
+        }
+    }
+
+    fn get_override_path<'config>(&self,
+                             template_config: &'config Option<TemplateConfig>) -> &'config Option<PathBuf>{
+        if template_config.is_none() {
+            return &None;
+        }
+        let config = template_config.as_ref().unwrap();
+        match self {
+            TemplateFiles::Styles => &config.styles_override,
+            TemplateFiles::MapDocs => &config.document_html_override,
+            TemplateFiles::TableOfContents => &config.table_of_contents_html_override,
+            TemplateFiles::CellPage => &config.cell_page_html_override,
+            TemplateFiles::ExtraPage => &config.extra_cell_page_html_override
         }
     }
 }
@@ -156,8 +128,4 @@ fn fill_table_of_contents_templates(writer: &mut BufWriter<File>, config: &Optio
 
 fn fill_cell_page_templates(writer: &mut BufWriter<File>, config: &Option<TemplateConfig>) {
     todo!()
-}
-
-fn update_html_from_markdown(target_directory: &PathBuf) {
-    unimplemented!();
 }
