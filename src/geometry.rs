@@ -1,11 +1,14 @@
 use crate::{PixelBox, PixelPoint};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 
 pub mod hexagons;
 
 /// Describes the structure of the RPG map. The map's [Geometry] is used to identify map cells and neighbors.
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(tag = "type")]
 pub enum Geometry {
     /// A hex map.
@@ -53,6 +56,17 @@ pub struct Cell {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BoundingPolygon {
     pub points: Vec<PixelPoint>,
+}
+
+/// Saves a cell map. Allows users to edit the generated cellmap manually, if they wish.
+pub fn persist_cell_map_as_geometry(target_directory: &PathBuf, cell_map: CellMap) {
+    let generic_geometry = Geometry::Generic {cell_map };
+    let serialized = serde_json::to_string_pretty(&generic_geometry).unwrap();
+    let mut path = PathBuf::from(target_directory);
+    path.push("geometry.json");
+    let mut file = File::create(path).unwrap();
+    file.write(serialized.as_bytes()).unwrap();
+    file.flush().unwrap();
 }
 
 ///The starting point and direction of the polygon is irrelevant for equality.
@@ -156,6 +170,48 @@ impl BoundingPolygon {
 }
 #[cfg(test)]
 mod test {
+
+    mod persist_cell_map {
+        use std::collections::{HashMap, HashSet};
+        use std::path::{PathBuf};
+        use crate::document::test::fixtures::assert_files_equal;
+        use crate::geometry::{persist_cell_map_as_geometry, BoundingPolygon, Cell, CellMap};
+        use crate::PixelPoint;
+
+        #[test]
+        fn persists_a_cell_map_as_a_generic_geometry() {
+            let mut test_case_path = PathBuf::new();
+            test_case_path.push(env!("CARGO_MANIFEST_DIR"));
+            test_case_path.push("test_resources");
+            test_case_path.push("persist_cell_map");
+
+            let mut target_directory = PathBuf::from(&test_case_path);
+            target_directory.push("result");
+            let cell_map = CellMap{
+                cells_by_coordinate: HashMap::from([
+                    ("abc".to_string(), Cell{
+                        coordinate: "abc".to_string(),
+                        neighbor_coordinates: HashSet::from(["def".to_string()]),
+                        center_point: PixelPoint {x: 1, y: 2},
+                        bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x:2, y:3}, PixelPoint{x:4, y:5}] },
+                    }),
+                    ("def".to_string(), Cell{
+                        coordinate: "def".to_string(),
+                        neighbor_coordinates: HashSet::from(["abc".to_string()]),
+                        center_point: PixelPoint {x: 3, y: 4},
+                        bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x:5, y:6}, PixelPoint{x:7, y:8}] },
+                    })
+                ])
+            };
+            persist_cell_map_as_geometry(&target_directory, cell_map);
+
+            let mut result_path = target_directory;
+            result_path.push("geometry.json");
+            let mut expected_path = test_case_path;
+            expected_path.push("expected/geometry.json");
+            assert_files_equal(&expected_path, &result_path);
+        }
+    }
 
     mod bounding_polygon {
 

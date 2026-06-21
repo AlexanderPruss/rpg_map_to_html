@@ -5,7 +5,7 @@ use crate::geometry::hexagons::standardized::StandardizedHexCellMap;
 use crate::geometry::hexagons::transform::InvertibleStandardizedGeometry;
 use crate::geometry::{BoundingPolygon, Cell, CellMap, ComputesCellMap};
 use FlatSides::FlatHorizontalSides;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
 mod transform;
@@ -13,7 +13,7 @@ mod transform;
 mod standardized;
 
 /// A hex map. All rows have the same number of hexes, all columns have the same number of hexes.
-#[derive(Deserialize, PartialEq, Debug, Clone)]
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct HexagonGeometryDefinition {
     pub flat_sides: FlatSides,
     pub number_of_rows: u8,
@@ -61,14 +61,14 @@ struct HexCell {
     bounding_polygon: BoundingPolygon,
 }
 
-#[derive(Deserialize, Debug, PartialEq, Clone, Copy)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Copy)]
 pub enum FlatSides {
     FlatVerticalSides,
     FlatHorizontalSides,
 }
 
 /// Whether the top left corner of the map is filled in by a hex.
-#[derive(Deserialize, Debug, PartialEq, Clone, Copy)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Copy)]
 pub enum FilledTopLeftCorner {
     /// There's an empty hex at the top left of the map. For flat top hexes, the corner looks like this:
     ///
