@@ -1,7 +1,7 @@
 use crate::config::MapImageConfig;
-use crate::geometry::{CellMap, ComputesCellMap};
+use crate::geometry::{CellMap, ComputesCellMap, Geometry};
 use ::image::DynamicImage;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::ops::{Add, Mul, Sub};
 use std::path::PathBuf;
@@ -21,11 +21,11 @@ fn _load_map(path: String) -> DynamicImage {
     image::open(path).unwrap()
 }
 
-pub fn compute_cell_map(map_image_config: &MapImageConfig) -> CellMap {
+pub fn compute_cell_map(map_image_config: &MapImageConfig, geometry: Geometry) -> CellMap {
     let map_margin = map_image_config
         .image_margins
         .unwrap_or(PixelPoint { x: 0, y: 0 });
-    map_image_config.geometry.compute_cell_map(
+    geometry.compute_cell_map(
         temp_get_image_dimensions(&map_image_config.image_file),
         map_margin,
     )
@@ -35,7 +35,7 @@ fn temp_get_image_dimensions(_image_path: &PathBuf) -> PixelPoint {
     unimplemented!()
 }
 
-#[derive(Deserialize, PartialEq, Debug, Clone, Copy)]
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone, Copy)]
 pub struct PixelPoint {
     pub x: i32,
     pub y: i32,

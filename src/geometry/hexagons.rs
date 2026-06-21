@@ -163,14 +163,14 @@ fn to_cell_map(hex_cell_map: HexCellMap) -> CellMap {
 }
 
 impl ComputesCellMap for HexagonGeometryDefinition {
-    fn compute_cell_map(&self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap {
+    fn compute_cell_map(self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap {
         let map_dimensions_without_margin = PixelPoint {
             x: map_dimensions.x - 2 * map_margin.x,
             y: map_dimensions.y - 2 * map_margin.y,
         };
 
         let invertible_standardized_geometry =
-            InvertibleStandardizedGeometry::standardize(self, map_dimensions_without_margin);
+            InvertibleStandardizedGeometry::standardize(&self, map_dimensions_without_margin);
         let standardized_hex_cell_map: StandardizedHexCellMap =
             invertible_standardized_geometry.compute_standardized_cell_map();
 
@@ -219,7 +219,8 @@ mod test {
                             filled_top_left_corner: EMPTY
                         }
                     )
-                }
+                },
+                Geometry::Generic { .. } => panic!("Should not have deserialized a Generic geometry.")
             }
         }
     }

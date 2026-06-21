@@ -9,6 +9,8 @@ pub struct Config {
     pub target_directory: String,
     pub title: String,
     pub map_image: MapImageConfig,
+    /// Describes the structure of the map.
+    pub geometry: Geometry,
     pub image_handling_config: Option<ImageHandlingConfig>,
     pub template: Option<TemplateConfig>,
 }
@@ -19,8 +21,6 @@ pub struct MapImageConfig {
     pub image_file: PathBuf,
     /// The contentless margin surrounding the map. Hexographer's default export has no margin.
     pub image_margins: Option<PixelPoint>,
-    /// Describes the structure of the map.
-    pub geometry: Geometry,
     /// Per default, cells that are mostly white around their center are skipped.
     pub skip_empty_cells: Option<SkipEmptyCellsConfig>,
 }

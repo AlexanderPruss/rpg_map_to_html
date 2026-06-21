@@ -1,5 +1,5 @@
 use crate::{PixelBox, PixelPoint};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
 pub mod hexagons;
@@ -14,29 +14,33 @@ pub enum Geometry {
     Hexagons {
         definition: hexagons::HexagonGeometryDefinition,
     },
+    Generic {
+        cell_map: CellMap
+    }
 }
 
 pub trait ComputesCellMap {
-    fn compute_cell_map<'map>(&self, map_dimensions: PixelPoint, map_margin: PixelPoint)
+    fn compute_cell_map<'map>(self, map_dimensions: PixelPoint, map_margin: PixelPoint)
     -> CellMap;
 }
 
 impl ComputesCellMap for Geometry {
-    fn compute_cell_map(&self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap {
+    fn compute_cell_map(self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap {
         match self {
             Geometry::Hexagons {
                 definition: hex_geometry_defn,
             } => hex_geometry_defn.compute_cell_map(map_dimensions, map_margin),
+            Geometry::Generic {cell_map} => cell_map
         }
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct CellMap {
     pub cells_by_coordinate: HashMap<String, Cell>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Cell {
     pub coordinate: String,
     pub neighbor_coordinates: HashSet<String>,
@@ -46,7 +50,7 @@ pub struct Cell {
 }
 
 /// A list of points defining a polygon in pixel space.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BoundingPolygon {
     pub points: Vec<PixelPoint>,
 }
