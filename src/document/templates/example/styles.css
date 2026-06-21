@@ -24,7 +24,7 @@
     left: 0;
 }
 
-.adjacent-cell-link {
+.cell-link {
     opacity: 0.25;
     fill: lightblue;
 }

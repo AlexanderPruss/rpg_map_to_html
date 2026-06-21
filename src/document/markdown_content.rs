@@ -2,12 +2,14 @@ use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
+use crate::document::replace_if_contains;
 
 pub static MARKDOWN_TEMPLATE_FILENAME: &str = "map_content.md";
 static TEMP_PREFIX: &str = "temp_";
 
 pub static CELL_PAGE_MD_HEADER_PREFIX: &str = "# Cell ";
 pub static EXTRA_CELL_PAGE_MD_HEADER_PREFIX: &str = "# Extra Cell ";
+pub static COORDINATE_TOKEN: &str = "{{COORDINATE}}";
 
 /// Each page generates an h1 header that identifies it and its cell coordinate.
 pub enum MarkdownHeaders {
@@ -92,7 +94,7 @@ fn write_page_for_coordinate(writer: &mut BufWriter<File>, coordinate: &String) 
     let template_lines = include_bytes!("templates/cell_page_template.md").lines();
     template_lines.for_each(|line_result| {
         let line = line_result.unwrap();
-        let line = line.replace("{{COORDINATE}}", coordinate);
+        let line = replace_if_contains(line, "{{COORDINATE}}", coordinate);
         writer.write(line.as_bytes()).unwrap();
         writer.write("\n".as_bytes()).unwrap();
     });
@@ -129,7 +131,7 @@ pub fn cell_header_to_coordinate(
 mod test {
 
     mod add_md_content_for_missing_cells {
-        use crate::document::markdown::add_md_content_for_missing_cells;
+        use crate::document::markdown_content::add_md_content_for_missing_cells;
         use crate::document::test::fixtures::{assert_files_equal, get_test_cases_path};
         use std::fs;
         use std::path::PathBuf;
@@ -183,7 +185,7 @@ mod test {
     }
 
     mod get_existing_cell_page_coordinates {
-        use crate::document::markdown::get_existing_cell_page_coordinates;
+        use crate::document::markdown_content::get_existing_cell_page_coordinates;
         use crate::document::test::fixtures::get_test_cases_path;
         use std::collections::HashSet;
 
@@ -201,8 +203,8 @@ mod test {
     }
 
     mod cell_header_to_coordinate {
-        use crate::document::markdown::MarkdownHeaders::{CellPage, ExtraCellPage};
-        use crate::document::markdown::cell_header_to_coordinate;
+        use crate::document::markdown_content::MarkdownHeaders::{CellPage, ExtraCellPage};
+        use crate::document::markdown_content::cell_header_to_coordinate;
 
         #[test]
         fn retrieves_coordinates_from_cell_headers() {

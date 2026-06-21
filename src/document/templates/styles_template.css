@@ -1,3 +1,7 @@
+.page {
+    break-after: page;
+}
+
 .cell-page {
     break-after: page;
 }
@@ -5,7 +9,6 @@
 .extra-cell-page {
     break-after: page;
 }
-
 
 .zoomed-in-map{
     {{CUTOUT_WIDTH_HEIGHT}}
@@ -29,7 +32,7 @@
     left: 0;
 }
 
-.adjacent-cell-link {
+.cell-link {
     opacity: 0.25;
     fill: lightblue;
 }
