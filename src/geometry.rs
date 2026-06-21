@@ -18,13 +18,12 @@ pub enum Geometry {
         definition: hexagons::HexagonGeometryDefinition,
     },
     Generic {
-        cell_map: CellMap
-    }
+        cell_map: CellMap,
+    },
 }
 
 pub trait ComputesCellMap {
-    fn compute_cell_map<'map>(self, map_dimensions: PixelPoint, map_margin: PixelPoint)
-    -> CellMap;
+    fn compute_cell_map<'map>(self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap;
 }
 
 impl ComputesCellMap for Geometry {
@@ -33,7 +32,7 @@ impl ComputesCellMap for Geometry {
             Geometry::Hexagons {
                 definition: hex_geometry_defn,
             } => hex_geometry_defn.compute_cell_map(map_dimensions, map_margin),
-            Geometry::Generic {cell_map} => cell_map
+            Geometry::Generic { cell_map } => cell_map,
         }
     }
 }
@@ -60,7 +59,7 @@ pub struct BoundingPolygon {
 
 /// Saves a cell map. Allows users to edit the generated cellmap manually, if they wish.
 pub fn persist_cell_map_as_geometry(target_directory: &PathBuf, cell_map: CellMap) {
-    let generic_geometry = Geometry::Generic {cell_map };
+    let generic_geometry = Geometry::Generic { cell_map };
     let serialized = serde_json::to_string_pretty(&generic_geometry).unwrap();
     let mut path = PathBuf::from(target_directory);
     path.push("geometry.json");
@@ -172,11 +171,11 @@ impl BoundingPolygon {
 mod test {
 
     mod persist_cell_map {
-        use std::collections::{HashMap, HashSet};
-        use std::path::{PathBuf};
-        use crate::document::test::fixtures::assert_files_equal;
-        use crate::geometry::{persist_cell_map_as_geometry, BoundingPolygon, Cell, CellMap};
         use crate::PixelPoint;
+        use crate::document::test::fixtures::assert_files_equal;
+        use crate::geometry::{BoundingPolygon, Cell, CellMap, persist_cell_map_as_geometry};
+        use std::collections::{HashMap, HashSet};
+        use std::path::PathBuf;
 
         #[test]
         fn persists_a_cell_map_as_a_generic_geometry() {
@@ -187,21 +186,31 @@ mod test {
 
             let mut target_directory = PathBuf::from(&test_case_path);
             target_directory.push("result");
-            let cell_map = CellMap{
+            let cell_map = CellMap {
                 cells_by_coordinate: HashMap::from([
-                    ("abc".to_string(), Cell{
-                        coordinate: "abc".to_string(),
-                        neighbor_coordinates: HashSet::from(["def".to_string()]),
-                        center_point: PixelPoint {x: 1, y: 2},
-                        bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x:2, y:3}, PixelPoint{x:4, y:5}] },
-                    }),
-                    ("def".to_string(), Cell{
-                        coordinate: "def".to_string(),
-                        neighbor_coordinates: HashSet::from(["abc".to_string()]),
-                        center_point: PixelPoint {x: 3, y: 4},
-                        bounding_polygon: BoundingPolygon { points: vec![PixelPoint{x:5, y:6}, PixelPoint{x:7, y:8}] },
-                    })
-                ])
+                    (
+                        "abc".to_string(),
+                        Cell {
+                            coordinate: "abc".to_string(),
+                            neighbor_coordinates: HashSet::from(["def".to_string()]),
+                            center_point: PixelPoint { x: 1, y: 2 },
+                            bounding_polygon: BoundingPolygon {
+                                points: vec![PixelPoint { x: 2, y: 3 }, PixelPoint { x: 4, y: 5 }],
+                            },
+                        },
+                    ),
+                    (
+                        "def".to_string(),
+                        Cell {
+                            coordinate: "def".to_string(),
+                            neighbor_coordinates: HashSet::from(["abc".to_string()]),
+                            center_point: PixelPoint { x: 3, y: 4 },
+                            bounding_polygon: BoundingPolygon {
+                                points: vec![PixelPoint { x: 5, y: 6 }, PixelPoint { x: 7, y: 8 }],
+                            },
+                        },
+                    ),
+                ]),
             };
             persist_cell_map_as_geometry(&target_directory, cell_map);
 

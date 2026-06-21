@@ -219,8 +219,10 @@ mod test {
                             filled_top_left_corner: EMPTY
                         }
                     )
-                },
-                Geometry::Generic { .. } => panic!("Should not have deserialized a Generic geometry.")
+                }
+                Geometry::Generic { .. } => {
+                    panic!("Should not have deserialized a Generic geometry.")
+                }
             }
         }
     }

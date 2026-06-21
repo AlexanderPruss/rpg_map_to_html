@@ -143,10 +143,10 @@ mod test {
             TableOfContentsMapImage, filter_coordinates_contained,
             save_table_of_contents_map_images,
         };
-        use crate::image_handling::test::fixtures::{get_test_resources_path};
+        use crate::image_handling::test::fixtures::get_test_resources_path;
         use crate::{PixelBox, PixelPoint};
-        use std::collections::{HashMap};
-        use std::path::{ PathBuf};
+        use std::collections::HashMap;
+        use std::path::PathBuf;
 
         fn two_fifty_px_by_two_fifty_px_cell_map(upper_bound: PixelPoint) -> CellMap {
             let mut cells_by_coordinate: HashMap<String, Cell> = HashMap::new();

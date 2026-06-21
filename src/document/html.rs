@@ -1,10 +1,10 @@
+use crate::PixelPoint;
 use crate::config::TemplateConfig;
-use crate::document::markdown::{add_md_content_for_missing_cells, get_markdown_content_read_file};
+use crate::document::markdown::add_md_content_for_missing_cells;
 use crate::geometry::CellMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
-use crate::PixelPoint;
 
 static HTML_DOC_FILENAME: &str = "rpg_map_doc.html";
 static STYLES_FILENAME: &str = "styles.css";
@@ -96,14 +96,26 @@ pub fn write_html_doc(
     add_md_content_for_missing_cells(target_directory, ordered_cells);
 
     generate_styles(target_directory, &cutout_width_height);
-    generate_html_doc(target_directory, title, cell_map, cutout_width_height, config);
+    generate_html_doc(
+        target_directory,
+        title,
+        cell_map,
+        cutout_width_height,
+        config,
+    );
 }
 
 fn generate_styles(target_directory: &PathBuf, cutout_width_height: &PixelPoint) {
     todo!()
 }
 
-fn generate_html_doc(target_directory: &PathBuf, title: String, cell_map: &CellMap, cutout_width_height: PixelPoint, config: Option<TemplateConfig>) {
+fn generate_html_doc(
+    target_directory: &PathBuf,
+    title: String,
+    cell_map: &CellMap,
+    cutout_width_height: PixelPoint,
+    config: Option<TemplateConfig>,
+) {
     let mut map_docs_path = PathBuf::from(target_directory);
     map_docs_path.push(HTML_DOC_FILENAME);
     let mut result_writer = BufWriter::new(File::create(map_docs_path).unwrap());
@@ -122,7 +134,11 @@ fn generate_html_doc(target_directory: &PathBuf, title: String, cell_map: &CellM
     }
 }
 
-fn fill_map_docs_templates(line: &String, writer: &mut BufWriter<File>, config: &Option<TemplateConfig>, ) -> bool {
+fn fill_map_docs_templates(
+    line: &String,
+    writer: &mut BufWriter<File>,
+    config: &Option<TemplateConfig>,
+) -> bool {
     if line.as_str() == "{{TABLE_OF_CONTENTS_TEMPLATES}}" {
         fill_table_of_contents_templates(writer, config);
         return true;
@@ -141,8 +157,6 @@ fn fill_table_of_contents_templates(writer: &mut BufWriter<File>, config: &Optio
 fn fill_cell_page_templates(writer: &mut BufWriter<File>, config: &Option<TemplateConfig>) {
     todo!()
 }
-
-
 
 fn update_html_from_markdown(target_directory: &PathBuf) {
     unimplemented!();
