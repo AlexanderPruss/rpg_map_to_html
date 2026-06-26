@@ -27,8 +27,9 @@ enum HeaderType {
 
 fn fill_cell_page_templates(target_directory: &PathBuf, writer: &mut BufWriter<File>, config: &Option<TemplateConfig>) {
     let markdown_content = get_markdown_content_read_file(target_directory);
-    let mut md_lines = BufReader::new(markdown_content).lines();
+    let mut md_lines = BufReader::new(markdown_content).lines().peekable();
     loop {
+        //Loop - we're outside of
         let line = md_lines.next();
         if line.is_none() {
             break;
@@ -46,49 +47,79 @@ fn fill_cell_page_templates(target_directory: &PathBuf, writer: &mut BufWriter<F
     todo!()
 }
 
-struct CurrentPage {
-    /// What token we need to continue unpacking this page, if any.
-    next_expected_token: Option<Token>,
-    template_iterator : Box<dyn Iterator<Item = std::io::Result<String>>>,
+struct CurrentPage<'writer> {
+    writer: &'writer BufWriter<File>,
+    page_template_iterator: Box<dyn Iterator<Item = std::io::Result<String>>>,
+    column_template_iterator: Option<Box<dyn Iterator<Item = std::io::Result<String>>>>,
+    config: &'writer Option<TemplateConfig>,
 
     title: String,
     description: String,
     image: Option<String>,
     coordinate: Option<String>,
+
+    tab_prefix: String,
+    current_column: CurrentColumn
 }
 
-impl CurrentPage {
-    fn cell_page_from(target_directory: &PathBuf,writer: &mut BufWriter<File>, title: String, description: String, image: String, coordinate: String, config: &Option<TemplateConfig>) -> CurrentPage{
+impl<'writer> CurrentPage<'writer> {
+    fn cell_page_from(writer: &'writer mut BufWriter<File>, title: String, description: String, image: String, coordinate: String, config: &'writer Option<TemplateConfig>) -> CurrentPage<'writer>{
         CurrentPage{
-            next_expected_token: None,
+            writer,
+            config,
             title,
             description,
             image: Some(image),
             coordinate: Some(coordinate),
-            template_iterator: TemplateFiles::CellPage.get_template_lines(config)
+            page_template_iterator: TemplateFiles::CellPage.get_template_lines(config),
+            tab_prefix: "\t".to_string(),
+            current_column: CurrentColumn::NoColumn,
+            column_template_iterator: None
         }
     }
-    fn extra_page_from(target_directory: &PathBuf, writer: &mut BufWriter<File>,title: String, description: String, config: &Option<TemplateConfig>) -> CurrentPage{
+    fn extra_page_from(writer: &'writer mut BufWriter<File>,title: String, description: String, config: &'writer Option<TemplateConfig>) -> CurrentPage<'writer>{
         CurrentPage{
-            next_expected_token: None,
+            writer,
+            config,
             title,
             description,
             image : None,
             coordinate: None,
-            template_iterator: TemplateFiles::ExtraPage.get_template_lines(config)
+            page_template_iterator: TemplateFiles::ExtraPage.get_template_lines(config),
+            tab_prefix: "\t".to_string(),
+            current_column: CurrentColumn::NoColumn,
+            column_template_iterator: None
         }
     }
-    
-    fn process(&mut self) -> ProcessResult {
-        //TODO: Rust regex
+
+    fn write_until_sections_needed(&mut self) {
         unimplemented!()
     }
-    
+
+    fn write_section(&mut self) {
+        unimplemented!()
+    }
+
+    fn finish_current_column(&mut self) {
+        if self.current_column == CurrentColumn::NoColumn {
+            return;
+        }
+        self.current_column = CurrentColumn::NoColumn;
+        unimplemented!("ff")
+    }
+
+    fn write_until_page_is_done(&mut self) {
+        self.finish_current_column();
+        unimplemented!()
+    }
+
 }
 
-enum ProcessResult {
-    WaitingForToken,
-    Finished
+#[derive(Debug, PartialEq)]
+enum CurrentColumn {
+    Left,
+    Right,
+    NoColumn
 }
 
 enum Token {

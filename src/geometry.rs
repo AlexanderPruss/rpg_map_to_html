@@ -57,6 +57,12 @@ pub struct BoundingPolygon {
     pub points: Vec<PixelPoint>,
 }
 
+impl BoundingPolygon {
+    pub fn get_inscribed_rectangle(&self) -> PixelBox {
+        todo!()
+    }
+}
+
 /// Saves a cell map. Allows users to edit the generated cellmap manually, if they wish.
 pub fn persist_cell_map_as_geometry(target_directory: &PathBuf, cell_map: CellMap) {
     let generic_geometry = Geometry::Generic { cell_map };

@@ -124,7 +124,7 @@ fn generate_html_doc(
         .get_template_lines(config)
         .map_while(Result::ok)
     {
-        let templates_filled = fill_map_docs_templates(&line, &mut result_writer, config);
+        let templates_filled = fill_map_docs_templates(target_directory, &line, &mut result_writer, config);
         if templates_filled {
             continue;
         }
@@ -153,6 +153,7 @@ fn fill_map_docs_templates(
 }
 
 fn fill_table_of_contents_templates(writer: &mut BufWriter<File>, cell_map: &CellMap, config: &Option<TemplateConfig>, table_of_contents_images :Vec<TableOfContentsMapImage> ) {
+    //TODO: Pass in prefix as well
     for table_of_contents_image in table_of_contents_images {
         let width_height_css = format!("width:{}px; height: {}px;", table_of_contents_image.size.x, table_of_contents_image.size.y);
         for line in TemplateFiles::TableOfContents
@@ -172,7 +173,7 @@ fn fill_table_of_contents_templates(writer: &mut BufWriter<File>, cell_map: &Cel
 
 fn fill_cell_page_templates(target_directory: &PathBuf, writer: &mut BufWriter<File>, config: &Option<TemplateConfig>) {
     let markdown_content = get_markdown_content_read_file(target_directory);
-    // If the line is one of our special lines, create the html element we need. 
+    // If the line is one of our special lines, create the html element we need.
     for md_line in BufReader::new(markdown_content).lines().map_while(Result::ok) {
         let md_iterator = TextMergeStream::new(Parser::new(&md_line.as_str()));
         for md_event in md_iterator {
@@ -186,10 +187,6 @@ fn fill_cell_page_templates(target_directory: &PathBuf, writer: &mut BufWriter<F
         }
     }
     todo!()
-}
-
-fn write_markdown(writer: &mut BufWriter<File>, md_event: Event) {
-    pulldown_cmark::html::write_html_io(&mut writer, )
 }
 
 fn generate_svg_links(writer: &mut BufWriter<File>, cell_map: &CellMap, tab_prefix: &str, image_size: PixelPoint, offset: PixelPoint, coordinates_contained: &HashSet<String>) {
