@@ -1,15 +1,15 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
-use crate::document::replace_if_contains;
+use crate::document::{ RegexHelper};
 
 pub static MARKDOWN_TEMPLATE_FILENAME: &str = "map_content.md";
 static TEMP_PREFIX: &str = "temp_";
 
 pub static CELL_PAGE_MD_HEADER_PREFIX: &str = "# Cell ";
 pub static EXTRA_CELL_PAGE_MD_HEADER_PREFIX: &str = "# Extra Cell ";
-pub static COORDINATE_TOKEN: &str = "{{COORDINATE}}";
+pub static COORDINATE_TOKEN: &str = "COORDINATE";
 
 /// Each page generates an h1 header that identifies it and its cell coordinate.
 pub enum MarkdownHeaders {
@@ -47,7 +47,7 @@ pub fn get_markdown_content_read_file(target_directory: &PathBuf) -> File {
 /// Tries to order the added pages alphabetically, but this can fail if the markdown file itself
 /// is not alphabetically ordered anymore. Failure means we'll have some partially-ordered pages inside
 /// the unordered document.
-pub fn add_md_content_for_missing_cells(target_directory: &PathBuf, coordinates: Vec<&String>) {
+pub fn add_md_content_for_missing_cells(target_directory: &PathBuf, coordinates: Vec<&String>, regex_helper: &RegexHelper) {
     let markdown_file = get_markdown_content_read_file(target_directory);
     let mut temp_path = PathBuf::from(target_directory);
     temp_path.push(TEMP_PREFIX.to_string() + MARKDOWN_TEMPLATE_FILENAME);
@@ -70,7 +70,7 @@ pub fn add_md_content_for_missing_cells(target_directory: &PathBuf, coordinates:
             while let Some(coordinate) = next_cell_coordinate_to_add
                 && *coordinate < found_coordinate
             {
-                write_page_for_coordinate(&mut temp_writer, coordinate);
+                write_page_for_coordinate(&mut temp_writer, coordinate, regex_helper);
                 next_cell_coordinate_to_add = ordered_cells_iter.next();
             }
         }
@@ -79,7 +79,7 @@ pub fn add_md_content_for_missing_cells(target_directory: &PathBuf, coordinates:
     }
     // Add any other new coordinate pages we haven't gotten to.
     while let Some(coordinate) = next_cell_coordinate_to_add {
-        write_page_for_coordinate(&mut temp_writer, coordinate);
+        write_page_for_coordinate(&mut temp_writer, coordinate, regex_helper);
         next_cell_coordinate_to_add = ordered_cells_iter.next();
     }
     temp_writer.flush().unwrap();
@@ -90,11 +90,12 @@ pub fn add_md_content_for_missing_cells(target_directory: &PathBuf, coordinates:
 }
 
 /// Writes a [cell_page_template.md] filled in with the [coordinate] into the provided [writer].
-fn write_page_for_coordinate(writer: &mut BufWriter<File>, coordinate: &String) {
+fn write_page_for_coordinate(writer: &mut BufWriter<File>, coordinate: &String, regex_helper: &RegexHelper) {
     let template_lines = include_bytes!("templates/cell_page_template.md").lines();
+    let coordinate_replacement = HashMap::from([(COORDINATE_TOKEN, coordinate)]);
     template_lines.for_each(|line_result| {
         let line = line_result.unwrap();
-        let line = replace_if_contains(line, "{{COORDINATE}}", coordinate);
+        let line = regex_helper.replace_tokens(line.as_str(), &coordinate_replacement);
         writer.write(line.as_bytes()).unwrap();
         writer.write("\n".as_bytes()).unwrap();
     });
@@ -135,6 +136,7 @@ mod test {
         use crate::document::test::fixtures::{assert_files_equal, get_test_cases_path};
         use std::fs;
         use std::path::PathBuf;
+        use crate::document::RegexHelper;
 
         #[test]
         fn create_and_fills_a_content_md_if_none_exists() {
@@ -154,7 +156,7 @@ mod test {
                 fs::remove_file(&result_file).unwrap();
             }
 
-            add_md_content_for_missing_cells(&result_dir, vec![&"1".to_string(), &"3".to_string()]);
+            add_md_content_for_missing_cells(&result_dir, vec![&"1".to_string(), &"3".to_string()], &RegexHelper::new());
 
             assert_files_equal(&expected_file, &result_file);
         }
@@ -178,7 +180,7 @@ mod test {
             }
 
             let coords: Vec<String> = (0..=9).map(|coord| coord.to_string()).collect();
-            add_md_content_for_missing_cells(&result_dir, coords.iter().collect());
+            add_md_content_for_missing_cells(&result_dir, coords.iter().collect(), &RegexHelper::new());
 
             assert_files_equal(&expected_file, &result_file);
         }

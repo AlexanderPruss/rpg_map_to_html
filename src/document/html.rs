@@ -7,7 +7,7 @@ use crate::geometry::CellMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
-use crate::document::replace_if_contains;
+use crate::document::{replace_if_contains, RegexHelper};
 use crate::image_handling::table_of_contents::TableOfContentsMapImage;
 
 mod markdown_to_html;
@@ -75,13 +75,14 @@ pub fn write_html_doc(
     cutout_width_height: PixelPoint,
     config: Option<TemplateConfig>,
 ) {
+    let regex_helper = RegexHelper::new();
     let mut ordered_cells: Vec<&String> = cell_map
         .cells_by_coordinate
         .iter()
         .map(|(coordinate, _cell)| coordinate)
         .collect();
     ordered_cells.sort();
-    add_md_content_for_missing_cells(target_directory, ordered_cells);
+    add_md_content_for_missing_cells(target_directory, ordered_cells, &regex_helper);
 
     generate_styles(target_directory, &config, &cutout_width_height);
     generate_html_doc(

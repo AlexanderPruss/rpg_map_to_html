@@ -15,24 +15,24 @@ fn replace_if_contains(string: String, pattern: &str, replace_by: &str) -> Strin
     string.replace(pattern, replace_by)
 }
 
-struct RegexHelper {
+pub struct RegexHelper {
     replace_tokens_regex: Regex,
     identify_template_regex: Regex,
 }
 
 impl RegexHelper {
-    fn new() -> RegexHelper {
+    pub fn new() -> RegexHelper {
         let replace_tokens_regex = Regex::new(r"\{\{(?<token>.*)}}").unwrap();
         let identify_template_regex = Regex::new(r"(?<whitespace>\s*)\[\[(?<template>.*)]]").unwrap();
         RegexHelper { replace_tokens_regex, identify_template_regex}
     }
 
-    fn replace_tokens(&self, line: &str, token_values: &HashMap<String, String>) -> String {
+    fn replace_tokens(&self, line: &str, token_values: &HashMap<&str, &String>) -> String {
          self.replace_tokens_regex.replace_all(line, |caps: &Captures| {
             token_values.get(&caps["token"]).unwrap()
         }).to_string()
     }
-    
+
 }
 
 #[cfg(test)]
