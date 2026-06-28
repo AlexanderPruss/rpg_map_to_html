@@ -10,6 +10,7 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::string::ToString;
+use crate::geometry::CellMap;
 
 pub mod markdown_content;
 
@@ -82,7 +83,12 @@ impl TemplateFiles {
 }
 
 /// Token values that have a value depending on how far along the document generation is.
-struct DocumentContext<'coordinate> {
+struct DocumentContext<'document> {
+    target_directory: &'document PathBuf,
+    config: &'document Option<TemplateConfig>,
+    cell_map: &'document CellMap,
+    table_of_contents_images: &'document Vec<TableOfContentsMapImage>,
+    
     replace_tokens_regex: Regex,
     identify_template_regex: Regex,
 
@@ -93,7 +99,7 @@ struct DocumentContext<'coordinate> {
     current_image_size: Option<PixelPoint>,
     current_image_width_height_css: Option<String>,
 
-    current_coordinate: Option<&'coordinate String>,
+    current_coordinate: Option<&'document String>,
     current_page_title: Option<String>,
     current_page_description: Option<String>,
 
@@ -101,12 +107,20 @@ struct DocumentContext<'coordinate> {
     current_section_contents: Option<String>,
 }
 
-impl<'coordinate> DocumentContext<'coordinate> {
-    fn new(document_title: String, cutout_image_size: PixelPoint) -> DocumentContext<'coordinate> {
+impl<'document> DocumentContext<'document> {
+    fn new(document_title: String, cutout_image_size: PixelPoint,
+           target_directory: &'document PathBuf,
+           config: &'document Option<TemplateConfig>,
+           cell_map: &'document CellMap,
+           table_of_contents_images: &'document Vec<TableOfContentsMapImage>) -> DocumentContext<'document> {
         let replace_tokens_regex = Regex::new(r"\{\{(?<token>.*)}}").unwrap();
         let identify_template_regex =
             Regex::new(r"(?<whitespace>\s*)\[\[(?<template>.*)]]").unwrap();
         DocumentContext {
+            target_directory,
+            config,
+            cell_map,
+            table_of_contents_images,
             replace_tokens_regex,
             identify_template_regex,
             document_title,
@@ -156,7 +170,7 @@ impl<'coordinate> DocumentContext<'coordinate> {
         self.current_image_size = Some(image.size);
     }
 
-    fn start_new_page(&mut self, coordinate: &'coordinate String) {
+    fn start_new_page(&mut self, coordinate: &'document String) {
         self.current_image_path = Some(format!("{}.png", coordinate));
         self.current_coordinate = Some(coordinate);
         self.current_image_size = Some(self.cutout_image_size);
