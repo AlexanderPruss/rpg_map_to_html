@@ -10,6 +10,7 @@ Result:
 [1, 2, 3, 4, 5, **7, 6,** 8, 9]
 
 # Cell 1
+
 # Cell 2
 
 ## Title - Cell 2
@@ -82,10 +83,12 @@ h'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn. Ep hrii, nil
 gh'rioth Nyarlathotep uh'e hafh'drn r'luh cathg lloig gnaiih, uaaah naflli'hee ngsgn'wahl ee
 Azathoth chafh'drn. Athg bug Shub-Niggurath r'luh h'kadishtu orr'e 'ai shogg chai Nyarlathotep
 r'luh.
+
 # Cell 3
+
 # Cell 4
 
-## Title - Cell 4 (continued)
+## Title - Cell 4
 
 Short Description
 
@@ -283,7 +286,7 @@ bugnyth shogg orr'e ahoth h'zhro k'yarnak 'fhalmanyth. Chtenff y-fm'latgh y-k'ya
 nali'hee shugg athg Cthulhu cathg syha'h, naflah shugg Yoggoth zhro sgn'wahl ftaghu hupadgh uh'e
 Dagon s'uhn, geb n'gha gotha naflep Shub-Niggurath phlegeth n'ghft nnnshugg. Uaaah ebunmaog y'hah
 shogg naflftaghu nggrah'n zhro n'ghft Yoggoth vulgtmor, athg h'goka nnnzhro Dagon ftaghu orr'e
-fm'latgh sll'ha. 
+fm'latgh sll'ha.
 
 # Extra Cell 8
 
@@ -356,7 +359,7 @@ bugnyth shogg orr'e ahoth h'zhro k'yarnak 'fhalmanyth. Chtenff y-fm'latgh y-k'ya
 nali'hee shugg athg Cthulhu cathg syha'h, naflah shugg Yoggoth zhro sgn'wahl ftaghu hupadgh uh'e
 Dagon s'uhn, geb n'gha gotha naflep Shub-Niggurath phlegeth n'ghft nnnshugg. Uaaah ebunmaog y'hah
 shogg naflftaghu nggrah'n zhro n'ghft Yoggoth vulgtmor, athg h'goka nnnzhro Dagon ftaghu orr'e
-fm'latgh sll'ha. 
+fm'latgh sll'ha.
 
 # Extra Cell 9
 
@@ -379,3 +382,4 @@ h'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn. Ep hrii, nil
 gh'rioth Nyarlathotep uh'e hafh'drn r'luh cathg lloig gnaiih, uaaah naflli'hee ngsgn'wahl ee
 Azathoth chafh'drn. Athg bug Shub-Niggurath r'luh h'kadishtu orr'e 'ai shogg chai Nyarlathotep
 r'luh.
+

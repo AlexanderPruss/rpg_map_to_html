@@ -22,19 +22,23 @@ enum TemplateFiles {
     TableOfContents,
     CellPage,
     ExtraPage,
+    LeftColumn,
+    RightColumn,
+    Section,
+    HighlightedSection
 }
 
-/// If the [string] contains the [pattern], replace it by [replace_by]. Otherwise returns
+/// If the [string] contains the [token], replace it by [replace_by]. Otherwise returns
 /// the original string without allocating a new one.
 fn replace_if_contains(string: String, token: &Token, replace_by: &str) -> String{
-    let token_string = token.to_string();
+    //This squiggly mess is equivalent to {{token}} after the character is escaped
+    let token_string = format!("{{{{{}}}}}", token.to_string());
     let token_pattern = token_string.as_str();
     if !string.contains(token_pattern) {
         return string;
     }
     string.replace(token_pattern, replace_by)
 }
-
 
 impl TemplateFiles {
     fn get_template_lines(
@@ -61,6 +65,18 @@ impl TemplateFiles {
             TemplateFiles::ExtraPage => {
                 Box::new(include_bytes!("document/templates/extra_page_template.html").lines())
             }
+            TemplateFiles::LeftColumn => {
+                Box::new(include_bytes!("document/templates/left_column_template.html").lines())
+            }
+            TemplateFiles::RightColumn => {
+                Box::new(include_bytes!("document/templates/right_column_template.html").lines())
+            }
+            TemplateFiles::Section => {
+                Box::new(include_bytes!("document/templates/section_template.html").lines())
+            }
+            TemplateFiles::HighlightedSection => {
+                Box::new(include_bytes!("document/templates/highlighted-section-template.html").lines())
+            }
         }
     }
 
@@ -78,6 +94,10 @@ impl TemplateFiles {
             TemplateFiles::TableOfContents => &config.table_of_contents_html_override,
             TemplateFiles::CellPage => &config.cell_page_html_override,
             TemplateFiles::ExtraPage => &config.extra_cell_page_html_override,
+            TemplateFiles::LeftColumn => &config.left_column_html_override,
+            TemplateFiles::RightColumn => &config.right_column_html_override,
+            TemplateFiles::Section => &config.section_html_override,
+            TemplateFiles::HighlightedSection => &config.highlighted_section_html_override,
         }
     }
 }
@@ -94,19 +114,21 @@ struct DocumentContext<'document> {
 
     document_title: String,
     cutout_image_size: PixelPoint,
-
+    
+    current_table_of_contents_image: Option<&'document TableOfContentsMapImage>,
+    
     current_image_path: Option<String>,
     current_image_size: Option<PixelPoint>,
     current_image_width_height_css: Option<String>,
+    current_svg_viewbox: Option<String>,
 
-    current_coordinate: Option<&'document String>,
+    current_coordinate: Option<String>,
     current_page_title: Option<String>,
     current_page_description: Option<String>,
 
     current_section_title: Option<String>,
     current_section_contents: Option<String>,
 }
-
 impl<'document> DocumentContext<'document> {
     fn new(document_title: String, cutout_image_size: PixelPoint,
            target_directory: &'document PathBuf,
@@ -128,11 +150,13 @@ impl<'document> DocumentContext<'document> {
             current_image_path: None,
             current_image_size: None,
             current_image_width_height_css: None,
+            current_svg_viewbox : None,
             current_coordinate: None,
             current_page_title: None,
             current_page_description: None,
             current_section_title: None,
             current_section_contents: None,
+            current_table_of_contents_image: None
         }
     }
 
@@ -165,18 +189,35 @@ impl<'document> DocumentContext<'document> {
             .collect()
     }
 
-    fn set_current_table_of_contents_image(&mut self, image: &TableOfContentsMapImage) {
+    fn set_current_table_of_contents_image(&mut self, image: &'document TableOfContentsMapImage) {
         self.current_image_path = Some(image.filename.clone());
         self.current_image_size = Some(image.size);
+        self.current_svg_viewbox = Some(format!("0 0 {} {}", image.size.x, image.size.y));
+        self.current_table_of_contents_image = Some(image);
     }
 
-    fn start_new_page(&mut self, coordinate: &'document String) {
+    fn start_new_cell_page(&mut self, coordinate: String, title: String, description: String) {
         self.current_image_path = Some(format!("{}.png", coordinate));
         self.current_coordinate = Some(coordinate);
         self.current_image_size = Some(self.cutout_image_size);
+        self.current_svg_viewbox = Some(format!("0 0 {} {}", self.cutout_image_size.x, self.cutout_image_size.y));
+        
+        self.current_page_title = Some(title);
+        self.current_page_description = Some(description);
+        
+        self.current_section_title = None;
+        self.current_section_contents = None;
+    }
 
-        self.current_page_title = None;
-        self.current_page_description = None;
+    fn start_new_extra_page(&mut self, coordinate: Option<String>, title: String, description: String) {
+        self.current_image_path = None;
+        self.current_coordinate = coordinate;
+        self.current_image_size = Some(self.cutout_image_size);
+        self.current_svg_viewbox = Some(format!("0 0 {} {}", self.cutout_image_size.x, self.cutout_image_size.y));
+
+        self.current_page_title = Some(title);
+        self.current_page_description = Some(description);
+
         self.current_section_title = None;
         self.current_section_contents = None;
     }
@@ -191,11 +232,12 @@ impl<'document> DocumentContext<'document> {
             DocumentTitle => return &self.document_title,
             MapImage => self.current_image_path.as_ref(),
             WidthHeightCss => self.current_image_width_height_css.as_ref(),
-            Coordinate => self.current_coordinate,
+            Coordinate => self.current_coordinate.as_ref(),
             PageTitle => self.current_page_title.as_ref(),
             PageDescription => self.current_page_description.as_ref(),
             SectionTitle => self.current_section_title.as_ref(),
             SectionContents => self.current_section_contents.as_ref(),
+            ViewBox => self.current_svg_viewbox.as_ref(),
         };
         if option.is_none() {
             panic!(
@@ -206,6 +248,11 @@ impl<'document> DocumentContext<'document> {
         }
         option.unwrap()
     }
+}
+
+struct TemplateMatch {
+    leading_whitespace: String,
+    template: Template,
 }
 
 /// In-line tokens inside of the template files. They are replaced by simple strings.
@@ -222,6 +269,7 @@ pub enum Token {
     PageDescription,
     SectionTitle,
     SectionContents,
+    ViewBox
 }
 
 impl Display for Token {
@@ -234,7 +282,8 @@ impl Display for Token {
             PageTitle => "PAGE_TITLE",
             PageDescription => "PAGE_DESCRIPTION",
             SectionTitle => "SECTION_TITLE",
-            SectionContents => "SECTION_CONTENTS"
+            SectionContents => "SECTION_CONTENTS",
+            ViewBox => "VIEW_BOX"
         };
         f.write_str(as_string)
     }
@@ -253,6 +302,7 @@ impl FromStr for Token {
             "PAGE_DESCRIPTION" => Ok(PageDescription),
             "SECTION_TITLE" => Ok(SectionTitle),
             "SECTION_CONTENTS" => Ok(SectionContents),
+            "VIEW_BOX" => Ok(ViewBox),
             _ => Err(()),
         }
     }
@@ -265,7 +315,8 @@ impl FromStr for Token {
 /// e.g. \[\[CELL_PAGES]] maps to [CellPages](Template/CellPages).
 pub enum Template {
     TableOfContents,
-    SvgPolygonLinks,
+    TableOfContentsPolygonLinks,
+    ZoomedInMapPolygonLinks,
     CellPages,
     LeftColumn,
     RightColumn,
@@ -278,7 +329,8 @@ impl FromStr for Template {
     fn from_str(enum_name: &str) -> Result<Self, Self::Err> {
         match enum_name {
             "TABLE_OF_CONTENTS" => Ok(TableOfContents),
-            "SVG_POLYGON_LINKS" => Ok(SvgPolygonLinks),
+            "TABLE_OF_CONTENTS_POLYGON_LINKS" => Ok(TableOfContentsPolygonLinks),
+            "ZOOMED_IN_MAP_POLYGON_LINKS" => Ok(ZoomedInMapPolygonLinks),
             "CELL_PAGES" => Ok(CellPages),
             "LEFT_COLUMN" => Ok(LeftColumn),
             "RIGHT_COLUMN" => Ok(RightColumn),
@@ -288,54 +340,18 @@ impl FromStr for Template {
     }
 }
 
-struct TemplateMatch {
-    leading_whitespace: String,
-    template: Template,
-}
-
-struct RegexHelper {
-    replace_tokens_regex: Regex,
-    identify_template_regex: Regex,
-}
-
-impl RegexHelper {
-    fn new() -> RegexHelper {
-        let replace_tokens_regex = Regex::new(r"\{\{(?<token>.*)}}").unwrap();
-        let identify_template_regex =
-            Regex::new(r"(?<whitespace>\s*)\[\[(?<template>.*)]]").unwrap();
-        RegexHelper {
-            replace_tokens_regex,
-            identify_template_regex,
-        }
-    }
-
-    fn replace_tokens(&self, line: &str, context: &DocumentContext) -> String {
-        self.replace_tokens_regex
-            .replace_all(line, |caps: &Captures| {
-                let token = Token::from_str(&caps["token"]);
-                if token.is_err() {
-                    panic!("Found unidentified token {}", &caps["token"]);
-                }
-                context.value_for_token(&token.unwrap())
-            })
-            .to_string()
-    }
-
-    fn template_matches(&self, line: &str) -> Vec<TemplateMatch> {
-        self.identify_template_regex
-            .captures_iter(line)
-            .map(|capture| {
-                let (_, [whitespace, template_str]) = capture.extract();
-                let template = Template::from_str(template_str);
-                if template.is_err() {
-                    panic!("Encountered an unrecognized template [[{}]]", template_str);
-                }
-                TemplateMatch {
-                    leading_whitespace: whitespace.to_string(),
-                    template: template.unwrap(),
-                }
-            })
-            .collect()
+impl Display for Template {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let as_string: &str = match self {
+            TableOfContents => "TABLE_OF_CONTENTS",
+            TableOfContentsPolygonLinks => "TABLE_OF_CONTENTS_POLYGON_LINKS",
+            ZoomedInMapPolygonLinks => "ZOOMED_IN_MAP_POLYGON_LINKS",
+            CellPages => "CELL_PAGES",
+            LeftColumn => "LEFT_COLUMN",
+            RightColumn => "RIGHT_COLUMN",
+            Sections => "SECTIONS"
+        };
+        f.write_str(as_string)
     }
 }
 

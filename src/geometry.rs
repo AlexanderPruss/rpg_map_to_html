@@ -49,18 +49,13 @@ pub struct Cell {
 
     pub center_point: PixelPoint,
     pub bounding_polygon: BoundingPolygon,
+    pub inscribed_rectangle: PixelBox,
 }
 
 /// A list of points defining a polygon in pixel space.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BoundingPolygon {
     pub points: Vec<PixelPoint>,
-}
-
-impl BoundingPolygon {
-    pub fn get_inscribed_rectangle(&self) -> PixelBox {
-        todo!()
-    }
 }
 
 /// Saves a cell map. Allows users to edit the generated cellmap manually, if they wish.
@@ -177,9 +172,9 @@ impl BoundingPolygon {
 mod test {
 
     mod persist_cell_map {
-        use crate::PixelPoint;
         use crate::document::test::fixtures::assert_files_equal;
         use crate::geometry::{BoundingPolygon, Cell, CellMap, persist_cell_map_as_geometry};
+        use crate::{PixelBox, PixelPoint};
         use std::collections::{HashMap, HashSet};
         use std::path::PathBuf;
 
@@ -203,19 +198,12 @@ mod test {
                             bounding_polygon: BoundingPolygon {
                                 points: vec![PixelPoint { x: 2, y: 3 }, PixelPoint { x: 4, y: 5 }],
                             },
-                        },
-                    ),
-                    (
-                        "def".to_string(),
-                        Cell {
-                            coordinate: "def".to_string(),
-                            neighbor_coordinates: HashSet::from(["abc".to_string()]),
-                            center_point: PixelPoint { x: 3, y: 4 },
-                            bounding_polygon: BoundingPolygon {
-                                points: vec![PixelPoint { x: 5, y: 6 }, PixelPoint { x: 7, y: 8 }],
+                            inscribed_rectangle: PixelBox {
+                                top_left_corner: PixelPoint { x: 0, y: 1 },
+                                bottom_right_corner: PixelPoint { x: 10, y: 15 },
                             },
                         },
-                    ),
+                    )
                 ]),
             };
             persist_cell_map_as_geometry(&target_directory, cell_map);

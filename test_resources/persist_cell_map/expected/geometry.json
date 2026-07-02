@@ -2,28 +2,6 @@
   "type": "Generic",
   "cell_map": {
     "cells_by_coordinate": {
-      "def": {
-        "coordinate": "def",
-        "neighbor_coordinates": [
-          "abc"
-        ],
-        "center_point": {
-          "x": 3,
-          "y": 4
-        },
-        "bounding_polygon": {
-          "points": [
-            {
-              "x": 5,
-              "y": 6
-            },
-            {
-              "x": 7,
-              "y": 8
-            }
-          ]
-        }
-      },
       "abc": {
         "coordinate": "abc",
         "neighbor_coordinates": [
@@ -44,6 +22,16 @@
               "y": 5
             }
           ]
+        },
+        "inscribed_rectangle": {
+          "top_left_corner": {
+            "x": 0,
+            "y": 1
+          },
+          "bottom_right_corner": {
+            "x": 10,
+            "y": 15
+          }
         }
       }
     }

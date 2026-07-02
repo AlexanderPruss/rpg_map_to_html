@@ -12,9 +12,9 @@ pub fn get_test_cases_path() -> PathBuf {
 }
 
 pub fn assert_files_equal(first: &PathBuf, second: &PathBuf) {
-    let mut first_lines = BufReader::new(File::open(first).unwrap()).lines();
-    let mut second_lines = BufReader::new(File::open(first).unwrap()).lines();
-    let mut line = 0;
+    let first_lines = BufReader::new(File::open(first).unwrap()).lines();
+    let mut second_lines = BufReader::new(File::open(second).unwrap()).lines();
+    let mut line = 1;
 
     for first_line in first_lines.map_while(Result::ok) {
         let second_line = second_lines.next().unwrap().unwrap();

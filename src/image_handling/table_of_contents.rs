@@ -160,6 +160,7 @@ mod test {
                             neighbor_coordinates: Default::default(),
                             center_point: PixelPoint { x, y },
                             bounding_polygon: BoundingPolygon { points: vec![] },
+                            inscribed_rectangle: Default::default()
                         },
                     );
                 }
@@ -295,6 +296,7 @@ mod test {
                             neighbor_coordinates: Default::default(),
                             center_point: PixelPoint { x, y },
                             bounding_polygon: BoundingPolygon { points: vec![] },
+                            inscribed_rectangle: Default::default()
                         },
                     );
                 }

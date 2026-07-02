@@ -211,6 +211,7 @@ mod test {
     }
 
     mod cell_scale_bounding_polygon {
+        use std::default::Default;
         use crate::PixelPoint;
         use crate::geometry::{BoundingPolygon, Cell};
 
@@ -242,6 +243,7 @@ mod test {
                 neighbor_coordinates: Default::default(),
                 center_point: center_on_origin,
                 bounding_polygon: octagon,
+                inscribed_rectangle: Default::default()
             };
 
             assert_eq!(expected, cell.scale_bounding_polygon(0.5));
@@ -267,6 +269,7 @@ mod test {
                 neighbor_coordinates: Default::default(),
                 center_point: center,
                 bounding_polygon: octagon_around_center,
+                inscribed_rectangle: Default::default()
             };
 
             assert_eq!(expected, cell.scale_bounding_polygon(0.5));
@@ -285,6 +288,7 @@ mod test {
                 neighbor_coordinates: Default::default(),
                 center_point: center_on_origin,
                 bounding_polygon: octagon,
+                inscribed_rectangle: Default::default()
             };
 
             assert_eq!(expected, cell.scale_bounding_polygon(2.0));
@@ -310,6 +314,7 @@ mod test {
                 neighbor_coordinates: Default::default(),
                 center_point: center,
                 bounding_polygon: octagon_around_center,
+                inscribed_rectangle: Default::default()
             };
 
             assert_eq!(expected, cell.scale_bounding_polygon(2.0));

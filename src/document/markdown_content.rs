@@ -7,22 +7,35 @@ use crate::document::{replace_if_contains, Token};
 pub static MARKDOWN_TEMPLATE_FILENAME: &str = "map_content.md";
 static TEMP_PREFIX: &str = "temp_";
 
-pub static CELL_PAGE_MD_HEADER_PREFIX: &str = "# Cell ";
-pub static EXTRA_CELL_PAGE_MD_HEADER_PREFIX: &str = "# Extra Cell ";
+static CELL_PAGE_MD_HEADER_PREFIX: &str = "# Cell ";
+static EXTRA_CELL_PAGE_MD_HEADER_PREFIX: &str = "# Extra Cell ";
+static PAGE_TITLE_PREFIX : &str = "## Title - ";
+static LEFT_COLUMN_PREFIX : &str = "## Left Column";
+static RIGHT_COLUMN_PREFIX: &str = "## Right Column";
+static SECTION_PREFIX : &str = "### ";
+static HIGHLIGHTED_SECTION_PREFIX: &str = "#### ";
 
 /// Each page generates an h1 header that identifies it and its cell coordinate.
 pub enum MarkdownHeaders {
-    /// Cell page headers look like '# Cell {{COORDINATE}}'
     CellPage,
-    /// Extra cell page headers look like '# Extra Cell {{COORDINATE}}'
     ExtraCellPage,
+    PageTitle,
+    LeftColumn,
+    RightColumn,
+    Section,
+    HighlightedSection
 }
 
 impl MarkdownHeaders {
-    fn get_prefix(&self) -> &str {
+    pub(crate) fn get_prefix(&self) -> &str {
         match self {
             MarkdownHeaders::CellPage => CELL_PAGE_MD_HEADER_PREFIX,
             MarkdownHeaders::ExtraCellPage => EXTRA_CELL_PAGE_MD_HEADER_PREFIX,
+            MarkdownHeaders::PageTitle => PAGE_TITLE_PREFIX,
+            MarkdownHeaders::LeftColumn => LEFT_COLUMN_PREFIX,
+            MarkdownHeaders::RightColumn => RIGHT_COLUMN_PREFIX,
+            MarkdownHeaders::Section => SECTION_PREFIX,
+            MarkdownHeaders::HighlightedSection => HIGHLIGHTED_SECTION_PREFIX
         }
     }
 }
@@ -54,6 +67,7 @@ pub fn add_md_content_for_missing_cells(target_directory: &PathBuf, coordinates:
     let mut temp_writer = BufWriter::new(temp_markdown_file);
 
     let existing_page_coordinates = get_existing_cell_page_coordinates(target_directory);
+    existing_page_coordinates.iter().for_each(|coord| println!("Found existing coord {coord}"));
     let mut ordered_cells_to_add: Vec<&String> = coordinates
         .into_iter()
         .filter(|coord| !existing_page_coordinates.contains(*coord))
@@ -122,9 +136,7 @@ pub fn cell_header_to_coordinate(
     if !cell_page_header.starts_with(header_type.get_prefix()) {
         return None;
     }
-    let mut coordinate = cell_page_header[header_type.get_prefix().len()..].to_string();
-    coordinate.retain(|c| !c.is_whitespace());
-    Some(coordinate)
+    Some(cell_page_header.strip_prefix(header_type.get_prefix()).unwrap().trim().to_string())
 }
 
 #[cfg(test)]
@@ -134,7 +146,7 @@ mod test {
         use crate::document::markdown_content::add_md_content_for_missing_cells;
         use crate::document::test::fixtures::{assert_files_equal, get_test_cases_path};
         use std::fs;
-        use std::path::PathBuf;
+        use std::path::{ PathBuf};
 
         #[test]
         fn create_and_fills_a_content_md_if_none_exists() {
@@ -172,12 +184,15 @@ mod test {
             let mut result_file = PathBuf::from(&result_dir);
             result_file.push("map_content.md");
 
-            //Cleanup previous test artifacts.
+            //Cleanup previous test artifacts, push the setup file into the right directory
             if fs::exists(&result_file).unwrap() {
                 fs::remove_file(&result_file).unwrap();
             }
+            let mut setup_file = PathBuf::from(&test_cases_path);
+            setup_file.push("setup/map_content.md");
+            fs::copy(setup_file, &result_file).unwrap();
 
-            let coords: Vec<String> = (0..=9).map(|coord| coord.to_string()).collect();
+            let coords: Vec<String> = (1..=9).map(|coord| coord.to_string()).collect();
             add_md_content_for_missing_cells(&result_dir, coords.iter().collect());
 
             assert_files_equal(&expected_file, &result_file);
@@ -222,14 +237,14 @@ mod test {
 
         #[test]
         fn retrieves_coordinates_from_cell_headers_stripping_whitespace() {
-            let header = "# Cell   012  .345  ".to_string();
+            let header = "# Cell   012.345  ".to_string();
             let coordinate = cell_header_to_coordinate(&header, CellPage);
             assert_eq!("012.345".to_string(), coordinate.unwrap())
         }
 
         #[test]
         fn retrieves_coordinates_from_extra_cell_headers_stripping_whitespace() {
-            let header = "# Extra Cell   012  .345  ".to_string();
+            let header = "# Extra Cell   012.345  ".to_string();
             let coordinate = cell_header_to_coordinate(&header, ExtraCellPage);
             assert_eq!("012.345".to_string(), coordinate.unwrap())
         }

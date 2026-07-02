@@ -47,7 +47,7 @@ bugnyth shogg orr'e ahoth h'zhro k'yarnak 'fhalmanyth. Chtenff y-fm'latgh y-k'ya
 nali'hee shugg athg Cthulhu cathg syha'h, naflah shugg Yoggoth zhro sgn'wahl ftaghu hupadgh uh'e
 Dagon s'uhn, geb n'gha gotha naflep Shub-Niggurath phlegeth n'ghft nnnshugg. Uaaah ebunmaog y'hah
 shogg naflftaghu nggrah'n zhro n'ghft Yoggoth vulgtmor, athg h'goka nnnzhro Dagon ftaghu orr'e
-fm'latgh sll'ha. 
+fm'latgh sll'ha.
 
 # Extra Cell {{COORDINATE}}
 
