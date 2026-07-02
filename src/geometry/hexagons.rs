@@ -102,7 +102,10 @@ impl HexCell {
                 bottom_right_corner.y = square_point.y
             }
         }
-        PixelBox{top_left_corner, bottom_right_corner}
+        PixelBox {
+            top_left_corner,
+            bottom_right_corner,
+        }
     }
 }
 
@@ -304,6 +307,77 @@ mod test {
         }
     }
 
+    mod hex_cell_inscribed_rectangle {
+        use crate::geometry::BoundingPolygon;
+        use crate::geometry::hexagons::{HexCell, HexCellCoordinate};
+        use crate::{PixelBox, PixelPoint};
+        use std::collections::HashSet;
+
+        #[test]
+        fn identifies_rectangles_for_flat_bottom_hexes() {
+            let mut hex_cell = HexCell {
+                hex_coordinate: HexCellCoordinate { row: 0, column: 0 },
+                neighbor_coordinates: HashSet::from([HexCellCoordinate { row: 9, column: 10 }]),
+                center_point: PixelPoint { x: 15, y: 20 },
+                bounding_polygon: BoundingPolygon {
+                    points: vec![
+                        PixelPoint { x: 10, y: 10 },
+                        PixelPoint { x: 20, y: 10 },
+                        PixelPoint { x: 30, y: 20 },
+                        PixelPoint { x: 20, y: 30 },
+                        PixelPoint { x: 10, y: 30 },
+                        PixelPoint { x: 00, y: 20 },
+                    ],
+                },
+            };
+            let expected_rectangle = PixelBox {
+                top_left_corner: PixelPoint { x: 10, y: 10 },
+                bottom_right_corner: PixelPoint { x: 20, y: 30 },
+            };
+            for _ in 1..=6 {
+                hex_cell.bounding_polygon.points.rotate_right(1);
+                assert_eq!(expected_rectangle, hex_cell.compute_inscribed_rectangle());
+            }
+            hex_cell.bounding_polygon.points.reverse();
+            for _ in 1..=6 {
+                hex_cell.bounding_polygon.points.rotate_right(1);
+                assert_eq!(expected_rectangle, hex_cell.compute_inscribed_rectangle());
+            }
+        }
+
+        #[test]
+        fn identifies_rectangles_for_flat_side_hexes() {
+            let mut hex_cell = HexCell {
+                hex_coordinate: HexCellCoordinate { row: 0, column: 0 },
+                neighbor_coordinates: HashSet::from([HexCellCoordinate { row: 9, column: 10 }]),
+                center_point: PixelPoint { x: 15, y: 20 },
+                bounding_polygon: BoundingPolygon {
+                    points: vec![
+                        PixelPoint { x: 10, y: 10 },
+                        PixelPoint { x: 20, y: 20 },
+                        PixelPoint { x: 20, y: 30 },
+                        PixelPoint { x: 10, y: 40 },
+                        PixelPoint { x: 00, y: 30 },
+                        PixelPoint { x: 00, y: 20 },
+                    ],
+                },
+            };
+            let expected_rectangle = PixelBox {
+                top_left_corner: PixelPoint { x: 00, y: 20 },
+                bottom_right_corner: PixelPoint { x: 20, y: 30 },
+            };
+            for _ in 1..=6 {
+                hex_cell.bounding_polygon.points.rotate_right(1);
+                assert_eq!(expected_rectangle, hex_cell.compute_inscribed_rectangle());
+            }
+            hex_cell.bounding_polygon.points.reverse();
+            for _ in 1..=6 {
+                hex_cell.bounding_polygon.points.rotate_right(1);
+                assert_eq!(expected_rectangle, hex_cell.compute_inscribed_rectangle());
+            }
+        }
+    }
+
     mod offset_map {
         use super::super::*;
 
@@ -393,11 +467,11 @@ mod test {
     }
 
     mod to_cell_map {
-        use crate::{PixelBox, PixelPoint};
+        use crate::geometry::hexagons::fixtures::assert_cells_equal;
         use crate::geometry::hexagons::{HexCell, HexCellCoordinate, HexCellMap, to_cell_map};
         use crate::geometry::{BoundingPolygon, Cell, CellMap};
+        use crate::{PixelBox, PixelPoint};
         use std::collections::HashSet;
-        use crate::geometry::hexagons::fixtures::assert_cells_equal;
 
         #[test]
         fn stringifies_hex_coordinates_and_adds_inscribed_rectangle() {
@@ -413,7 +487,7 @@ mod test {
                             PixelPoint { x: 3, y: 2 },
                             PixelPoint { x: 2, y: 3 },
                             PixelPoint { x: 1, y: 3 },
-                            PixelPoint { x: 0, y: 2 }
+                            PixelPoint { x: 0, y: 2 },
                         ],
                     },
                 },
@@ -425,13 +499,13 @@ mod test {
                     }]),
                     center_point: PixelPoint { x: 5, y: 6 },
                     bounding_polygon: BoundingPolygon {
-                        points:  vec![
+                        points: vec![
                             PixelPoint { x: 2, y: 2 },
                             PixelPoint { x: 3, y: 2 },
                             PixelPoint { x: 4, y: 3 },
                             PixelPoint { x: 3, y: 4 },
                             PixelPoint { x: 2, y: 4 },
-                            PixelPoint { x: 1, y: 3 }
+                            PixelPoint { x: 1, y: 3 },
                         ],
                     },
                 },
@@ -448,32 +522,32 @@ mod test {
                             PixelPoint { x: 3, y: 2 },
                             PixelPoint { x: 2, y: 3 },
                             PixelPoint { x: 1, y: 3 },
-                            PixelPoint { x: 0, y: 2 }
+                            PixelPoint { x: 0, y: 2 },
                         ],
                     },
                     inscribed_rectangle: PixelBox {
-                        top_left_corner: PixelPoint{x: 1, y:1},
-                        bottom_right_corner: PixelPoint{ x:2, y: 3}
-                    }
+                        top_left_corner: PixelPoint { x: 1, y: 1 },
+                        bottom_right_corner: PixelPoint { x: 2, y: 3 },
+                    },
                 },
                 Cell {
                     coordinate: String::from("002.001"),
                     neighbor_coordinates: HashSet::from([String::from("012.011")]),
                     center_point: PixelPoint { x: 5, y: 6 },
                     bounding_polygon: BoundingPolygon {
-                        points:  vec![
+                        points: vec![
                             PixelPoint { x: 2, y: 2 },
                             PixelPoint { x: 3, y: 2 },
                             PixelPoint { x: 4, y: 3 },
                             PixelPoint { x: 3, y: 4 },
                             PixelPoint { x: 2, y: 4 },
-                            PixelPoint { x: 1, y: 3 }
+                            PixelPoint { x: 1, y: 3 },
                         ],
                     },
                     inscribed_rectangle: PixelBox {
-                        top_left_corner: PixelPoint{x: 2, y:2},
-                        bottom_right_corner: PixelPoint{ x:3, y: 4}
-                    }
+                        top_left_corner: PixelPoint { x: 2, y: 2 },
+                        bottom_right_corner: PixelPoint { x: 3, y: 4 },
+                    },
                 },
             ]);
             let hex_cell_map: HexCellMap = hex_cells
