@@ -85,7 +85,7 @@ pub struct TemplateConfig {
     /// Defaults to a Dolmenwood-esque two-column description, but without the image.
     pub extra_cell_page_html_override: Option<PathBuf>,
     /// An .html file rendered for every left column on a page.
-    /// 
+    ///
     /// Defaults to a section container taking up roughly half a page.
     pub left_column_html_override: Option<PathBuf>,
     /// An .html file rendered for every right column on a page.
@@ -100,9 +100,9 @@ pub struct TemplateConfig {
     /// An .html file rendered for every highlighted section in a column. It is filled by user generated
     /// content from the markdown content file.
     ///
-    /// "Highlighted" means here that it is set in its own colored box. It draws attention to 
+    /// "Highlighted" means here that it is set in its own colored box. It draws attention to
     /// individual elements, creatures, treasures, etc.
-    /// 
+    ///
     /// Defaults to a highlighted similar to the ones in the Dolmenwood book.
     pub highlighted_section_html_override: Option<PathBuf>,
     /// The size, in pixels, of the generated map cutouts on the cell pages.

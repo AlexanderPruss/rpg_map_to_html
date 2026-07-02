@@ -169,7 +169,7 @@ fn fill_templates_if_found(
                     &template_match.leading_whitespace,
                     Column::Left,
                 )
-            },
+            }
             Template::RightColumn => {
                 template_filled = true;
                 fill_column(
@@ -178,7 +178,7 @@ fn fill_templates_if_found(
                     &template_match.leading_whitespace,
                     Column::Right,
                 )
-            },
+            }
             Template::Sections => {
                 template_filled = true;
                 fill_sections(context, reader_writer, &template_match.leading_whitespace)
@@ -423,9 +423,21 @@ fn read_next_section(md_lines: &mut Peekable<Lines<BufReader<File>>>) -> Option<
     }
     let header_line = header_line.unwrap().unwrap();
     let (title, template) = if header_line.starts_with(MarkdownHeaders::Section.get_prefix()) {
-        (header_line.strip_prefix(MarkdownHeaders::Section.get_prefix()).unwrap().to_string(), TemplateFiles::Section)
+        (
+            header_line
+                .strip_prefix(MarkdownHeaders::Section.get_prefix())
+                .unwrap()
+                .to_string(),
+            TemplateFiles::Section,
+        )
     } else if header_line.starts_with(MarkdownHeaders::HighlightedSection.get_prefix()) {
-        (header_line.strip_prefix(MarkdownHeaders::HighlightedSection.get_prefix()).unwrap().to_string(), TemplateFiles::HighlightedSection)
+        (
+            header_line
+                .strip_prefix(MarkdownHeaders::HighlightedSection.get_prefix())
+                .unwrap()
+                .to_string(),
+            TemplateFiles::HighlightedSection,
+        )
     } else {
         return None;
     };
@@ -433,7 +445,7 @@ fn read_next_section(md_lines: &mut Peekable<Lines<BufReader<File>>>) -> Option<
     let parser = pulldown_cmark::Parser::new(raw_content.as_str());
     let mut content = String::new();
     pulldown_cmark::html::push_html(&mut content, parser);
-    Some(Section{
+    Some(Section {
         title,
         content,
         template,
@@ -455,16 +467,22 @@ fn iterate_until_page_starts(
     };
 
     //The header contains the coordinate if one is present.
-    let (coordinate, extra_page) = if page_header.starts_with(MarkdownHeaders::CellPage.get_prefix()) {
-        (cell_header_to_coordinate(&page_header, MarkdownHeaders::CellPage), false)
-    } else {
-        (cell_header_to_coordinate(&page_header, MarkdownHeaders::ExtraCellPage), true)
-    };
+    let (coordinate, extra_page) =
+        if page_header.starts_with(MarkdownHeaders::CellPage.get_prefix()) {
+            (
+                cell_header_to_coordinate(&page_header, MarkdownHeaders::CellPage),
+                false,
+            )
+        } else {
+            (
+                cell_header_to_coordinate(&page_header, MarkdownHeaders::ExtraCellPage),
+                true,
+            )
+        };
 
     //The first header after the page header contains the title.
     iterate_until_header_or_eof(md_lines);
-    let title = match next_line_starts_with(md_lines, MarkdownHeaders::PageTitle.get_prefix())
-    {
+    let title = match next_line_starts_with(md_lines, MarkdownHeaders::PageTitle.get_prefix()) {
         Match => {
             let page_title_line = md_lines.next().unwrap().unwrap();
             page_title_line
@@ -488,7 +506,7 @@ fn iterate_until_page_starts(
         .filter(|line| !line.trim().is_empty())
         .next()
         .unwrap_or_else(|| "".to_string());
-    Some(StartOfCellPage{
+    Some(StartOfCellPage {
         coordinate,
         title,
         description,

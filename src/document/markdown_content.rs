@@ -1,18 +1,18 @@
-use std::collections::{HashSet};
+use crate::document::{Token, replace_if_contains};
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
-use crate::document::{replace_if_contains, Token};
 
 pub static MARKDOWN_TEMPLATE_FILENAME: &str = "map_content.md";
 static TEMP_PREFIX: &str = "temp_";
 
 static CELL_PAGE_MD_HEADER_PREFIX: &str = "# Cell ";
 static EXTRA_CELL_PAGE_MD_HEADER_PREFIX: &str = "# Extra Cell ";
-static PAGE_TITLE_PREFIX : &str = "## Title - ";
-static LEFT_COLUMN_PREFIX : &str = "## Left Column";
+static PAGE_TITLE_PREFIX: &str = "## Title - ";
+static LEFT_COLUMN_PREFIX: &str = "## Left Column";
 static RIGHT_COLUMN_PREFIX: &str = "## Right Column";
-static SECTION_PREFIX : &str = "### ";
+static SECTION_PREFIX: &str = "### ";
 static HIGHLIGHTED_SECTION_PREFIX: &str = "#### ";
 
 /// Each page generates an h1 header that identifies it and its cell coordinate.
@@ -23,7 +23,7 @@ pub enum MarkdownHeaders {
     LeftColumn,
     RightColumn,
     Section,
-    HighlightedSection
+    HighlightedSection,
 }
 
 impl MarkdownHeaders {
@@ -35,7 +35,7 @@ impl MarkdownHeaders {
             MarkdownHeaders::LeftColumn => LEFT_COLUMN_PREFIX,
             MarkdownHeaders::RightColumn => RIGHT_COLUMN_PREFIX,
             MarkdownHeaders::Section => SECTION_PREFIX,
-            MarkdownHeaders::HighlightedSection => HIGHLIGHTED_SECTION_PREFIX
+            MarkdownHeaders::HighlightedSection => HIGHLIGHTED_SECTION_PREFIX,
         }
     }
 }
@@ -67,7 +67,9 @@ pub fn add_md_content_for_missing_cells(target_directory: &PathBuf, coordinates:
     let mut temp_writer = BufWriter::new(temp_markdown_file);
 
     let existing_page_coordinates = get_existing_cell_page_coordinates(target_directory);
-    existing_page_coordinates.iter().for_each(|coord| println!("Found existing coord {coord}"));
+    existing_page_coordinates
+        .iter()
+        .for_each(|coord| println!("Found existing coord {coord}"));
     let mut ordered_cells_to_add: Vec<&String> = coordinates
         .into_iter()
         .filter(|coord| !existing_page_coordinates.contains(*coord))
@@ -136,7 +138,13 @@ pub fn cell_header_to_coordinate(
     if !cell_page_header.starts_with(header_type.get_prefix()) {
         return None;
     }
-    Some(cell_page_header.strip_prefix(header_type.get_prefix()).unwrap().trim().to_string())
+    Some(
+        cell_page_header
+            .strip_prefix(header_type.get_prefix())
+            .unwrap()
+            .trim()
+            .to_string(),
+    )
 }
 
 #[cfg(test)]
@@ -146,7 +154,7 @@ mod test {
         use crate::document::markdown_content::add_md_content_for_missing_cells;
         use crate::document::test::fixtures::{assert_files_equal, get_test_cases_path};
         use std::fs;
-        use std::path::{ PathBuf};
+        use std::path::PathBuf;
 
         #[test]
         fn create_and_fills_a_content_md_if_none_exists() {

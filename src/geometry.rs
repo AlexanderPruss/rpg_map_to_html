@@ -188,23 +188,21 @@ mod test {
             let mut target_directory = PathBuf::from(&test_case_path);
             target_directory.push("result");
             let cell_map = CellMap {
-                cells_by_coordinate: HashMap::from([
-                    (
-                        "abc".to_string(),
-                        Cell {
-                            coordinate: "abc".to_string(),
-                            neighbor_coordinates: HashSet::from(["def".to_string()]),
-                            center_point: PixelPoint { x: 1, y: 2 },
-                            bounding_polygon: BoundingPolygon {
-                                points: vec![PixelPoint { x: 2, y: 3 }, PixelPoint { x: 4, y: 5 }],
-                            },
-                            inscribed_rectangle: PixelBox {
-                                top_left_corner: PixelPoint { x: 0, y: 1 },
-                                bottom_right_corner: PixelPoint { x: 10, y: 15 },
-                            },
+                cells_by_coordinate: HashMap::from([(
+                    "abc".to_string(),
+                    Cell {
+                        coordinate: "abc".to_string(),
+                        neighbor_coordinates: HashSet::from(["def".to_string()]),
+                        center_point: PixelPoint { x: 1, y: 2 },
+                        bounding_polygon: BoundingPolygon {
+                            points: vec![PixelPoint { x: 2, y: 3 }, PixelPoint { x: 4, y: 5 }],
                         },
-                    )
-                ]),
+                        inscribed_rectangle: PixelBox {
+                            top_left_corner: PixelPoint { x: 0, y: 1 },
+                            bottom_right_corner: PixelPoint { x: 10, y: 15 },
+                        },
+                    },
+                )]),
             };
             persist_cell_map_as_geometry(&target_directory, cell_map);
 

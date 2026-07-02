@@ -2,6 +2,7 @@ use crate::PixelPoint;
 use crate::config::TemplateConfig;
 use crate::document::Template::*;
 use crate::document::Token::*;
+use crate::geometry::CellMap;
 use crate::image_handling::table_of_contents::TableOfContentsMapImage;
 use regex::{Captures, Regex};
 use std::fmt::{Display, Formatter};
@@ -10,7 +11,6 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::string::ToString;
-use crate::geometry::CellMap;
 
 pub mod markdown_content;
 
@@ -25,12 +25,12 @@ enum TemplateFiles {
     LeftColumn,
     RightColumn,
     Section,
-    HighlightedSection
+    HighlightedSection,
 }
 
 /// If the [string] contains the [token], replace it by [replace_by]. Otherwise returns
 /// the original string without allocating a new one.
-fn replace_if_contains(string: String, token: &Token, replace_by: &str) -> String{
+fn replace_if_contains(string: String, token: &Token, replace_by: &str) -> String {
     //This squiggly mess is equivalent to {{token}} after the character is escaped
     let token_string = format!("{{{{{}}}}}", token.to_string());
     let token_pattern = token_string.as_str();
@@ -74,9 +74,9 @@ impl TemplateFiles {
             TemplateFiles::Section => {
                 Box::new(include_bytes!("document/templates/section_template.html").lines())
             }
-            TemplateFiles::HighlightedSection => {
-                Box::new(include_bytes!("document/templates/highlighted-section-template.html").lines())
-            }
+            TemplateFiles::HighlightedSection => Box::new(
+                include_bytes!("document/templates/highlighted-section-template.html").lines(),
+            ),
         }
     }
 
@@ -108,15 +108,15 @@ struct DocumentContext<'document> {
     config: &'document Option<TemplateConfig>,
     cell_map: &'document CellMap,
     table_of_contents_images: &'document Vec<TableOfContentsMapImage>,
-    
+
     replace_tokens_regex: Regex,
     identify_template_regex: Regex,
 
     document_title: String,
     cutout_image_size: PixelPoint,
-    
+
     current_table_of_contents_image: Option<&'document TableOfContentsMapImage>,
-    
+
     current_image_path: Option<String>,
     current_image_size: Option<PixelPoint>,
     current_image_width_height_css: Option<String>,
@@ -130,11 +130,14 @@ struct DocumentContext<'document> {
     current_section_contents: Option<String>,
 }
 impl<'document> DocumentContext<'document> {
-    fn new(document_title: String, cutout_image_size: PixelPoint,
-           target_directory: &'document PathBuf,
-           config: &'document Option<TemplateConfig>,
-           cell_map: &'document CellMap,
-           table_of_contents_images: &'document Vec<TableOfContentsMapImage>) -> DocumentContext<'document> {
+    fn new(
+        document_title: String,
+        cutout_image_size: PixelPoint,
+        target_directory: &'document PathBuf,
+        config: &'document Option<TemplateConfig>,
+        cell_map: &'document CellMap,
+        table_of_contents_images: &'document Vec<TableOfContentsMapImage>,
+    ) -> DocumentContext<'document> {
         let replace_tokens_regex = Regex::new(r"\{\{(?<token>.*)}}").unwrap();
         let identify_template_regex =
             Regex::new(r"(?<whitespace>\s*)\[\[(?<template>.*)]]").unwrap();
@@ -150,13 +153,13 @@ impl<'document> DocumentContext<'document> {
             current_image_path: None,
             current_image_size: None,
             current_image_width_height_css: None,
-            current_svg_viewbox : None,
+            current_svg_viewbox: None,
             current_coordinate: None,
             current_page_title: None,
             current_page_description: None,
             current_section_title: None,
             current_section_contents: None,
-            current_table_of_contents_image: None
+            current_table_of_contents_image: None,
         }
     }
 
@@ -200,20 +203,31 @@ impl<'document> DocumentContext<'document> {
         self.current_image_path = Some(format!("{}.png", coordinate));
         self.current_coordinate = Some(coordinate);
         self.current_image_size = Some(self.cutout_image_size);
-        self.current_svg_viewbox = Some(format!("0 0 {} {}", self.cutout_image_size.x, self.cutout_image_size.y));
-        
+        self.current_svg_viewbox = Some(format!(
+            "0 0 {} {}",
+            self.cutout_image_size.x, self.cutout_image_size.y
+        ));
+
         self.current_page_title = Some(title);
         self.current_page_description = Some(description);
-        
+
         self.current_section_title = None;
         self.current_section_contents = None;
     }
 
-    fn start_new_extra_page(&mut self, coordinate: Option<String>, title: String, description: String) {
+    fn start_new_extra_page(
+        &mut self,
+        coordinate: Option<String>,
+        title: String,
+        description: String,
+    ) {
         self.current_image_path = None;
         self.current_coordinate = coordinate;
         self.current_image_size = Some(self.cutout_image_size);
-        self.current_svg_viewbox = Some(format!("0 0 {} {}", self.cutout_image_size.x, self.cutout_image_size.y));
+        self.current_svg_viewbox = Some(format!(
+            "0 0 {} {}",
+            self.cutout_image_size.x, self.cutout_image_size.y
+        ));
 
         self.current_page_title = Some(title);
         self.current_page_description = Some(description);
@@ -269,7 +283,7 @@ pub enum Token {
     PageDescription,
     SectionTitle,
     SectionContents,
-    ViewBox
+    ViewBox,
 }
 
 impl Display for Token {
@@ -283,7 +297,7 @@ impl Display for Token {
             PageDescription => "PAGE_DESCRIPTION",
             SectionTitle => "SECTION_TITLE",
             SectionContents => "SECTION_CONTENTS",
-            ViewBox => "VIEW_BOX"
+            ViewBox => "VIEW_BOX",
         };
         f.write_str(as_string)
     }
@@ -349,7 +363,7 @@ impl Display for Template {
             CellPages => "CELL_PAGES",
             LeftColumn => "LEFT_COLUMN",
             RightColumn => "RIGHT_COLUMN",
-            Sections => "SECTIONS"
+            Sections => "SECTIONS",
         };
         f.write_str(as_string)
     }

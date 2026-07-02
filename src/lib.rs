@@ -105,9 +105,12 @@ pub struct PixelBox {
     pub bottom_right_corner: PixelPoint,
 }
 
-impl Default for PixelBox{
+impl Default for PixelBox {
     fn default() -> Self {
-        PixelBox{ top_left_corner: PixelPoint {x: 0, y:0}, bottom_right_corner: PixelPoint {x:0, y:0} }
+        PixelBox {
+            top_left_corner: PixelPoint { x: 0, y: 0 },
+            bottom_right_corner: PixelPoint { x: 0, y: 0 },
+        }
     }
 }
 
