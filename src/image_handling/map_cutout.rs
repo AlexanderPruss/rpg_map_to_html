@@ -19,11 +19,11 @@ pub struct CutoutImage {
 /// The bounding polygon is drawn around each cell in its own cutout.
 pub fn save_cutout_images(
     target_directory: &PathBuf,
-    cell_map: CellMap,
+    cell_map: &CellMap,
     original_image: &DynamicImage,
     image_margins: PixelPoint,
-    skip_empty_cells: SkipEmptyCells,
-    image_handling: ImageHandling,
+    skip_empty_cells: &SkipEmptyCells,
+    image_handling: &ImageHandling,
 ) -> Vec<CutoutImage> {
     let empty_color = Rgba::from(skip_empty_cells.empty_color_rgba);
     let (padded_image, padding) = pad_image(
@@ -187,11 +187,11 @@ mod test {
 
             let cutout_images = save_cutout_images(
                 &target_directory,
-                snapshot.cell_map,
+                &snapshot.cell_map,
                 &image,
                 PixelPoint { x: 0, y: 0 },
-                skip_empty_cells,
-                image_handling,
+                &skip_empty_cells,
+                &image_handling,
             );
 
             let filled_coordinates: Vec<String> = vec![

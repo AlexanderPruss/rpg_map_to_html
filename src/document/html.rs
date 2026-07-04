@@ -7,7 +7,7 @@ use crate::document::markdown_content::{
 use crate::document::{DocumentContext, Template, TemplateFiles, Token, replace_if_contains};
 use crate::geometry::CellMap;
 use crate::image_handling::table_of_contents::TableOfContentsMapImage;
-use crate::{PixelBox, PixelPoint};
+use crate::{PixelPoint};
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Lines, Write};
@@ -17,13 +17,13 @@ use std::path::PathBuf;
 static HTML_DOC_FILENAME: &str = "rpg_map_doc.html";
 static STYLES_FILENAME: &str = "styles.css";
 
-struct ReaderWriter {
+struct ReaderWriter<I: Iterator<Item = std::io::Result<String>>> {
     writer: BufWriter<File>,
-    md_lines: Peekable<Lines<BufReader<File>>>,
+    md_lines: Peekable<I>,
 }
 
-impl ReaderWriter {
-    fn new(output_file: File, md_content_file: File) -> ReaderWriter {
+impl ReaderWriter<Lines<BufReader<File>>> {
+    fn new(output_file: File, md_content_file: File) -> ReaderWriter<Lines<BufReader<File>>> {
         ReaderWriter {
             writer: BufWriter::new(output_file),
             md_lines: BufReader::new(md_content_file).lines().peekable(),
@@ -108,9 +108,9 @@ fn generate_html_doc(mut context: DocumentContext) {
 ///
 /// Otherwise, any [Token]s the line contains are replaced with their values, and the
 /// line is written with an endline.
-fn fill_template_or_write_line(
+fn fill_template_or_write_line<I: Iterator<Item = Result<String, std::io::Error>>>(
     mut context: &mut DocumentContext,
-    mut reader_writer: &mut ReaderWriter,
+    mut reader_writer: &mut ReaderWriter<I>,
     line: String,
 ) {
     let line_str = line.as_str();
@@ -123,9 +123,9 @@ fn fill_template_or_write_line(
     reader_writer.writer.write("\n".as_bytes()).unwrap();
 }
 
-fn fill_templates_if_found(
+fn fill_templates_if_found<I: Iterator<Item = Result<String, std::io::Error>>>(
     line: &str,
-    reader_writer: &mut ReaderWriter,
+    reader_writer: &mut ReaderWriter<I>,
     context: &mut DocumentContext,
 ) -> bool {
     let mut template_filled = false;
@@ -192,9 +192,9 @@ enum Column {
     Right,
 }
 
-fn fill_table_of_contents_templates(
+fn fill_table_of_contents_templates<I: Iterator<Item = Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
-    reader_writer: &mut ReaderWriter,
+    reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
 ) {
     for table_of_contents_image in context.table_of_contents_images {
@@ -208,9 +208,9 @@ fn fill_table_of_contents_templates(
     }
 }
 
-fn fill_table_of_contents_polygon_links(
+fn fill_table_of_contents_polygon_links<I: Iterator<Item = Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
-    reader_writer: &mut ReaderWriter,
+    reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
 ) {
     let table_of_contents_image = context.current_table_of_contents_image;
@@ -230,9 +230,9 @@ fn fill_table_of_contents_polygon_links(
     )
 }
 
-fn fill_zoomed_in_map_polygon_links(
+fn fill_zoomed_in_map_polygon_links<I: Iterator<Item = Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
-    reader_writer: &mut ReaderWriter,
+    reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
 ) {
     let coordinate = context.current_coordinate.as_ref();
@@ -300,9 +300,9 @@ struct StartOfCellPage {
 
 /// Iterates over the markdown content until it is consumed and all pages contained inside are mapped
 /// to html. Further calls to templates based on the markdown reader will fail.
-fn fill_cell_pages(
+fn fill_cell_pages<I: Iterator<Item = Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
-    reader_writer: &mut ReaderWriter,
+    reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
 ) {
     if reader_writer.md_lines.peek().is_none() {
@@ -344,9 +344,9 @@ fn fill_cell_pages(
         write_template(context, reader_writer, prefix, template);
     }
 }
-fn fill_column(
+fn fill_column<I: Iterator<Item = Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
-    reader_writer: &mut ReaderWriter,
+    reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
     column: Column,
 ) {
@@ -381,9 +381,9 @@ fn fill_column(
     write_template(context, reader_writer, &prefix, templateFile);
 }
 
-fn write_template(
+fn write_template<I: Iterator<Item = Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
-    reader_writer: &mut ReaderWriter,
+    reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
     template: TemplateFiles,
 ) {
@@ -402,7 +402,7 @@ struct Section {
     template: TemplateFiles,
 }
 
-fn fill_sections(context: &mut DocumentContext, reader_writer: &mut ReaderWriter, prefix: &String) {
+fn fill_sections<I: Iterator<Item = Result<String, std::io::Error>>>(context: &mut DocumentContext, reader_writer: &mut ReaderWriter<I>, prefix: &String) {
     loop {
         let next_section: Option<Section> = read_next_section(&mut reader_writer.md_lines);
         if next_section.is_none() {
@@ -414,7 +414,7 @@ fn fill_sections(context: &mut DocumentContext, reader_writer: &mut ReaderWriter
     }
 }
 
-fn read_next_section(md_lines: &mut Peekable<Lines<BufReader<File>>>) -> Option<Section> {
+fn read_next_section<I: Iterator<Item = Result<String, std::io::Error>>>(md_lines: &mut Peekable<I>) -> Option<Section> {
     iterate_until_header_or_eof(md_lines);
     let header_line = md_lines.next();
     if header_line.is_none() {
@@ -452,8 +452,8 @@ fn read_next_section(md_lines: &mut Peekable<Lines<BufReader<File>>>) -> Option<
     })
 }
 
-fn iterate_until_page_starts(
-    md_lines: &mut Peekable<Lines<BufReader<File>>>,
+fn iterate_until_page_starts<I: Iterator<Item = Result<String, std::io::Error>>>(
+    md_lines: &mut Peekable<I>,
 ) -> Option<StartOfCellPage> {
     // Cells are H1 headers. If the next line is not a header, then we're in the wrong part of the markdown file and give up
     iterate_until_header_or_eof(md_lines);
@@ -521,8 +521,8 @@ enum NextLineMatch {
     Eof,
 }
 
-fn next_line_starts_with(
-    md_lines: &mut Peekable<Lines<BufReader<File>>>,
+fn next_line_starts_with<I: Iterator<Item = Result<String, std::io::Error>>>(
+    md_lines: &mut Peekable<I>,
     prefix: &str,
 ) -> NextLineMatch {
     let peek = md_lines.peek();
@@ -537,7 +537,7 @@ fn next_line_starts_with(
 }
 
 /// Iterates until the next (peeked) line is either a header or EOF. Returns all lines encountered.
-fn iterate_until_header_or_eof(md_lines: &mut Peekable<Lines<BufReader<File>>>) -> Vec<String> {
+fn iterate_until_header_or_eof<I: Iterator<Item = Result<String, std::io::Error>>>(md_lines: &mut Peekable<I>) -> Vec<String> {
     let mut lines: Vec<String> = vec![];
     loop {
         if next_line_starts_with(md_lines, "#") != NoMatch {

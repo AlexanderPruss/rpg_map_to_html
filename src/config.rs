@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::BufReader;
 use crate::PixelPoint;
 use crate::geometry::Geometry;
 use serde::Deserialize;
@@ -6,7 +8,7 @@ use std::path::PathBuf;
 #[derive(Deserialize, Debug)]
 pub struct Config {
     /// Generated files - images and html - will be saved in a child directory of [target_directory].
-    pub target_directory: String,
+    pub target_directory: PathBuf,
     pub title: String,
     pub map_image: MapImageConfig,
     /// Describes the structure of the map.
@@ -111,14 +113,6 @@ pub struct TemplateConfig {
     pub zoomed_in_map_image_size: Option<PixelPoint>,
 }
 
-#[derive(Deserialize, Debug)]
-pub enum GenerationMode {
-    /// (Re)creates a map, discarding the previous one if it already exists
-    CreateOverwrite,
-    /// Updates the images of an existing map, adding new pages as needed
-    Update,
-}
-
-pub fn parse_config(_args: &[String]) -> Config {
-    unimplemented!()
+pub fn parse_config(config_path: PathBuf) -> Config {
+    serde_json::from_reader(BufReader::new(File::open(config_path).unwrap())).unwrap()
 }

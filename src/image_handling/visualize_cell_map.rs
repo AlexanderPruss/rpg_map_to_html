@@ -8,9 +8,9 @@ use std::path::PathBuf;
 /// a visual inspection of what was generated.
 pub fn save_cell_map_visualization(
     target_directory: &PathBuf,
-    cell_map: CellMap,
+    cell_map: &CellMap,
     original_image: &DynamicImage,
-    visualization_color: Rgba<u8>,
+    visualization_color: &Rgba<u8>,
 ) {
     let mut visualization_image = original_image.clone();
     let text_scale = PxScale { x: 10.0, y: 10.0 };
@@ -20,16 +20,16 @@ pub fn save_cell_map_visualization(
         .iter()
         .for_each(|(coordinate, cell)| {
             cell.bounding_polygon
-                .draw(&mut visualization_image, visualization_color);
+                .draw(&mut visualization_image, *visualization_color);
             draw_cross_mut(
                 &mut visualization_image,
-                visualization_color,
+                *visualization_color,
                 cell.center_point.x,
                 cell.center_point.y,
             );
             draw_text_mut(
                 &mut visualization_image,
-                visualization_color,
+                *visualization_color,
                 cell.center_point.x,
                 cell.center_point.y,
                 text_scale,
@@ -71,9 +71,9 @@ mod test {
         let red = Rgba::from([255u8, 0, 0, 255]);
         save_cell_map_visualization(
             &target_directory,
-            snapshot.cell_map,
+            &snapshot.cell_map,
             &original_map_image,
-            red,
+            &red,
         );
         let saved_image = image::open(target_file).unwrap();
 
