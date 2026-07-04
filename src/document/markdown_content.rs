@@ -67,9 +67,6 @@ pub fn add_md_content_for_missing_cells(target_directory: &PathBuf, coordinates:
     let mut temp_writer = BufWriter::new(temp_markdown_file);
 
     let existing_page_coordinates = get_existing_cell_page_coordinates(target_directory);
-    existing_page_coordinates
-        .iter()
-        .for_each(|coord| println!("Found existing coord {coord}"));
     let mut ordered_cells_to_add: Vec<&String> = coordinates
         .into_iter()
         .filter(|coord| !existing_page_coordinates.contains(*coord))

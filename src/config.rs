@@ -95,6 +95,10 @@ pub struct TemplateConfig {
     ///
     /// Defaults to the left column, but with a zoomed in cell map.
     pub right_column_html_override: Option<PathBuf>,
+    /// An .html file rendered for every right column on an extra page.
+    ///
+    /// Defaults to the usual right column, but with no cell map.
+    pub extra_right_column_html_override: Option<PathBuf>,
     /// An .html file rendered for every section in a column. It is filled by user generated
     /// content from the markdown content file.
     ///
@@ -132,19 +136,19 @@ pub fn generate_config_interactively() -> Config {
     println!("Generating a config interactively");
     let mut input = String::new();
 
-    println!("Directory should the generated files be created in: (Default: 'target')");
-    let target_directory = PathBuf::from(read_input_with_default(&mut input, "target".to_string()));
-
-    println!("Title of the generated document: (Default: 'Title')");
-    let title = read_input_with_default(&mut input, "Title".to_string());
-
     println!("Path to the map image:");
     input.clear();
     io::stdin().read_line(&mut input).unwrap();
     let image_file = PathBuf::from(input.trim());
 
+    println!("Directory the generated files should be created in: (Default: 'target')");
+    let target_directory = PathBuf::from(read_input_with_default(&mut input, "target".to_string()));
+
+    println!("Title of the generated document: (Default: 'Title')");
+    let title = read_input_with_default(&mut input, "Title".to_string());
+
     println!(
-        "Does the map have a margin? (Pixels of the image that do not contain map cells.) Y/N (default N"
+        "Does the map have a margin? (Pixels of the image that do not contain map cells.) Y/N (default N)"
     );
     let image_margins = if read_input_yes_no_with_default(&mut input, false) {
         println!("Width of the image margin, in pixels: (Default: 0)");

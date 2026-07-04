@@ -26,7 +26,7 @@ fn interactive_mode() {
         );
         let mut input = String::new();
         if read_input_yes_no_with_default(&mut input, true){
-            generate_with_existing_config()
+            return generate_with_existing_config()
         }
         println!(
             "Ok, the existing config will not be used. Proceeding with generating a config interactively."

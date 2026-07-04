@@ -179,6 +179,15 @@ fn fill_templates_if_found<I: Iterator<Item = Result<String, std::io::Error>>>(
                     Column::Right,
                 )
             }
+            Template::ExtraRightColumn => {
+                template_filled = true;
+                fill_column(
+                    context,
+                    reader_writer,
+                    &template_match.leading_whitespace,
+                    Column::ExtraRight,
+                )
+            }
             Template::Sections => {
                 template_filled = true;
                 fill_sections(context, reader_writer, &template_match.leading_whitespace)
@@ -190,6 +199,7 @@ fn fill_templates_if_found<I: Iterator<Item = Result<String, std::io::Error>>>(
 enum Column {
     Left,
     Right,
+    ExtraRight
 }
 
 fn fill_table_of_contents_templates<I: Iterator<Item = Result<String, std::io::Error>>>(
@@ -282,7 +292,7 @@ fn write_polygon_links(
         let y = top_left.y;
         let html = format!(
             r#"
-{prefix}    <a href={coordinate}>
+{prefix}    <a href=#{coordinate}>
 {prefix}        <rect class="cell-link" x="{x}" y="{y}" width="{width}" height ="{height}"/>
 {prefix}    </a>
 "#,
@@ -312,10 +322,6 @@ fn fill_cell_pages<I: Iterator<Item = Result<String, std::io::Error>>>(
         )
     }
     loop {
-        let line = reader_writer.md_lines.next();
-        if line.is_none() {
-            break;
-        }
         let start_of_cell_page: Option<StartOfCellPage> =
             iterate_until_page_starts(&mut reader_writer.md_lines);
         if start_of_cell_page.is_none() {
@@ -361,6 +367,11 @@ fn fill_column<I: Iterator<Item = Result<String, std::io::Error>>>(
             TemplateFiles::RightColumn,
             Template::RightColumn,
         ),
+        Column::ExtraRight => (
+            MarkdownHeaders::RightColumn.get_prefix(),
+            TemplateFiles::ExtraRightColumn,
+            Template::ExtraRightColumn,
+        ),
     };
     iterate_until_header_or_eof(&mut reader_writer.md_lines);
     let expect_column_header_line = reader_writer.md_lines.next();
@@ -404,7 +415,7 @@ struct Section {
 
 fn fill_sections<I: Iterator<Item = Result<String, std::io::Error>>>(context: &mut DocumentContext, reader_writer: &mut ReaderWriter<I>, prefix: &String) {
     loop {
-        let next_section: Option<Section> = read_next_section(&mut reader_writer.md_lines);
+        let next_section: Option<Section> = read_next_section(&mut reader_writer.md_lines, prefix);
         if next_section.is_none() {
             break;
         }
@@ -414,14 +425,14 @@ fn fill_sections<I: Iterator<Item = Result<String, std::io::Error>>>(context: &m
     }
 }
 
-fn read_next_section<I: Iterator<Item = Result<String, std::io::Error>>>(md_lines: &mut Peekable<I>) -> Option<Section> {
+fn read_next_section<I: Iterator<Item = Result<String, std::io::Error>>>(md_lines: &mut Peekable<I>, prefix: &String) -> Option<Section> {
     iterate_until_header_or_eof(md_lines);
-    let header_line = md_lines.next();
+    let header_line = md_lines.peek();
     if header_line.is_none() {
         // It's ok if the user hasn't actually added any sections for a page.
         return None;
     }
-    let header_line = header_line.unwrap().unwrap();
+    let header_line = header_line.unwrap().as_ref().unwrap();
     let (title, template) = if header_line.starts_with(MarkdownHeaders::Section.get_prefix()) {
         (
             header_line
@@ -441,13 +452,15 @@ fn read_next_section<I: Iterator<Item = Result<String, std::io::Error>>>(md_line
     } else {
         return None;
     };
+    md_lines.next();
     let raw_content = iterate_until_header_or_eof(md_lines).join("\n");
     let parser = pulldown_cmark::Parser::new(raw_content.as_str());
     let mut content = String::new();
     pulldown_cmark::html::push_html(&mut content, parser);
+    let content_lines : Vec<String> = content.lines().map(|line| format!("{prefix}{line}")).collect();
     Some(Section {
         title,
-        content,
+        content: content_lines.join("\n"),
         template,
     })
 }

@@ -24,6 +24,7 @@ enum TemplateFiles {
     ExtraPage,
     LeftColumn,
     RightColumn,
+    ExtraRightColumn,
     Section,
     HighlightedSection,
 }
@@ -32,7 +33,7 @@ impl TemplateFiles {
     fn get_template_lines(
         &self,
         template_config: &Option<TemplateConfig>,
-    ) -> Box<dyn Iterator<Item = std::io::Result<String>>> {
+    ) -> Box<dyn Iterator<Item=std::io::Result<String>>> {
         if let Some(override_path) = self.get_override_path(template_config) {
             let override_file = File::open(override_path).unwrap();
             return Box::new(BufReader::new(override_file).lines());
@@ -59,6 +60,9 @@ impl TemplateFiles {
             TemplateFiles::RightColumn => {
                 Box::new(include_bytes!("document/templates/right_column_template.html").lines())
             }
+            TemplateFiles::ExtraRightColumn => {
+                Box::new(include_bytes!("document/templates/extra_right_column_template.html").lines())
+            }
             TemplateFiles::Section => {
                 Box::new(include_bytes!("document/templates/section_template.html").lines())
             }
@@ -84,6 +88,7 @@ impl TemplateFiles {
             TemplateFiles::ExtraPage => &config.extra_cell_page_html_override,
             TemplateFiles::LeftColumn => &config.left_column_html_override,
             TemplateFiles::RightColumn => &config.right_column_html_override,
+            TemplateFiles::ExtraRightColumn => &config.extra_right_column_html_override,
             TemplateFiles::Section => &config.section_html_override,
             TemplateFiles::HighlightedSection => &config.highlighted_section_html_override,
         }
@@ -155,6 +160,7 @@ pub enum Template {
     CellPages,
     LeftColumn,
     RightColumn,
+    ExtraRightColumn,
     Sections,
 }
 
@@ -170,6 +176,7 @@ impl FromStr for Template {
             "LEFT_COLUMN" => Ok(LeftColumn),
             "RIGHT_COLUMN" => Ok(RightColumn),
             "SECTIONS" => Ok(Sections),
+            "EXTRA_RIGHT_COLUMN" => Ok(ExtraRightColumn),
             _ => Err(()),
         }
     }
@@ -185,6 +192,7 @@ impl Display for Template {
             LeftColumn => "LEFT_COLUMN",
             RightColumn => "RIGHT_COLUMN",
             Sections => "SECTIONS",
+            ExtraRightColumn => "EXTRA_RIGHT_COLUMN"
         };
         f.write_str(as_string)
     }
@@ -239,9 +247,9 @@ impl<'document> DocumentContext<'document> {
         cell_map: &'document CellMap,
         table_of_contents_images: &'document Vec<TableOfContentsMapImage>,
     ) -> DocumentContext<'document> {
-        let replace_tokens_regex = Regex::new(r"\{\{(?<token>.*)}}").unwrap();
+        let replace_tokens_regex = Regex::new(r"\{\{(?<token>.*?)}}").unwrap();
         let identify_template_regex =
-            Regex::new(r"(?<whitespace>\s*)\[\[(?<template>.*)]]").unwrap();
+            Regex::new(r"(?<whitespace>\s*)\[\[(?<template>.*?)]]").unwrap();
         DocumentContext {
             target_directory,
             config,
@@ -298,6 +306,7 @@ impl<'document> DocumentContext<'document> {
         self.current_image_size = Some(image.size);
         self.current_svg_viewbox = Some(format!("0 0 {} {}", image.size.x, image.size.y));
         self.current_table_of_contents_image = Some(image);
+        self.current_image_width_height_css = Some(format!("width:{}px; height:{}px;", image.size.x, image.size.y))
     }
 
     fn start_new_cell_page(&mut self, coordinate: String, title: String, description: String) {
@@ -308,6 +317,8 @@ impl<'document> DocumentContext<'document> {
             "0 0 {} {}",
             self.cutout_image_size.x, self.cutout_image_size.y
         ));
+        self.current_image_width_height_css = Some(format!("width:{}px; height:{}px;",
+                                                           self.cutout_image_size.x, self.cutout_image_size.y));
 
         self.current_page_title = Some(title);
         self.current_page_description = Some(description);
@@ -329,6 +340,8 @@ impl<'document> DocumentContext<'document> {
             "0 0 {} {}",
             self.cutout_image_size.x, self.cutout_image_size.y
         ));
+        self.current_image_width_height_css = Some(format!("width:{}px; height:{}px;",
+                                                           self.cutout_image_size.x, self.cutout_image_size.y));
 
         self.current_page_title = Some(title);
         self.current_page_description = Some(description);
@@ -372,6 +385,80 @@ struct TemplateMatch {
 
 #[cfg(test)]
 pub mod test {
-
     pub(crate) mod fixtures;
+
+    mod context {
+        mod replace_tokens {
+            use std::path::PathBuf;
+            use regex::Regex;
+            use crate::document::DocumentContext;
+            use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
+            use crate::image_handling::table_of_contents::TableOfContentsMapImage;
+            use crate::PixelPoint;
+
+            #[test]
+            fn replaces_all_tokens_in_the_string_with_values_from_the_context() {
+                let all_tokens = r"
+1. {{DOCUMENT_TITLE}} 2. {{MAP_IMAGE}}
+3. {{WIDTH_HEIGHT}}
+4. {{COORDINATE}}
+5. {{PAGE_TITLE}}
+6. {{PAGE_DESCRIPTION}}
+7. {{SECTION_TITLE}}
+8. {{SECTION_CONTENTS}}
+9. {{VIEW_BOX}}
+                ";
+                let expected = r"
+1. abc 2. jkl.png
+3. width:100px; height:200px;
+4. jkl
+5. mno
+6. pqr
+7. stu
+8. vwx
+9. 0 0 100 200
+                ";
+                let title = "abc".to_string();
+                let target = PathBuf::from("target");
+                let cell_map = FourByFour::Standardized.to_snapshot().cell_map;
+                let toc_images = vec![];
+                let mut context = DocumentContext::new(
+                    &title,
+                    PixelPoint{x: 100, y: 200},
+                    &target,
+                    &None,
+                    &cell_map,
+                    &toc_images
+                );
+                let toc_image = TableOfContentsMapImage{
+                    filename: "def".to_string(),
+                    size: PixelPoint {x: 150, y:250},
+                    offset: PixelPoint {x:0, y:0},
+                    coordinates_contained: Default::default(),
+                };
+                context.set_current_table_of_contents_image(&toc_image);
+                context.start_new_cell_page(
+                    "jkl".to_string(),
+                    "mno".to_string(),
+                    "pqr".to_string()
+                );
+                context.start_new_section(
+                    "stu".to_string(),
+                    "vwx".to_string()
+                );
+
+                assert_eq!(expected, context.replace_tokens(all_tokens));
+            }
+
+            #[test]
+            fn returns_the_unchanged_string_if_no_tokens_match() {
+                todo!()
+            }
+
+            #[test]
+            fn panics_if_the_token_is_unknown() {
+                todo!()
+            }
+        }
+    }
 }
