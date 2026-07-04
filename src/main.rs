@@ -8,7 +8,7 @@ fn main() {
     if args.len() > 2 {
         print_help(executable)
     }
-    if args[1].starts_with("-h") {
+    if args.len() > 1 && args[1].starts_with("-h") {
         print_help(executable)
     }
     if args.len() == 2 {

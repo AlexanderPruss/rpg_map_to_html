@@ -2,7 +2,7 @@ use crate::config::{Config};
 use crate::geometry::{ ComputesCellMap};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use std::io;
+use std::{fs, io};
 use std::ops::{Add, Mul, Sub};
 use std::path::{ PathBuf};
 
@@ -25,6 +25,9 @@ pub fn generate_docs(config: Config)  {
     let map_dimensions = PixelPoint{x: map_image.width() as i32, y: map_image.height() as i32 };
     let map_margin = config.map_image.image_margins.unwrap_or(PixelPoint { x: 0, y: 0 });
     let target_directory = &config.target_directory;
+    if !fs::exists(target_directory).unwrap(){
+        fs::create_dir_all(target_directory).unwrap();
+    }
 
     //Geometry
     let cell_map = config.geometry.compute_cell_map(
@@ -66,7 +69,7 @@ pub fn read_input_with_default(input: &mut String, default: String) -> String {
     io::stdin().read_line(input).unwrap();
     match input.to_lowercase().trim() {
         "" => default,
-        _ => input.trim().to_string()
+        _ => input.to_lowercase().trim().to_string()
     }
 }
 
@@ -77,6 +80,7 @@ pub fn read_input(input: &mut String) -> String {
 }
 
 pub fn read_input_yes_no_with_default(input: &mut String, default: bool) -> bool {
+    input.clear();
     loop {
         io::stdin().read_line(input).unwrap();
         match input.to_lowercase().trim() {
@@ -96,9 +100,9 @@ pub fn read_input_yes_no_with_default(input: &mut String, default: bool) -> bool
 
 pub fn read_input_until_valid_option(input: &mut String, options: Vec<&str>, default: &str) -> String{
     loop {
-        let user_input = read_input_with_default(input, "Hexagons".to_string());
-        match options.iter().find(|option| option.to_lowercase() == user_input.to_lowercase()){
-            None => {println!("Did not understand the input '{input}'. Please input one of [{}] (default: {default}).", options.join(", "))}
+        let user_input = read_input_with_default(input, default.to_string());
+        match options.iter().find(|option| option.to_lowercase() == user_input){
+            None => {println!("Did not understand the input '{user_input}'. Please input one of [{}] (default: {default}).", options.join(", "))}
             Some(option) => return option.to_string()
         }
     }

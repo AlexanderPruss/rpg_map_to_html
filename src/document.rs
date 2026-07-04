@@ -42,7 +42,7 @@ impl TemplateFiles {
                 Box::new(include_bytes!("document/templates/styles_template.css").lines())
             }
             TemplateFiles::MapDocs => Box::new(
-                include_bytes!("document/templates/table_of_contents_template.html").lines(),
+                include_bytes!("document/templates/map_docs_template.html").lines(),
             ),
             TemplateFiles::TableOfContents => Box::new(
                 include_bytes!("document/templates/table_of_contents_template.html").lines(),
