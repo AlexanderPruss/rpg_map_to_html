@@ -1,9 +1,13 @@
-use crate::{PixelBox, PixelPoint};
+use crate::{read_input, read_input_until_valid_option, PixelBox, PixelPoint};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::io::{BufReader, Write};
+use std::path::{ PathBuf};
+use crate::geometry::Geometry::Hexagons;
+use crate::geometry::hexagons::FilledTopLeftCorner::{EMPTY, FILLED};
+use crate::geometry::hexagons::FlatSides::{FlatHorizontalSides, FlatVerticalSides};
+use crate::geometry::hexagons::HexagonGeometryDefinition;
 
 pub mod hexagons;
 
@@ -23,26 +27,26 @@ pub enum Geometry {
 }
 
 pub trait ComputesCellMap {
-    fn compute_cell_map<'map>(self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap;
+    fn compute_cell_map<'map>(&self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap;
 }
 
 impl ComputesCellMap for Geometry {
-    fn compute_cell_map(self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap {
+    fn compute_cell_map(&self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap {
         match self {
             Geometry::Hexagons {
                 definition: hex_geometry_defn,
             } => hex_geometry_defn.compute_cell_map(map_dimensions, map_margin),
-            Geometry::Generic { cell_map } => cell_map,
+            Geometry::Generic { cell_map } => cell_map.clone(),
         }
     }
 }
 
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct CellMap {
     pub cells_by_coordinate: HashMap<String, Cell>,
 }
 
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Cell {
     pub coordinate: String,
     pub neighbor_coordinates: HashSet<String>,
@@ -168,6 +172,73 @@ impl BoundingPolygon {
         }
     }
 }
+
+pub(crate) fn generate_geometry_interactively() -> Geometry {
+    println!("Geometry type: Generic/Hexagons (Default: Hexagons)");
+    let mut input = String::new();
+    match read_input_until_valid_option(&mut input, vec!["hexagons", "generic"], "hexagons").as_str() {
+        "hexagons" => {
+            generate_hexagon_geometry_interactively()
+        } 
+        _ => {
+            generate_generic_geometry_interactively()
+        }
+    }
+}
+
+fn generate_hexagon_geometry_interactively() -> Geometry {
+    let mut input = String::new();
+    println!("Does the hex map have flat vertical sides or flat horizontal sides? Vertical/Horizontal (default: Horizontal)");
+    let flat_sides = match read_input_until_valid_option(&mut input, vec!["vertical", "horizontal"], "horizontal").as_str() {
+        "vertical" => {
+            FlatVerticalSides
+        }
+        _ => {
+            FlatHorizontalSides
+        }
+    };
+    
+    println!("Is the top-left corner of the hex map filled or empty? Filled/Empty (default: Filled)");
+    let filled_top_left_corner = match read_input_until_valid_option(&mut input, vec!["filled", "empty"], "filled").as_str() {
+        "filled" => {
+            FILLED
+        }
+        _ => {
+            EMPTY 
+        }
+    };
+    
+    println!("Number of rows: ");
+    let number_of_rows : u8 = read_input(&mut input).parse().unwrap();
+    println!("Number of columns: ");
+    let number_of_columns : u8 = read_input(&mut input).parse().unwrap();
+    println!("Hexagon height (float, any units): (ex: 10.0)");
+    let hexagon_height : f32 = read_input(&mut input).parse().unwrap();
+    println!("Hexagon width (float, any units): (ex: 20.0)");
+    let hexagon_width : f32 = read_input(&mut input).parse().unwrap();
+    Hexagons {
+        definition: HexagonGeometryDefinition{
+            flat_sides,
+            filled_top_left_corner,
+            number_of_rows,
+            number_of_columns,
+            hexagon_height,
+            hexagon_width,
+        }
+    }
+}
+
+fn generate_generic_geometry_interactively() -> Geometry {
+    println!("Generic geometries are too complicated to input interactively field by field.");
+    println!("Instead, the geometry must be created ahead of time and saved in a file.");
+    println!("File where the geometry is saved: (ex: target/geometry.json)");
+    let mut input = String::new();
+    let path = PathBuf::from(read_input(&mut input));
+    serde_json::from_reader(BufReader::new(File::open(path).unwrap())).unwrap()
+}
+
+
+
 #[cfg(test)]
 mod test {
 
@@ -472,3 +543,4 @@ mod test {
         }
     }
 }
+

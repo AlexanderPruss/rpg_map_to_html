@@ -35,11 +35,11 @@ impl ReaderWriter<Lines<BufReader<File>>> {
 /// to generate the final html document.
 pub fn write_html_doc(
     target_directory: &PathBuf,
-    title: String,
+    title: &String,
     cell_map: &CellMap,
     cutout_width_height: PixelPoint,
     table_of_contents_images: Vec<TableOfContentsMapImage>,
-    config: Option<TemplateConfig>,
+    config: &Option<TemplateConfig>,
 ) {
     let mut ordered_cells: Vec<&String> = cell_map
         .cells_by_coordinate
@@ -350,7 +350,7 @@ fn fill_column<I: Iterator<Item = Result<String, std::io::Error>>>(
     prefix: &String,
     column: Column,
 ) {
-    let (required_markdown_prefix, templateFile, template) = match column {
+    let (required_markdown_prefix, template_file, template) = match column {
         Column::Left => (
             MarkdownHeaders::LeftColumn.get_prefix(),
             TemplateFiles::LeftColumn,
@@ -378,7 +378,7 @@ fn fill_column<I: Iterator<Item = Result<String, std::io::Error>>>(
             expect_column_header_line, required_markdown_prefix
         )
     }
-    write_template(context, reader_writer, &prefix, templateFile);
+    write_template(context, reader_writer, &prefix, template_file);
 }
 
 fn write_template<I: Iterator<Item = Result<String, std::io::Error>>>(

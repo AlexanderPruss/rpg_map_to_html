@@ -4,8 +4,8 @@ use image::Rgba;
 
 /// Resolve the input config into a config filled with values, using default values where needed.
 pub fn resolve_config(
-    skip_config: Option<SkipEmptyCellsConfig>,
-    cutout_config: Option<ImageHandlingConfig>,
+    skip_config: &Option<SkipEmptyCellsConfig>,
+    cutout_config: &Option<ImageHandlingConfig>,
 ) -> (SkipEmptyCells, ImageHandling) {
     let mut skip_empty_cells = SkipEmptyCells {
         skipping_enabled: true,

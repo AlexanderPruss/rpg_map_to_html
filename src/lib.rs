@@ -1,10 +1,10 @@
-use crate::config::{Config, MapImageConfig};
-use crate::geometry::{CellMap, ComputesCellMap, Geometry};
-use ::image::DynamicImage;
+use crate::config::{Config};
+use crate::geometry::{ ComputesCellMap};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use std::io;
 use std::ops::{Add, Mul, Sub};
-use std::path::{Path, PathBuf};
+use std::path::{ PathBuf};
 
 pub mod config;
 pub mod geometry;
@@ -12,13 +12,14 @@ pub mod geometry;
 pub mod document;
 pub mod image_handling;
 
+pub static LAST_USED_CONFIG : &str = "last_used_config.json";
+
 /// A convenience method - loads the config and does all the logic for you. Computes a geometry,
 /// creates all the images, creates/updates the markdown content and final html document.
-/// 
+///
 /// Also saves a visualization of the geometry and the cell-map used.
-pub fn generate_map(config_path: PathBuf)  {
+pub fn generate_docs(config: Config)  {
     //Config
-    let config = config::parse_config(config_path);
     let image_path = &config.map_image.image_file;
     let map_image = image::open(image_path).unwrap();
     let map_dimensions = PixelPoint{x: map_image.width() as i32, y: map_image.height() as i32 };
@@ -32,7 +33,7 @@ pub fn generate_map(config_path: PathBuf)  {
     );
 
     //Image handling
-    let (skip_empty_cells, image_handling) = image_handling::image_config::resolve_config(config.map_image.skip_empty_cells,config.image_handling_config);
+    let (skip_empty_cells, image_handling) = image_handling::image_config::resolve_config(&config.map_image.skip_empty_cells,&config.image_handling_config);
     let table_of_contents_images = image_handling::table_of_contents::save_table_of_contents_map_images(
         target_directory,
         &map_image,
@@ -40,24 +41,68 @@ pub fn generate_map(config_path: PathBuf)  {
         &cell_map
     );
     image_handling::map_cutout::save_cutout_images(
-        target_directory, 
+        target_directory,
         &cell_map,
         &map_image,
         map_margin,
         &skip_empty_cells,
         &image_handling
     );
-    
+
     //Document
-    document::html::write_html_doc(target_directory, config.title, &cell_map, image_handling.zoomed_in_map_image_size, table_of_contents_images, config.template);
-    
+    document::html::write_html_doc(target_directory, &config.title, &cell_map, image_handling.zoomed_in_map_image_size, table_of_contents_images, &config.template);
+
     //Cleanup
     image_handling::visualize_cell_map::save_cell_map_visualization(
         target_directory, &cell_map, &map_image, &image_handling.cell_outline_color
     );
     geometry::persist_cell_map_as_geometry(target_directory, cell_map);
+    let config_path = PathBuf::from(LAST_USED_CONFIG);
+    config::persist_config(&config, &config_path);
 }
 
+pub fn read_input_with_default(input: &mut String, default: String) -> String {
+    input.clear();
+    io::stdin().read_line(input).unwrap();
+    match input.to_lowercase().trim() {
+        "" => default,
+        _ => input.trim().to_string()
+    }
+}
+
+pub fn read_input(input: &mut String) -> String {
+    input.clear();
+    io::stdin().read_line(input).unwrap();
+    input.trim().to_string()
+}
+
+pub fn read_input_yes_no_with_default(input: &mut String, default: bool) -> bool {
+    loop {
+        io::stdin().read_line(input).unwrap();
+        match input.to_lowercase().trim() {
+            "y" => return true,
+            "" => return default,
+            "n" => {
+                return false
+            }
+            _ => {
+                println!(
+                    "Couldn't understand the input '{input}'. Please input Y or N."
+                )
+            }
+        }
+    }
+}
+
+pub fn read_input_until_valid_option(input: &mut String, options: Vec<&str>, default: &str) -> String{
+    loop {
+        let user_input = read_input_with_default(input, "Hexagons".to_string());
+        match options.iter().find(|option| option.to_lowercase() == user_input.to_lowercase()){
+            None => {println!("Did not understand the input '{input}'. Please input one of [{}] (default: {default}).", options.join(", "))}
+            Some(option) => return option.to_string()
+        }
+    }
+}
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone, Copy)]
 pub struct PixelPoint {
@@ -123,7 +168,7 @@ impl Mul<f32> for PixelPoint {
 /// A Box in pixel space, defined by two opposite corners.
 ///
 /// Remember that the top-left corner of an image has X,Y coordinate (0,0).
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct PixelBox {
     pub top_left_corner: PixelPoint,
     pub bottom_right_corner: PixelPoint,

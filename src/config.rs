@@ -1,11 +1,12 @@
-use std::fs::File;
-use std::io::BufReader;
-use crate::PixelPoint;
 use crate::geometry::Geometry;
-use serde::Deserialize;
+use crate::{PixelPoint, read_input_with_default, read_input_yes_no_with_default, geometry};
+use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io;
+use std::io::{BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Config {
     /// Generated files - images and html - will be saved in a child directory of [target_directory].
     pub target_directory: PathBuf,
@@ -17,7 +18,7 @@ pub struct Config {
     pub template: Option<TemplateConfig>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct MapImageConfig {
     /// The file containing the map. ex: sweetestMap.png
     pub image_file: PathBuf,
@@ -28,7 +29,7 @@ pub struct MapImageConfig {
 }
 
 /// The program can try to automatically determine which cells have no content.
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 
 pub struct SkipEmptyCellsConfig {
     /// Whether to determine and skip empty cells. Defaults to true.
@@ -44,7 +45,7 @@ pub struct SkipEmptyCellsConfig {
 }
 
 /// Allows customizing how the zoomed-in map cutouts on each cell's page are generated.
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct ImageHandlingConfig {
     /// The size, in pixels, of the generated map cutouts on the cell pages.
     ///
@@ -67,7 +68,7 @@ pub struct ImageHandlingConfig {
 }
 
 /// Allows customizing the generated map file by replacing the templates used.
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct TemplateConfig {
     /// A .css file replacing the default styles.
     pub styles_override: Option<PathBuf>,
@@ -113,6 +114,62 @@ pub struct TemplateConfig {
     pub zoomed_in_map_image_size: Option<PixelPoint>,
 }
 
+/// Reads a [Config] out of the file at [config_path].
 pub fn parse_config(config_path: PathBuf) -> Config {
     serde_json::from_reader(BufReader::new(File::open(config_path).unwrap())).unwrap()
+}
+
+/// Persists the [config] to the [path] as a pretty-JSON file.
+pub fn persist_config(config: &Config, path: &PathBuf) {
+    let mut writer = BufWriter::new(File::create(path).unwrap());
+    writer
+        .write(serde_json::to_string_pretty(config).unwrap().as_bytes())
+        .unwrap();
+    writer.flush().unwrap();
+}
+
+pub fn generate_config_interactively() -> Config {
+    println!("Generating a config interactively");
+    let mut input = String::new();
+
+    println!("Directory should the generated files be created in: (Default: 'target')");
+    let target_directory = PathBuf::from(read_input_with_default(&mut input, "target".to_string()));
+
+    println!("Title of the generated document: (Default: 'Title')");
+    let title = read_input_with_default(&mut input, "Title".to_string());
+
+    println!("Path to the map image:");
+    input.clear();
+    io::stdin().read_line(&mut input).unwrap();
+    let image_file = PathBuf::from(input.trim());
+
+    println!(
+        "Does the map have a margin? (Pixels of the image that do not contain map cells.) Y/N (default N"
+    );
+    let image_margins = if read_input_yes_no_with_default(&mut input, false) {
+        println!("Width of the image margin, in pixels: (Default: 0)");
+        let x = read_input_with_default(&mut input, "0".to_string());
+        println!("Height of the image margin, in pixels: (Default: 0)");
+        let y = read_input_with_default(&mut input, "0".to_string());
+        Some(PixelPoint {
+            x: x.parse().expect("Could not parse the margin width"),
+            y: y.parse().expect("Could not parse the margin height"),
+        })
+    } else {
+        None
+    };
+
+    let geometry = geometry::generate_geometry_interactively();
+    Config{
+        target_directory,
+        title,
+        map_image: MapImageConfig {
+            image_file,
+            image_margins,
+            skip_empty_cells: None,
+        },
+        geometry,
+        image_handling_config: None,
+        template: None,
+    }
 }

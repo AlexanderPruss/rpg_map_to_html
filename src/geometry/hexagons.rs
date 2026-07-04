@@ -16,13 +16,13 @@ mod standardized;
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct HexagonGeometryDefinition {
     pub flat_sides: FlatSides,
+    pub filled_top_left_corner: FilledTopLeftCorner,
     pub number_of_rows: u8,
     pub number_of_columns: u8,
     /// The units here can be pixels, cm, whatever, so long as they're consistent with [hexagon_width]
     pub hexagon_height: f32,
     /// The units here can be pixels, cm, whatever, so long as they're consistent with [hexagon_height]
     pub hexagon_width: f32,
-    pub filled_top_left_corner: FilledTopLeftCorner,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
@@ -212,7 +212,7 @@ fn to_cell_map(hex_cell_map: HexCellMap) -> CellMap {
 }
 
 impl ComputesCellMap for HexagonGeometryDefinition {
-    fn compute_cell_map(self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap {
+    fn compute_cell_map(&self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap {
         let map_dimensions_without_margin = PixelPoint {
             x: map_dimensions.x - 2 * map_margin.x,
             y: map_dimensions.y - 2 * map_margin.y,
@@ -467,7 +467,6 @@ mod test {
     }
 
     mod to_cell_map {
-        use crate::geometry::hexagons::fixtures::assert_cells_equal;
         use crate::geometry::hexagons::{HexCell, HexCellCoordinate, HexCellMap, to_cell_map};
         use crate::geometry::{BoundingPolygon, Cell, CellMap};
         use crate::{PixelBox, PixelPoint};

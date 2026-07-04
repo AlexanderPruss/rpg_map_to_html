@@ -213,7 +213,7 @@ struct DocumentContext<'document> {
     replace_tokens_regex: Regex,
     identify_template_regex: Regex,
 
-    document_title: String,
+    document_title: &'document String,
     cutout_image_size: PixelPoint,
 
     current_table_of_contents_image: Option<&'document TableOfContentsMapImage>,
@@ -232,7 +232,7 @@ struct DocumentContext<'document> {
 }
 impl<'document> DocumentContext<'document> {
     fn new(
-        document_title: String,
+        document_title: &'document String,
         cutout_image_size: PixelPoint,
         target_directory: &'document PathBuf,
         config: &'document Option<TemplateConfig>,
