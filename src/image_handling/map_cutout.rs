@@ -7,8 +7,8 @@ use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
 pub struct CutoutImage {
-    coordinate: String,
-    offset_from_original_image: PixelPoint,
+    pub coordinate: String,
+    pub offset_from_original_image: PixelPoint,
 }
 
 /// Cuts out the zoomed-in map images that are displayed on the details page of any given cell.

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::PixelPoint;
 use crate::config::TemplateConfig;
 use crate::document::Template::*;
@@ -11,6 +12,7 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::string::ToString;
+use crate::image_handling::map_cutout::CutoutImage;
 
 pub mod markdown_content;
 
@@ -217,6 +219,7 @@ struct DocumentContext<'document> {
     config: &'document Option<TemplateConfig>,
     cell_map: &'document CellMap,
     table_of_contents_images: &'document Vec<TableOfContentsMapImage>,
+    cutout_image_offsets_by_coordinate: &'document HashMap<String, PixelPoint>,
 
     replace_tokens_regex: Regex,
     identify_template_regex: Regex,
@@ -246,6 +249,7 @@ impl<'document> DocumentContext<'document> {
         config: &'document Option<TemplateConfig>,
         cell_map: &'document CellMap,
         table_of_contents_images: &'document Vec<TableOfContentsMapImage>,
+        cutout_image_offsets_by_coordinate: &'document HashMap<String, PixelPoint>,
     ) -> DocumentContext<'document> {
         let replace_tokens_regex = Regex::new(r"\{\{(?<token>.*?)}}").unwrap();
         let identify_template_regex =
@@ -255,6 +259,7 @@ impl<'document> DocumentContext<'document> {
             config,
             cell_map,
             table_of_contents_images,
+            cutout_image_offsets_by_coordinate,
             replace_tokens_regex,
             identify_template_regex,
             document_title,
@@ -389,6 +394,7 @@ pub mod test {
 
     mod context {
         mod replace_tokens {
+            use std::collections::HashMap;
             use std::path::PathBuf;
             use regex::Regex;
             use crate::document::DocumentContext;
@@ -422,13 +428,15 @@ pub mod test {
                 let target = PathBuf::from("target");
                 let cell_map = FourByFour::Standardized.to_snapshot().cell_map;
                 let toc_images = vec![];
+                let cutout_images = HashMap::new();
                 let mut context = DocumentContext::new(
                     &title,
                     PixelPoint{x: 100, y: 200},
                     &target,
                     &None,
                     &cell_map,
-                    &toc_images
+                    &toc_images,
+                    &cutout_images,
                 );
                 let toc_image = TableOfContentsMapImage{
                     filename: "def".to_string(),

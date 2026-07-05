@@ -43,7 +43,7 @@ pub fn generate_docs(config: Config)  {
         &image_handling.max_table_of_contents_map_image_size,
         &cell_map
     );
-    image_handling::map_cutout::save_cutout_images(
+    let cutout_images = image_handling::map_cutout::save_cutout_images(
         target_directory,
         &cell_map,
         &map_image,
@@ -53,7 +53,7 @@ pub fn generate_docs(config: Config)  {
     );
 
     //Document
-    document::html::write_html_doc(target_directory, &config.title, &cell_map, image_handling.zoomed_in_map_image_size, table_of_contents_images, &config.template);
+    document::html::write_html_doc(target_directory, &config.title, &cell_map, image_handling.zoomed_in_map_image_size, table_of_contents_images, &cutout_images,  &config.template);
 
     //Cleanup
     image_handling::visualize_cell_map::save_cell_map_visualization(
