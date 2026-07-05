@@ -62,6 +62,7 @@ pub fn generate_docs(config: Config)  {
     geometry::persist_cell_map_as_geometry(target_directory, cell_map);
     let config_path = PathBuf::from(LAST_USED_CONFIG);
     config::persist_config(&config, &config_path);
+    //TODO: Persist image stuff as well, use it to allow skipping computation when unnecessary
 }
 
 pub fn read_input_with_default(input: &mut String, default: String) -> String {

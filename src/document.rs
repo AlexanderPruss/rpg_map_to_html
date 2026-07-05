@@ -460,12 +460,43 @@ pub mod test {
 
             #[test]
             fn returns_the_unchanged_string_if_no_tokens_match() {
-                todo!()
+                let title = "abc".to_string();
+                let target = PathBuf::from("target");
+                let cell_map = FourByFour::Standardized.to_snapshot().cell_map;
+                let toc_images = vec![];
+                let cutout_images = HashMap::new();
+                let context = DocumentContext::new(
+                    &title,
+                    PixelPoint{x: 100, y: 200},
+                    &target,
+                    &None,
+                    &cell_map,
+                    &toc_images,
+                    &cutout_images,
+                );
+                let line_without_tokens = "Just vibing in a dungeon";
+                assert_eq!(line_without_tokens.to_string(), context.replace_tokens(line_without_tokens));
             }
 
             #[test]
+            #[should_panic]
             fn panics_if_the_token_is_unknown() {
-                todo!()
+                let title = "abc".to_string();
+                let target = PathBuf::from("target");
+                let cell_map = FourByFour::Standardized.to_snapshot().cell_map;
+                let toc_images = vec![];
+                let cutout_images = HashMap::new();
+                let context = DocumentContext::new(
+                    &title,
+                    PixelPoint{x: 100, y: 200},
+                    &target,
+                    &None,
+                    &cell_map,
+                    &toc_images,
+                    &cutout_images,
+                );
+                let line_without_tokens = "Just vibing in a dungeon when suddenly {{PANIC}}";
+                assert_eq!(line_without_tokens.to_string(), context.replace_tokens(line_without_tokens));
             }
         }
     }

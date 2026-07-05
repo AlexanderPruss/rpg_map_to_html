@@ -9,6 +9,7 @@ use std::path::PathBuf;
 pub struct CutoutImage {
     pub coordinate: String,
     pub offset_from_original_image: PixelPoint,
+    pub image_size: PixelPoint,
 }
 
 /// Cuts out the zoomed-in map images that are displayed on the details page of any given cell.
@@ -96,6 +97,26 @@ fn save_cutout_map_image(
     target_directory: &PathBuf,
     image_handling: &ImageHandling,
 ) -> CutoutImage {
+    let mut path = PathBuf::new();
+    path.push(target_directory);
+    path.push(cell.coordinate.clone() + ".png");
+    let padded_image_size = PixelPoint {
+        x: padded_image.width() as i32,
+        y: padded_image.height() as i32,
+    };
+    if padded_image_size.x <= image_handling.zoomed_in_map_image_size.x
+        && padded_image_size.y <= image_handling.zoomed_in_map_image_size.y
+    {
+        padded_image
+            .save_with_format(&path, ImageFormat::Png)
+            .unwrap();
+        return CutoutImage {
+            coordinate: cell.coordinate.clone(),
+            offset_from_original_image: padding,
+            image_size: padded_image_size,
+        };
+    }
+
     //The cell was created for an image that wasn't yet padded, so the padding offsets the cell.
     //The cell is centered by default, which means half the map cutout's size separates the cell from
     //the cutout's top-left corner.
@@ -104,11 +125,13 @@ fn save_cutout_map_image(
     //Cutouts for cells on or near the boundary might extend past the bounds of the padded image
     //if the cell stays centered. If this is the case, adjust cutout so that it fits inside the image,
     //which has the effect of no longer centering the cutout on the cell.
-    let fit_in_bounds_adjustment = PixelPoint {
-        x: adjustment_to_fit(cutout_top_left_corner.x, 0, padded_image.width() as i32),
-        y: adjustment_to_fit(cutout_top_left_corner.y, 0, padded_image.height() as i32),
-    };
-    cutout_top_left_corner = cutout_top_left_corner + fit_in_bounds_adjustment;
+    let original_top_left_corner = cutout_top_left_corner;
+    cutout_top_left_corner = fit_to_bounds(
+        cutout_top_left_corner,
+        &image_handling.zoomed_in_map_image_size,
+        &padded_image_size,
+    );
+    let fit_in_bounds_adjustment = cutout_top_left_corner - original_top_left_corner;
     let mut cutout_image = padded_image.crop_imm(
         cutout_top_left_corner.x as u32,
         cutout_top_left_corner.y as u32,
@@ -128,28 +151,43 @@ fn save_cutout_map_image(
     offset_polygon.draw(&mut cutout_image, image_handling.cell_outline_color);
 
     //Finally, save the thing.
-    let mut path = PathBuf::new();
-    path.push(target_directory);
-    path.push(cell.coordinate.clone() + ".png");
     cutout_image
         .save_with_format(&path, ImageFormat::Png)
         .unwrap();
     CutoutImage {
         coordinate: cell.coordinate.clone(),
         offset_from_original_image: offset_from_old_cell_coordinates,
+        image_size: image_handling.zoomed_in_map_image_size,
     }
 }
 
-/// Returns the adjustment that must be added to [val] so that it satisfies
+/// Moves the point so that the cutout image rectangle with this point as its top-left corner
+/// fits inside the containing image.
 ///
-/// [greater_than_or_equal] <= [val] < [less_than]
-fn adjustment_to_fit(val: i32, greater_than_or_equal: i32, less_than: i32) -> i32 {
-    if val < greater_than_or_equal {
-        return greater_than_or_equal - val;
-    } else if val >= less_than {
-        return less_than - 1 - val;
+/// Panics if fitting to bounds is not possible.
+fn fit_to_bounds(
+    mut point: PixelPoint,
+    cutout_image_size: &PixelPoint,
+    padded_image_size: &PixelPoint,
+) -> PixelPoint {
+    if point.x < 0 {
+        point.x = 0;
     }
-    0
+    if point.y < 0 {
+        point.y = 0;
+    }
+    let distance_to_positive_boundary = *padded_image_size - *cutout_image_size - point;
+    if distance_to_positive_boundary.x < 0 {
+        point.x += distance_to_positive_boundary.x;
+    }
+    if distance_to_positive_boundary.y < 0 {
+        point.y += distance_to_positive_boundary.y;
+    }
+    if point.x < 0 || point.y < 0 || point.x > padded_image_size.x || point.y > padded_image_size.y
+    {
+        panic!("The map was too small, it was not possible to fit a cutout image into it.")
+    }
+    point
 }
 
 #[cfg(test)]
@@ -271,7 +309,7 @@ mod test {
         use crate::PixelPoint;
         use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
         use crate::image_handling::image_config::ImageHandling;
-        use crate::image_handling::map_cutout::{pad_image, save_cutout_map_image};
+        use crate::image_handling::map_cutout::{CutoutImage, pad_image, save_cutout_map_image};
         use crate::image_handling::test::fixtures::FourByFourImages;
         use image::Rgba;
         use std::path::PathBuf;
@@ -287,8 +325,8 @@ mod test {
 
         fn cutout_test_case(
             coordinate: String,
-            test_case_name: String,
-            expected_offset: PixelPoint,
+            test_case_name: &String,
+            expected_cutout_image: CutoutImage,
         ) {
             let config = test_config();
             let image = FourByFourImages::Standardized.load_image();
@@ -310,7 +348,7 @@ mod test {
             target_directory.push(test_case_name);
             let mut expected_path = target_directory.clone();
             target_directory.push("result");
-            expected_path.push("expected.png");
+            expected_path.push(format!("expected-{coordinate}.png"));
             let expected = image::ImageReader::open(expected_path)
                 .unwrap()
                 .decode()
@@ -325,70 +363,101 @@ mod test {
                 .decode()
                 .unwrap();
 
-            assert_eq!(*cell.coordinate, cutout_image.coordinate);
-            assert_eq!(expected_offset, cutout_image.offset_from_original_image);
+            assert_eq!(expected_cutout_image, cutout_image);
             assert_eq!(expected, actual_cutout_image);
         }
 
         #[test]
         fn creates_cutouts_centered_on_the_cell_for_cells_in_the_middle() {
+            let expected_size = test_config().zoomed_in_map_image_size;
+            let test_case = "central_cell".to_string();
             cutout_test_case(
                 "001.001".to_string(),
-                "central_cell".to_string(),
-                PixelPoint { x: -38, y: -13 },
+                &test_case,
+                CutoutImage {
+                    coordinate: "001.001".to_string(),
+                    offset_from_original_image: PixelPoint { x: -38, y: -13 },
+                    image_size: expected_size,
+                },
             );
         }
 
         #[test]
         fn creates_cutouts_offset_from_the_cell_for_corners() {
+            let expected_size = test_config().zoomed_in_map_image_size;
+            let test_case = "corner_cell".to_string();
+            //Top-left
             cutout_test_case(
                 "000.000".to_string(),
-                "corner_cell".to_string(),
-                PixelPoint { x: 20, y: 20 },
+                &test_case,
+                CutoutImage {
+                    coordinate: "000.000".to_string(),
+                    offset_from_original_image: PixelPoint { x: 20, y: 20 },
+                    image_size: expected_size,
+                },
+            );
+            //Bottom-right
+            cutout_test_case(
+                "003.003".to_string(),
+                &test_case,
+                CutoutImage {
+                    coordinate: "003.003".to_string(),
+                    offset_from_original_image: PixelPoint { x: -170, y: -70 },
+                    image_size: expected_size,
+                },
             );
         }
 
         #[test]
-        fn creates_cutouts_offset_from_the_cell_for_cells_on_the_side() {
+        fn creates_cutouts_offset_from_the_cell_for_cells_on_the_edges() {
+            let expected_size = test_config().zoomed_in_map_image_size;
+            let test_case = "edge_cell".to_string();
+            //top
+            cutout_test_case(
+                "002.000".to_string(),
+                &test_case,
+                CutoutImage {
+                    coordinate: "002.000".to_string(),
+                    offset_from_original_image: PixelPoint { x: -113, y: 20 },
+                    image_size: expected_size,
+                },
+            );
+            //left
+            cutout_test_case(
+                "000.002".to_string(),
+                &test_case,
+                CutoutImage {
+                    coordinate: "000.002".to_string(),
+                    offset_from_original_image: PixelPoint { x: 20, y: -38 },
+                    image_size: expected_size,
+                },
+            );
+            //bottom
+            cutout_test_case(
+                "003.001".to_string(),
+                &test_case,
+                CutoutImage {
+                    coordinate: "003.001".to_string(),
+                    offset_from_original_image: PixelPoint { x: -170, y: -13 },
+                    image_size: expected_size,
+                },
+            );
+            //right
             cutout_test_case(
                 "001.003".to_string(),
-                "edge_cell".to_string(),
-                PixelPoint { x: -38, y: -113 },
+                &test_case,
+                CutoutImage {
+                    coordinate: "001.003".to_string(),
+                    offset_from_original_image: PixelPoint { x: -38, y: -70 },
+                    image_size: expected_size,
+                },
             );
         }
     }
 
-    mod adjustment_to_fit {
-        use crate::image_handling::map_cutout::adjustment_to_fit;
+    mod fit_to_bounds {
+        use crate::image_handling::map_cutout::fit_to_bounds;
 
-        #[test]
-        fn returns_the_positive_offset_if_the_value_is_smaller_than_the_lower_bound() {
-            let adjustment = adjustment_to_fit(10, 15, 20);
-            assert_eq!(5, adjustment);
-        }
-
-        #[test]
-        fn returns_zero_if_the_value_is_equal_to_the_lower_bound() {
-            let adjustment = adjustment_to_fit(15, 15, 20);
-            assert_eq!(0, adjustment);
-        }
-
-        #[test]
-        fn returns_zero_if_the_value_is_between_the_bounds() {
-            let adjustment = adjustment_to_fit(17, 15, 20);
-            assert_eq!(0, adjustment);
-        }
-
-        #[test]
-        fn returns_negative_one_if_the_value_is_equal_to_the_upper_bound() {
-            let adjustment = adjustment_to_fit(20, 15, 20);
-            assert_eq!(-1, adjustment);
-        }
-
-        #[test]
-        fn returns_the_negative_offset_if_the_value_is_greater_than_the_upper_bound() {
-            let adjustment = adjustment_to_fit(25, 15, 20);
-            assert_eq!(-6, adjustment);
-        }
+        //TODO - new tests here
     }
 }
