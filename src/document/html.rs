@@ -54,7 +54,7 @@ pub fn write_html_doc(
     add_md_content_for_missing_cells(target_directory, ordered_cells);
 
     let offset_by_coordinate = cutout_images.iter()
-        .map(|cutout_image| (cutout_image.coordinate.clone(), cutout_image.offset_from_original_image))
+        .map(|cutout_image| (cutout_image.coordinate.clone(), cutout_image))
         .collect();
     let context = DocumentContext::new(
         title,
@@ -63,7 +63,7 @@ pub fn write_html_doc(
         &config,
         cell_map,
         &table_of_contents_images,
-        &offset_by_coordinate
+        offset_by_coordinate
     );
     generate_styles(target_directory, &config, &cutout_width_height);
     generate_html_doc(context);
@@ -266,12 +266,12 @@ fn fill_zoomed_in_map_polygon_links<I: Iterator<Item = Result<String, std::io::E
         .cells_by_coordinate
         .get(coordinate)
         .unwrap();
-    let offset = context.cutout_image_offsets_by_coordinate.get(coordinate).unwrap();
+    let cutout_image = *context.cutout_images_by_coordinate.get(coordinate).unwrap();
     write_polygon_links(
         &mut reader_writer.writer,
         context.cell_map,
         prefix,
-        *offset,
+        cutout_image.offset_from_original_image,
         &cell.neighbor_coordinates,
     )
 }

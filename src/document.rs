@@ -1,18 +1,18 @@
-use std::collections::HashMap;
 use crate::PixelPoint;
 use crate::config::TemplateConfig;
 use crate::document::Template::*;
 use crate::document::Token::*;
 use crate::geometry::CellMap;
+use crate::image_handling::map_cutout::CutoutImage;
 use crate::image_handling::table_of_contents::TableOfContentsMapImage;
 use regex::{Captures, Regex};
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::string::ToString;
-use crate::image_handling::map_cutout::CutoutImage;
 
 pub mod markdown_content;
 
@@ -35,7 +35,7 @@ impl TemplateFiles {
     fn get_template_lines(
         &self,
         template_config: &Option<TemplateConfig>,
-    ) -> Box<dyn Iterator<Item=std::io::Result<String>>> {
+    ) -> Box<dyn Iterator<Item = std::io::Result<String>>> {
         if let Some(override_path) = self.get_override_path(template_config) {
             let override_file = File::open(override_path).unwrap();
             return Box::new(BufReader::new(override_file).lines());
@@ -44,9 +44,9 @@ impl TemplateFiles {
             TemplateFiles::Styles => {
                 Box::new(include_bytes!("document/templates/styles_template.css").lines())
             }
-            TemplateFiles::MapDocs => Box::new(
-                include_bytes!("document/templates/map_docs_template.html").lines(),
-            ),
+            TemplateFiles::MapDocs => {
+                Box::new(include_bytes!("document/templates/map_docs_template.html").lines())
+            }
             TemplateFiles::TableOfContents => Box::new(
                 include_bytes!("document/templates/table_of_contents_template.html").lines(),
             ),
@@ -62,9 +62,9 @@ impl TemplateFiles {
             TemplateFiles::RightColumn => {
                 Box::new(include_bytes!("document/templates/right_column_template.html").lines())
             }
-            TemplateFiles::ExtraRightColumn => {
-                Box::new(include_bytes!("document/templates/extra_right_column_template.html").lines())
-            }
+            TemplateFiles::ExtraRightColumn => Box::new(
+                include_bytes!("document/templates/extra_right_column_template.html").lines(),
+            ),
             TemplateFiles::Section => {
                 Box::new(include_bytes!("document/templates/section_template.html").lines())
             }
@@ -194,12 +194,11 @@ impl Display for Template {
             LeftColumn => "LEFT_COLUMN",
             RightColumn => "RIGHT_COLUMN",
             Sections => "SECTIONS",
-            ExtraRightColumn => "EXTRA_RIGHT_COLUMN"
+            ExtraRightColumn => "EXTRA_RIGHT_COLUMN",
         };
         f.write_str(as_string)
     }
 }
-
 
 /// If the [string] contains the [token], replace it by [replace_by]. Otherwise returns
 /// the original string without allocating a new one.
@@ -219,7 +218,7 @@ struct DocumentContext<'document> {
     config: &'document Option<TemplateConfig>,
     cell_map: &'document CellMap,
     table_of_contents_images: &'document Vec<TableOfContentsMapImage>,
-    cutout_image_offsets_by_coordinate: &'document HashMap<String, PixelPoint>,
+    cutout_images_by_coordinate: HashMap<String, &'document CutoutImage>,
 
     replace_tokens_regex: Regex,
     identify_template_regex: Regex,
@@ -249,7 +248,7 @@ impl<'document> DocumentContext<'document> {
         config: &'document Option<TemplateConfig>,
         cell_map: &'document CellMap,
         table_of_contents_images: &'document Vec<TableOfContentsMapImage>,
-        cutout_image_offsets_by_coordinate: &'document HashMap<String, PixelPoint>,
+        cutout_images_by_coordinate: HashMap<String, &'document CutoutImage>,
     ) -> DocumentContext<'document> {
         let replace_tokens_regex = Regex::new(r"\{\{(?<token>.*?)}}").unwrap();
         let identify_template_regex =
@@ -259,7 +258,7 @@ impl<'document> DocumentContext<'document> {
             config,
             cell_map,
             table_of_contents_images,
-            cutout_image_offsets_by_coordinate,
+            cutout_images_by_coordinate,
             replace_tokens_regex,
             identify_template_regex,
             document_title,
@@ -311,10 +310,20 @@ impl<'document> DocumentContext<'document> {
         self.current_image_size = Some(image.size);
         self.current_svg_viewbox = Some(format!("0 0 {} {}", image.size.x, image.size.y));
         self.current_table_of_contents_image = Some(image);
-        self.current_image_width_height_css = Some(format!("width:{}px; height:{}px;", image.size.x, image.size.y))
+        self.current_image_width_height_css = Some(format!(
+            "width:{}px; height:{}px;",
+            image.size.x, image.size.y
+        ))
     }
 
     fn start_new_cell_page(&mut self, coordinate: String, title: String, description: String) {
+        let mut image_size = self.cutout_image_size;
+        if let Some(cutout_image) = self.cutout_images_by_coordinate.get(&coordinate) {
+            if cutout_image.image_size.x < image_size.x || cutout_image.image_size.y < image_size.y
+            {
+                image_size = cutout_image.image_size;
+            }
+        };
         self.current_image_path = Some(format!("{}.png", coordinate));
         self.current_coordinate = Some(coordinate);
         self.current_image_size = Some(self.cutout_image_size);
@@ -322,8 +331,11 @@ impl<'document> DocumentContext<'document> {
             "0 0 {} {}",
             self.cutout_image_size.x, self.cutout_image_size.y
         ));
-        self.current_image_width_height_css = Some(format!("width:{}px; height:{}px;",
-                                                           self.cutout_image_size.x, self.cutout_image_size.y));
+
+        self.current_image_width_height_css = Some(format!(
+            "width:{}px; height:{}px;",
+            image_size.x, image_size.y
+        ));
 
         self.current_page_title = Some(title);
         self.current_page_description = Some(description);
@@ -345,8 +357,10 @@ impl<'document> DocumentContext<'document> {
             "0 0 {} {}",
             self.cutout_image_size.x, self.cutout_image_size.y
         ));
-        self.current_image_width_height_css = Some(format!("width:{}px; height:{}px;",
-                                                           self.cutout_image_size.x, self.cutout_image_size.y));
+        self.current_image_width_height_css = Some(format!(
+            "width:{}px; height:{}px;",
+            self.cutout_image_size.x, self.cutout_image_size.y
+        ));
 
         self.current_page_title = Some(title);
         self.current_page_description = Some(description);
@@ -394,13 +408,12 @@ pub mod test {
 
     mod context {
         mod replace_tokens {
-            use std::collections::HashMap;
-            use std::path::PathBuf;
-            use regex::Regex;
+            use crate::PixelPoint;
             use crate::document::DocumentContext;
             use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
             use crate::image_handling::table_of_contents::TableOfContentsMapImage;
-            use crate::PixelPoint;
+            use std::collections::HashMap;
+            use std::path::PathBuf;
 
             #[test]
             fn replaces_all_tokens_in_the_string_with_values_from_the_context() {
@@ -431,29 +444,26 @@ pub mod test {
                 let cutout_images = HashMap::new();
                 let mut context = DocumentContext::new(
                     &title,
-                    PixelPoint{x: 100, y: 200},
+                    PixelPoint { x: 100, y: 200 },
                     &target,
                     &None,
                     &cell_map,
                     &toc_images,
-                    &cutout_images,
+                    cutout_images,
                 );
-                let toc_image = TableOfContentsMapImage{
+                let toc_image = TableOfContentsMapImage {
                     filename: "def".to_string(),
-                    size: PixelPoint {x: 150, y:250},
-                    offset: PixelPoint {x:0, y:0},
+                    size: PixelPoint { x: 150, y: 250 },
+                    offset: PixelPoint { x: 0, y: 0 },
                     coordinates_contained: Default::default(),
                 };
                 context.set_current_table_of_contents_image(&toc_image);
                 context.start_new_cell_page(
                     "jkl".to_string(),
                     "mno".to_string(),
-                    "pqr".to_string()
+                    "pqr".to_string(),
                 );
-                context.start_new_section(
-                    "stu".to_string(),
-                    "vwx".to_string()
-                );
+                context.start_new_section("stu".to_string(), "vwx".to_string());
 
                 assert_eq!(expected, context.replace_tokens(all_tokens));
             }
@@ -467,15 +477,18 @@ pub mod test {
                 let cutout_images = HashMap::new();
                 let context = DocumentContext::new(
                     &title,
-                    PixelPoint{x: 100, y: 200},
+                    PixelPoint { x: 100, y: 200 },
                     &target,
                     &None,
                     &cell_map,
                     &toc_images,
-                    &cutout_images,
+                    cutout_images,
                 );
                 let line_without_tokens = "Just vibing in a dungeon";
-                assert_eq!(line_without_tokens.to_string(), context.replace_tokens(line_without_tokens));
+                assert_eq!(
+                    line_without_tokens.to_string(),
+                    context.replace_tokens(line_without_tokens)
+                );
             }
 
             #[test]
@@ -488,15 +501,18 @@ pub mod test {
                 let cutout_images = HashMap::new();
                 let context = DocumentContext::new(
                     &title,
-                    PixelPoint{x: 100, y: 200},
+                    PixelPoint { x: 100, y: 200 },
                     &target,
                     &None,
                     &cell_map,
                     &toc_images,
-                    &cutout_images,
+                    cutout_images,
                 );
                 let line_without_tokens = "Just vibing in a dungeon when suddenly {{PANIC}}";
-                assert_eq!(line_without_tokens.to_string(), context.replace_tokens(line_without_tokens));
+                assert_eq!(
+                    line_without_tokens.to_string(),
+                    context.replace_tokens(line_without_tokens)
+                );
             }
         }
     }
