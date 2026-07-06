@@ -243,7 +243,7 @@ fn fill_table_of_contents_polygon_links<I: Iterator<Item = Result<String, std::i
         &mut reader_writer.writer,
         context.cell_map,
         prefix,
-        table_of_contents_image.offset,
+        table_of_contents_image.offset*-1, //TODO: This is silly, standardize it lol
         &table_of_contents_image.coordinates_contained,
     )
 }

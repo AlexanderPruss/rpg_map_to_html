@@ -5,7 +5,7 @@ use crate::geometry::hexagons::{HexCellCoordinate, HexagonGeometryDefinition};
 #[derive(PartialEq, Debug, Clone)]
 pub struct ReflectOverXAxis {
     map_dimensions: PixelPoint,
-    number_of_columns: u8,
+    number_of_rows: u8,
 }
 
 impl ReflectOverXAxis {
@@ -15,7 +15,7 @@ impl ReflectOverXAxis {
     ) -> (Self, HexagonGeometryDefinition) {
         let reflection = ReflectOverXAxis {
             map_dimensions: geometry_dimensions,
-            number_of_columns: geometry.number_of_columns,
+            number_of_rows: geometry.number_of_rows,
         };
         let rotated_geometry = reflection.transform(geometry);
         (reflection, rotated_geometry)
@@ -24,32 +24,28 @@ impl ReflectOverXAxis {
 
 impl Transform for ReflectOverXAxis {
     fn transform(&self, geometry: &HexagonGeometryDefinition) -> HexagonGeometryDefinition {
-        let mut filled_top_corner = geometry.filled_top_left_corner;
-        if geometry.number_of_columns % 2 == 0 {
-            filled_top_corner = filled_top_corner.switch()
-        }
         HexagonGeometryDefinition {
             flat_sides: geometry.flat_sides,
             number_of_rows: geometry.number_of_rows,
             number_of_columns: geometry.number_of_columns,
             hexagon_height: geometry.hexagon_height,
             hexagon_width: geometry.hexagon_width,
-            filled_top_left_corner: filled_top_corner,
+            filled_top_left_corner: geometry.filled_top_left_corner.switch(),
         }
     }
 }
 impl InvertibleTransform for ReflectOverXAxis {
     fn inverse_transform_point(&self, point: PixelPoint) -> PixelPoint {
         PixelPoint {
-            x: self.map_dimensions.x - point.x,
-            y: point.y,
+            x: point.x,
+            y: self.map_dimensions.y - point.y,
         }
     }
 
     fn inverse_transform_coordinate(&self, coordinate: HexCellCoordinate) -> HexCellCoordinate {
         HexCellCoordinate {
-            row: coordinate.row,
-            column: self.number_of_columns - coordinate.column - 1,
+            row: self.number_of_rows - coordinate.row - 1,
+            column: coordinate.column,
         }
     }
 
@@ -104,7 +100,7 @@ mod test {
                 };
                 let expected_transform = ReflectOverXAxis {
                     map_dimensions: geometry_dimensions,
-                    number_of_columns: 6,
+                    number_of_rows: 6, //TODO: all broken
                 };
 
                 let (transform, rotated_geometry) =
@@ -148,7 +144,7 @@ mod test {
                 };
                 let expected_transform = ReflectOverXAxis {
                     map_dimensions: geometry_dimensions,
-                    number_of_columns: 7,
+                    number_of_rows: 7, //TODO: Broken
                 };
 
                 let (transform, rotated_geometry) =
