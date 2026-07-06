@@ -380,6 +380,15 @@ mod test {
                     image_size: expected_size,
                 },
             );
+            cutout_test_case(
+                "002.002".to_string(),
+                &test_case,
+                CutoutImage {
+                    coordinate: "002.002".to_string(),
+                    offset_from_original_image: PixelPoint { x: -113, y: -38 },
+                    image_size: expected_size,
+                },
+            );
         }
 
         #[test]

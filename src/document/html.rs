@@ -293,8 +293,8 @@ fn write_polygon_links(
         }
         let cell = cell.unwrap();
         let link_box = &cell.inscribed_rectangle;
-        let top_left = link_box.top_left_corner - offset;
-        let bottom_right = link_box.bottom_right_corner - offset;
+        let top_left = link_box.top_left_corner + offset;
+        let bottom_right = link_box.bottom_right_corner + offset;
         let width = bottom_right.x - top_left.x;
         let height = bottom_right.y - top_left.y;
         let x = top_left.x;

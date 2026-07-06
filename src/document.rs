@@ -329,7 +329,7 @@ impl<'document> DocumentContext<'document> {
         self.current_image_size = Some(self.cutout_image_size);
         self.current_svg_viewbox = Some(format!(
             "0 0 {} {}",
-            self.cutout_image_size.x, self.cutout_image_size.y
+            image_size.x, image_size.y
         ));
 
         self.current_image_width_height_css = Some(format!(
