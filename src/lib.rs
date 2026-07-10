@@ -1,7 +1,6 @@
 use crate::config::{Config};
 use crate::geometry::{ ComputesCellMap};
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use std::{fs, io};
 use std::ops::{Add, Mul, Sub};
 use std::path::{ PathBuf};

@@ -267,7 +267,7 @@ pub(super) fn _assert_hex_cells_equal(expected: HexCellMap, actual: HexCellMap) 
 }
 
 /// Helpful for debugging test failures, since it fails on the concrete cell that doesn't map properly.
-pub fn assert_cells_equal(expected: CellMap, actual: CellMap) {
+pub fn _assert_cells_equal(expected: CellMap, actual: CellMap) {
     let mut expected_cells: Vec<Cell> = expected
         .cells_by_coordinate
         .into_iter()

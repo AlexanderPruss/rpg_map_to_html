@@ -465,7 +465,6 @@ mod test {
     }
 
     mod fit_to_bounds {
-        use crate::image_handling::map_cutout::fit_to_bounds;
 
         //TODO - new tests here
     }
