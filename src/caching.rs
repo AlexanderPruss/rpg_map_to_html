@@ -1,29 +1,137 @@
-use std::path::PathBuf;
-use crate::config::Config;
-use crate::{config, geometry, image_handling};
+use crate::caching::ChangedPixels::{AllNew, NoChanges};
+use crate::config::{Config, LAST_USED_CONFIG};
 use crate::geometry::CellMap;
 use crate::image_handling::map_cutout::CutoutImage;
 use crate::image_handling::table_of_contents::TableOfContentsMapImage;
+use crate::{PixelBox, PixelPoint, config, geometry, image_handling};
+use image::{DynamicImage, GenericImageView};
+use std::path::PathBuf;
 
-struct CachedComputedObjects {
-    cell_map: CellMap,
-    table_of_contents_map_images: Vec<TableOfContentsMapImage>,
-    cutout_images: Vec<CutoutImage>
+pub struct CachedComputedObjects {
+    pub cell_map: CellMap,
+    pub table_of_contents_map_images: Vec<TableOfContentsMapImage>,
+    pub cutout_images: Vec<CutoutImage>,
+    pub changed_pixel_box: ChangedPixels,
+}
+
+/// Whether pixels of the map image have changed between two runs of the generator.
+pub enum ChangedPixels {
+    NoChanges,
+    Changes { bounding_box: PixelBox },
+    AllNew,
 }
 
 /// Attempts to recover computationally intensive objects. These can only be recovered if
 ///
 /// * The config is unchanged from the previous run
-/// * The map image is unchanged from the previous run
+/// * The map image is the same size as before
 /// * The cached objects are present
-pub fn get_cached_objects() -> Option<CachedComputedObjects> {
-    config::parse_config()
-    todo!()
+pub fn get_cached_objects(
+    config: &Config,
+    map_image: &DynamicImage,
+) -> Option<CachedComputedObjects> {
+    let previous_config = config::parse_config(PathBuf::from(LAST_USED_CONFIG))?;
+    //If the config has changed, everything could be different. Don't use the cache.
+    if previous_config != *config {
+        return None;
+    }
+    let image_filename = config
+        .map_image
+        .image_file
+        .file_name()?
+        .to_str()?
+        .to_string();
+    let (table_of_contents_map_images, cutout_images, previous_image) =
+        image_handling::load_persisted_image_metadata(&config.target_directory, &image_filename)?;
+    let changed_pixel_box = find_changed_pixels(map_image, &previous_image);
+
+    let cell_map = match changed_pixel_box {
+        NoChanges => geometry::load_persisted_cell_map(&previous_config.target_directory)?,
+        _ => return None
+    };
+    Some(CachedComputedObjects {
+        cell_map,
+        table_of_contents_map_images,
+        cutout_images,
+        changed_pixel_box: find_changed_pixels(map_image, &previous_image),
+    })
 }
 
-pub fn persist_cached_objects(target_directory: &PathBuf, config: &Config, cell_map: CellMap,
-                                     table_of_contents_images: &Vec<TableOfContentsMapImage>, cutout_images: &Vec<CutoutImage>) {
+pub fn persist_cached_objects(
+    target_directory: &PathBuf,
+    config: &Config,
+    image: &DynamicImage,
+    cell_map: CellMap,
+    table_of_contents_images: &Vec<TableOfContentsMapImage>,
+    cutout_images: &Vec<CutoutImage>,
+) {
     config::persist_config(&config);
     geometry::persist_cell_map_as_geometry(target_directory, cell_map);
-    image_handling::persist_image_metadata(target_directory, table_of_contents_images, cutout_images);
+
+    let image_filename = config
+        .map_image
+        .image_file
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string();
+    image_handling::persist_image_metadata(
+        target_directory,
+        &image_filename,
+        image,
+        table_of_contents_images,
+        cutout_images,
+    );
+}
+
+/// Returns a box bounding all pixels that have changed between the last two runs
+/// //TODO: Test please
+fn find_changed_pixels(map_image: &DynamicImage, previous_image: &DynamicImage) -> ChangedPixels {
+    if map_image.width() != previous_image.width() || map_image.height() != previous_image.height()
+    {
+        return AllNew;
+    }
+    let mut new_pixels = map_image.pixels();
+    let mut previous_pixels = previous_image.pixels();
+    let mut changed_pixel_bounding_box: Option<PixelBox> = None;
+    loop {
+        let new_pixel = new_pixels.next();
+        let previous_pixel = previous_pixels.next();
+        if new_pixel.is_none() && previous_pixel.is_none() {
+            break;
+        }
+        if new_pixel.is_none() || previous_pixel.is_none() {
+            return AllNew;
+        }
+        let new_pixel = new_pixel.unwrap();
+        if new_pixel != previous_pixel.unwrap() {
+            let x = new_pixel.0 as i32;
+            let y = new_pixel.1 as i32;
+            if changed_pixel_bounding_box.is_none() {
+                let _ = changed_pixel_bounding_box.insert(PixelBox {
+                    top_left_corner: PixelPoint { x, y },
+                    bottom_right_corner: PixelPoint { x, y },
+                });
+            } else {
+                let _ = changed_pixel_bounding_box.insert(PixelBox {
+                    top_left_corner: PixelPoint::min(
+                        &PixelPoint { x, y },
+                        &changed_pixel_bounding_box.as_ref().unwrap().top_left_corner,
+                    ),
+                    bottom_right_corner: PixelPoint::max(
+                        &PixelPoint { x, y },
+                        &changed_pixel_bounding_box
+                            .as_ref()
+                            .unwrap()
+                            .bottom_right_corner,
+                    ),
+                });
+            };
+        }
+    }
+    match changed_pixel_bounding_box {
+        None => NoChanges,
+        Some(bounding_box) => ChangedPixels::Changes { bounding_box },
+    }
 }

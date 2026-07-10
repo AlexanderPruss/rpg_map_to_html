@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 pub static LAST_USED_CONFIG: &str = "last_used_config.json";
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct Config {
     /// Generated files - images and html - will be saved in a child directory of [target_directory].
     pub target_directory: PathBuf,
@@ -20,7 +20,7 @@ pub struct Config {
     pub template: Option<TemplateConfig>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct MapImageConfig {
     /// The file containing the map. ex: sweetestMap.png
     pub image_file: PathBuf,
@@ -31,7 +31,7 @@ pub struct MapImageConfig {
 }
 
 /// The program can try to automatically determine which cells have no content.
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 
 pub struct SkipEmptyCellsConfig {
     /// Whether to determine and skip empty cells. Defaults to true.
@@ -47,7 +47,7 @@ pub struct SkipEmptyCellsConfig {
 }
 
 /// Allows customizing how the zoomed-in map cutouts on each cell's page are generated.
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct ImageHandlingConfig {
     /// The size, in pixels, of the generated map cutouts on the cell pages.
     ///
@@ -70,7 +70,7 @@ pub struct ImageHandlingConfig {
 }
 
 /// Allows customizing the generated map file by replacing the templates used.
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct TemplateConfig {
     /// A .css file replacing the default styles.
     pub styles_override: Option<PathBuf>,

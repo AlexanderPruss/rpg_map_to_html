@@ -1,16 +1,18 @@
-use std::fs;
-use std::fs::File;
-use std::hash::{DefaultHasher, Hash, Hasher};
-use std::io::{BufReader, Write};
 use crate::PixelPoint;
-use crate::geometry::{persist_cell_map_as_geometry, BoundingPolygon, CellMap, Geometry, CACHED_GEOMETRY_FILE};
+use crate::geometry::Geometry::Hexagons;
+use crate::geometry::{
+    BoundingPolygon, CACHED_GEOMETRY_FILE, CellMap, Geometry, persist_cell_map_as_geometry,
+};
 use crate::image_handling::map_cutout::CutoutImage;
 use crate::image_handling::table_of_contents::TableOfContentsMapImage;
 use image::{DynamicImage, GenericImageView, Rgba};
 use imageproc::drawing::draw_line_segment_mut;
+use std::fs;
+use std::fs::File;
+use std::hash::{DefaultHasher, Hash, Hasher};
+use std::io::{BufReader, Write};
 use std::ops::Add;
-use std::path::PathBuf;
-use crate::geometry::Geometry::Hexagons;
+use std::path::{Path, PathBuf};
 
 pub mod image_config;
 
@@ -23,46 +25,53 @@ mod empty_cell_detection;
 pub static IMAGE_SUBDIRECTORY: &str = "generated-images";
 pub static CACHED_TABLE_OF_CONTENTS_FILE: &str = "table-of-contents-metadata.json";
 pub static CACHED_CUTOUT_IMAGES_FILE: &str = "cutout-images-metadata.json";
-pub static CACHED_MAP_IMAGE_HASH: &str = "map-image-hash.txt";
 
 /// Saves a cell map. Used primarily for caching.
 pub fn persist_image_metadata(
     target_directory: &PathBuf,
+    image_filename: &String,
     image: &DynamicImage,
     table_of_contents_images: &Vec<TableOfContentsMapImage>,
     cutout_images: &Vec<CutoutImage>,
 ) {
-    let serialized_table_of_contents = serde_json::to_string_pretty(table_of_contents_images).unwrap();
+    let serialized_table_of_contents =
+        serde_json::to_string_pretty(table_of_contents_images).unwrap();
     let mut path = PathBuf::from(target_directory);
     path.push(CACHED_TABLE_OF_CONTENTS_FILE);
     let mut table_of_contents_file = File::create(&path).unwrap();
-    table_of_contents_file.write(serialized_table_of_contents.as_bytes()).unwrap();
+    table_of_contents_file
+        .write(serialized_table_of_contents.as_bytes())
+        .unwrap();
     table_of_contents_file.flush().unwrap();
 
     let serialized_cutout_images = serde_json::to_string_pretty(cutout_images).unwrap();
     let mut path = PathBuf::from(target_directory);
     path.push(CACHED_CUTOUT_IMAGES_FILE);
     let mut cutout_images_file = File::create(&path).unwrap();
-    cutout_images_file.write(serialized_cutout_images.as_bytes()).unwrap();
+    cutout_images_file
+        .write(serialized_cutout_images.as_bytes())
+        .unwrap();
     cutout_images_file.flush().unwrap();
 
-    let mut hasher = DefaultHasher::new();
-    image.as_rgb8().hash(&mut hasher);
-    let mut path = PathBuf::from(target_directory);
-    path.push(CACHED_MAP_IMAGE_HASH);
-    let mut image_hash_file = File::create(&path).unwrap();
-    image_hash_file.write(&hasher.finish().to_be_bytes()).unwrap();
-    image_hash_file.flush().unwrap();
+    let mut cached_image_path = PathBuf::from(target_directory);
+    cached_image_path.push(image_filename);
+    image.save(cached_image_path).unwrap();
 }
 
 /// Loads the cell map persisted by [persist_cell_map_as_geometry]. Returns NONE if the file can't
 /// be found or parsed.
-pub fn load_persisted_image_metadata(target_directory: &PathBuf) -> Option<(Vec<TableOfContentsMapImage>, Vec<CutoutImage>)> {
+pub fn load_persisted_image_metadata(
+    target_directory: &PathBuf,
+    image_filename: &String,
+) -> Option<(Vec<TableOfContentsMapImage>, Vec<CutoutImage>, DynamicImage)> {
     let mut path = PathBuf::from(target_directory);
     path.push(CACHED_TABLE_OF_CONTENTS_FILE);
     let table_of_contents_file = File::open(path);
-    if table_of_contents_file.is_err() {return None};
-    let table_of_contents_result: serde_json::Result<Vec<TableOfContentsMapImage>> = serde_json::from_reader(BufReader::new(table_of_contents_file.unwrap()));
+    if table_of_contents_file.is_err() {
+        return None;
+    };
+    let table_of_contents_result: serde_json::Result<Vec<TableOfContentsMapImage>> =
+        serde_json::from_reader(BufReader::new(table_of_contents_file.unwrap()));
     if table_of_contents_result.is_err() {
         return None;
     }
@@ -70,12 +79,26 @@ pub fn load_persisted_image_metadata(target_directory: &PathBuf) -> Option<(Vec<
     let mut path = PathBuf::from(target_directory);
     path.push(CACHED_CUTOUT_IMAGES_FILE);
     let cutout_images_file = File::open(path);
-    if cutout_images_file.is_err() {return None};
-    let cutout_images_result: serde_json::Result<Vec<CutoutImage>> = serde_json::from_reader(BufReader::new(cutout_images_file.unwrap()));
+    if cutout_images_file.is_err() {
+        return None;
+    };
+    let cutout_images_result: serde_json::Result<Vec<CutoutImage>> =
+        serde_json::from_reader(BufReader::new(cutout_images_file.unwrap()));
     if cutout_images_result.is_err() {
         return None;
     }
-    Some((table_of_contents_result.unwrap(), cutout_images_result.unwrap()))
+
+    let mut path = PathBuf::from(target_directory);
+    path.push(image_filename);
+    let image = image::open(path);
+    if image.is_err() {
+        return None;
+    }
+    Some((
+        table_of_contents_result.unwrap(),
+        cutout_images_result.unwrap(),
+        image.unwrap(),
+    ))
 }
 
 impl BoundingPolygon {
@@ -135,18 +158,17 @@ mod test {
         image.save(output_path).unwrap()
     }
 
-    mod persist_and_load_image_metadata {
-        use crate::document::test::fixtures::assert_files_equal;
-        use crate::geometry::{BoundingPolygon, Cell, CellMap, persist_cell_map_as_geometry, load_persisted_cell_map};
-        use crate::{PixelBox, PixelPoint};
-        use std::collections::{HashMap, HashSet};
-        use std::path::PathBuf;
+    mod persist_and_load_computed_images {
         use crate::image_handling::map_cutout::CutoutImage;
-        use crate::image_handling::{load_persisted_image_metadata, persist_image_metadata};
         use crate::image_handling::table_of_contents::TableOfContentsMapImage;
+        use crate::image_handling::test::fixtures::FourByFourImages;
+        use crate::image_handling::{load_persisted_image_metadata, persist_image_metadata};
+        use crate::{ PixelPoint};
+        use std::collections::{ HashSet};
+        use std::path::PathBuf;
 
         #[test]
-        fn persists_the_table_of_contents_and_cutout_images() {
+        fn persists_and_loads_computed_images() {
             let mut test_case_path = PathBuf::new();
             test_case_path.push(env!("CARGO_MANIFEST_DIR"));
             test_case_path.push("test_resources");
@@ -155,42 +177,45 @@ mod test {
             let mut target_directory = PathBuf::from(&test_case_path);
             target_directory.push("result");
             let table_of_contents_images: Vec<TableOfContentsMapImage> = vec![
-                TableOfContentsMapImage{
+                TableOfContentsMapImage {
                     filename: "first_toc.jpg".to_string(),
-                    size: PixelPoint {x:1, y:2},
-                    offset: PixelPoint {x:3, y:4},
-                    coordinates_contained: HashSet::from([
-                        "foo".to_string(),
-                        "bar".to_string()
-                    ]),
+                    size: PixelPoint { x: 1, y: 2 },
+                    offset: PixelPoint { x: 3, y: 4 },
+                    coordinates_contained: HashSet::from(["foo".to_string(), "bar".to_string()]),
                 },
-                TableOfContentsMapImage{
+                TableOfContentsMapImage {
                     filename: "second_toc.jpg".to_string(),
-                    size: PixelPoint {x:4, y:5},
-                    offset: PixelPoint {x:6, y:7},
-                    coordinates_contained: HashSet::from([
-                        "baz".to_string(),
-                        "dag".to_string()
-                    ]),
-                }
-            ];
-            let cutout_images : Vec<CutoutImage> = vec![
-                CutoutImage{
-                    coordinate: "first_cutout.png".to_string(),
-                    offset_from_original_image: PixelPoint {x:10, y:20},
-                    image_size: PixelPoint {x:30, y:40},
+                    size: PixelPoint { x: 4, y: 5 },
+                    offset: PixelPoint { x: 6, y: 7 },
+                    coordinates_contained: HashSet::from(["baz".to_string(), "dag".to_string()]),
                 },
-                CutoutImage{
-                    coordinate: "second_cutout.png".to_string(),
-                    offset_from_original_image: PixelPoint {x:100, y:200},
-                    image_size: PixelPoint {x:300, y:400},
-                }
             ];
-            //TODO: we're here
-            persist_image_metadata(&target_directory, &table_of_contents_images, &cutout_images);
-            let loaded_metadata = load_persisted_image_metadata(&target_directory).unwrap();
+            let cutout_images: Vec<CutoutImage> = vec![
+                CutoutImage {
+                    coordinate: "first_cutout.png".to_string(),
+                    offset_from_original_image: PixelPoint { x: 10, y: 20 },
+                    image_size: PixelPoint { x: 30, y: 40 },
+                },
+                CutoutImage {
+                    coordinate: "second_cutout.png".to_string(),
+                    offset_from_original_image: PixelPoint { x: 100, y: 200 },
+                    image_size: PixelPoint { x: 300, y: 400 },
+                },
+            ];
+            let filename = "four-by-four.png".to_string();
+            let image = FourByFourImages::Standardized.load_image();
+            persist_image_metadata(
+                &target_directory,
+                &filename,
+                &image,
+                &table_of_contents_images,
+                &cutout_images,
+            );
+            let loaded_metadata =
+                load_persisted_image_metadata(&target_directory, &filename).unwrap();
             assert_eq!(table_of_contents_images, loaded_metadata.0);
             assert_eq!(cutout_images, loaded_metadata.1);
+            assert_eq!(image, loaded_metadata.2);
         }
     }
 

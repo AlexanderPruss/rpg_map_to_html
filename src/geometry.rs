@@ -12,7 +12,7 @@ pub mod hexagons;
 pub static CACHED_GEOMETRY_FILE: &str = "geometry.json";
 
 /// Describes the structure of the RPG map. The map's [Geometry] is used to identify map cells and neighbors.
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(tag = "type")]
 pub enum Geometry {
     /// A hex map.
