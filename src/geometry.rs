@@ -1,15 +1,15 @@
 use crate::{read_input, read_input_until_valid_option, PixelBox, PixelPoint};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Write};
 use std::path::{ PathBuf};
 use crate::geometry::Geometry::Hexagons;
-use crate::geometry::hexagons::FilledTopLeftCorner::{EMPTY, FILLED};
-use crate::geometry::hexagons::FlatSides::{FlatHorizontalSides, FlatVerticalSides};
-use crate::geometry::hexagons::HexagonGeometryDefinition;
 
 pub mod hexagons;
+
+pub static CACHED_GEOMETRY_FILE: &str = "geometry.json";
 
 /// Describes the structure of the RPG map. The map's [Geometry] is used to identify map cells and neighbors.
 #[derive(Deserialize, Serialize, Debug)]
@@ -62,15 +62,37 @@ pub struct BoundingPolygon {
     pub points: Vec<PixelPoint>,
 }
 
-/// Saves a cell map. Allows users to edit the generated cellmap manually, if they wish.
+/// Saves a cell map. Used primarily for caching,
+/// but also allows users to edit the generated cell map manually, if they wish.
 pub fn persist_cell_map_as_geometry(target_directory: &PathBuf, cell_map: CellMap) {
     let generic_geometry = Geometry::Generic { cell_map };
     let serialized = serde_json::to_string_pretty(&generic_geometry).unwrap();
     let mut path = PathBuf::from(target_directory);
-    path.push("geometry.json");
+    path.push(CACHED_GEOMETRY_FILE);
     let mut file = File::create(path).unwrap();
     file.write(serialized.as_bytes()).unwrap();
     file.flush().unwrap();
+}
+
+/// Loads the cell map persisted by [persist_cell_map_as_geometry]. Returns NONE if the file can't
+/// be found or parsed.
+pub fn load_persisted_cell_map(target_directory: &PathBuf) -> Option<CellMap> {
+    let mut geometry_path = PathBuf::from(target_directory);
+    geometry_path.push(CACHED_GEOMETRY_FILE);
+    let geometry_file = File::open(geometry_path);
+    if geometry_file.is_err() {return None};
+
+    let geometry_result: serde_json::Result<Geometry> = serde_json::from_reader(BufReader::new(geometry_file.unwrap()));
+    if geometry_result.is_err() {
+        return None;
+    }
+    match geometry_result.unwrap() {
+        Hexagons { .. } => {
+            //We expect a generic geometry, but don't panic; just return None and let it be recomputed
+            None
+        }
+        Geometry::Generic { cell_map } => Some(cell_map)
+    }
 }
 
 ///The starting point and direction of the polygon is irrelevant for equality.
@@ -198,9 +220,9 @@ fn generate_generic_geometry_interactively() -> Geometry {
 #[cfg(test)]
 mod test {
 
-    mod persist_cell_map {
+    mod persist_and_load_cell_map {
         use crate::document::test::fixtures::assert_files_equal;
-        use crate::geometry::{BoundingPolygon, Cell, CellMap, persist_cell_map_as_geometry};
+        use crate::geometry::{BoundingPolygon, Cell, CellMap, persist_cell_map_as_geometry, load_persisted_cell_map};
         use crate::{PixelBox, PixelPoint};
         use std::collections::{HashMap, HashSet};
         use std::path::PathBuf;
@@ -231,13 +253,16 @@ mod test {
                     },
                 )]),
             };
-            persist_cell_map_as_geometry(&target_directory, cell_map);
+            persist_cell_map_as_geometry(&target_directory, cell_map.clone());
 
-            let mut result_path = target_directory;
+            let mut result_path = PathBuf::from(&target_directory);
             result_path.push("geometry.json");
             let mut expected_path = test_case_path;
             expected_path.push("expected/geometry.json");
             assert_files_equal(&expected_path, &result_path);
+
+            let loaded_cell_map = load_persisted_cell_map(&target_directory);
+            assert_eq!(cell_map, loaded_cell_map.unwrap());
         }
     }
 

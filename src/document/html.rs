@@ -39,7 +39,7 @@ pub fn write_html_doc(
     title: &String,
     cell_map: &CellMap,
     cutout_width_height: PixelPoint,
-    table_of_contents_images: Vec<TableOfContentsMapImage>,
+    table_of_contents_images: &Vec<TableOfContentsMapImage>,
     cutout_images: &Vec<CutoutImage>,
     config: &Option<TemplateConfig>,
 ) {

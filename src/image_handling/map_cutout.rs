@@ -4,9 +4,10 @@ use crate::image_handling::empty_cell_detection::is_cell_empty;
 use crate::image_handling::image_config::{ImageHandling, SkipEmptyCells};
 use image::{DynamicImage, ImageBuffer, ImageFormat, Rgba};
 use std::path::PathBuf;
+use serde::{Deserialize, Serialize};
 use crate::image_handling::IMAGE_SUBDIRECTORY;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct CutoutImage {
     pub coordinate: String,
     pub offset_from_original_image: PixelPoint,

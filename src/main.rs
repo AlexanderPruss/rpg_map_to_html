@@ -1,6 +1,7 @@
-use rpg_map_to_html::{LAST_USED_CONFIG, config, generate_docs, read_input_yes_no_with_default};
+use rpg_map_to_html::{config, generate_docs, read_input_yes_no_with_default};
 use std::path::PathBuf;
 use std::{env, fs};
+use rpg_map_to_html::config::LAST_USED_CONFIG;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -13,7 +14,7 @@ fn main() {
     }
     if args.len() == 2 {
         let config_path = PathBuf::from(args.get(1).unwrap());
-        return generate_docs(config::parse_config(config_path));
+        return generate_docs(config::parse_config(config_path).expect("Couldn't parse the config file"));
     }
 
     interactive_mode()
@@ -39,7 +40,7 @@ fn interactive_mode() {
 
 fn generate_with_existing_config() {
     println!("Using the existing config at {LAST_USED_CONFIG}");
-    generate_docs(config::parse_config(PathBuf::from(LAST_USED_CONFIG)))
+    generate_docs(config::parse_config(PathBuf::from(LAST_USED_CONFIG)).expect("Couldn't parse the last-used config file."))
 }
 
 fn print_help(executable: &String) {

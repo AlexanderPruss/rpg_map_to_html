@@ -1,10 +1,12 @@
 use crate::geometry::Geometry;
-use crate::{PixelPoint, read_input_with_default, read_input_yes_no_with_default, geometry};
+use crate::{PixelPoint, geometry, read_input_with_default, read_input_yes_no_with_default};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::PathBuf;
+
+pub static LAST_USED_CONFIG: &str = "last_used_config.json";
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Config {
@@ -119,12 +121,22 @@ pub struct TemplateConfig {
 }
 
 /// Reads a [Config] out of the file at [config_path].
-pub fn parse_config(config_path: PathBuf) -> Config {
-    serde_json::from_reader(BufReader::new(File::open(config_path).unwrap())).unwrap()
+pub fn parse_config(config_path: PathBuf) -> Option<Config> {
+    let file = File::open(config_path);
+    if file.is_err() {
+        return None;
+    }
+    let config_result: serde_json::Result<Config> =
+        serde_json::from_reader(BufReader::new(file.unwrap()));
+    match config_result {
+        Ok(config) => Some(config),
+        Err(_) => None
+    }
 }
 
 /// Persists the [config] to the [path] as a pretty-JSON file.
-pub fn persist_config(config: &Config, path: &PathBuf) {
+pub fn persist_config(config: &Config) {
+    let path = PathBuf::from(LAST_USED_CONFIG);
     let mut writer = BufWriter::new(File::create(path).unwrap());
     writer
         .write(serde_json::to_string_pretty(config).unwrap().as_bytes())
@@ -164,7 +176,7 @@ pub fn generate_config_interactively() -> Config {
     };
 
     let geometry = geometry::generate_geometry_interactively();
-    Config{
+    Config {
         target_directory,
         title,
         map_image: MapImageConfig {

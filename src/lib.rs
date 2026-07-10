@@ -12,7 +12,8 @@ pub mod geometry;
 pub mod document;
 pub mod image_handling;
 
-pub static LAST_USED_CONFIG : &str = "last_used_config.json";
+mod caching;
+
 
 /// A convenience method - loads the config and does all the logic for you. Computes a geometry,
 /// creates all the images, creates/updates the markdown content and final html document.
@@ -55,16 +56,13 @@ pub fn generate_docs(config: Config)  {
     );
 
     //Document
-    document::html::write_html_doc(target_directory, &config.title, &cell_map, image_handling.zoomed_in_map_image_size, table_of_contents_images, &cutout_images,  &config.template);
+    document::html::write_html_doc(target_directory, &config.title, &cell_map, image_handling.zoomed_in_map_image_size, &table_of_contents_images, &cutout_images,  &config.template);
 
-    //Cleanup
+    //Cleanup, caching
     image_handling::visualize_cell_map::save_cell_map_visualization(
         target_directory, &cell_map, &map_image, &image_handling.cell_outline_color
     );
-    geometry::persist_cell_map_as_geometry(target_directory, cell_map);
-    let config_path = PathBuf::from(LAST_USED_CONFIG);
-    config::persist_config(&config, &config_path);
-    //TODO: Persist image stuff as well, use it to allow skipping computation when unnecessary
+    caching::persist_cached_objects(target_directory, &config, cell_map, &table_of_contents_images, &cutout_images);
 }
 
 pub fn read_input_with_default(input: &mut String, default: String) -> String {

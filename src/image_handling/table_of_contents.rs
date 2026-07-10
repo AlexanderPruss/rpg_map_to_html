@@ -3,9 +3,10 @@ use crate::{PixelBox, PixelPoint};
 use image::{DynamicImage, ImageFormat};
 use std::collections::HashSet;
 use std::path::{PathBuf};
+use serde::{Deserialize, Serialize};
 use crate::image_handling::IMAGE_SUBDIRECTORY;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct TableOfContentsMapImage {
     pub filename: String,
     pub size: PixelPoint,
