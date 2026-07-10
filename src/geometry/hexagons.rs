@@ -242,31 +242,33 @@ pub fn generate_geometry_interactively() -> Geometry {
         }
     };
 
-    println!(r"Is the top-left corner of the hex map filled or empty? Filled/Empty (default: Filled)
-    Filled:
+    println!(r"
+Filled:
 
-                ••••••••••
-               •          •
-              •            •
-             •     (0,0)    ••••••••••
-              •            •          •
-               •          •            •
-                ••••••••••    (0,1)     •
-                          •            •
-                           •          •
-                            ••••••••••
+   ..........
+  .          .
+ .            .
+.     (0,0)    ..........
+ .            .          .
+  .          .            .
+   ..........    (0,1)     .
+             .            .
+              .          .
+               ..........
 
-    Empty:
-                            ••••••••••
-                           •          •
-                          •            •
-                ••••••••••     (0,1)    •
-               •          •            •
-              •            •          •
-             •     (0,0)    ••••••••••
-              •            •
-               •          •
-                ••••••••••
+Empty:
+               ..........
+              .          .
+             .            .
+   ..........     (0,1)    .
+  .          .            .
+ .            .          .
+.     (0,0)    ..........
+ .            .
+  .          .
+   ..........
+
+Is the top-left corner of the hex map filled or empty? Filled/Empty (default: Filled)
     ");
     let filled_top_left_corner = match read_input_until_valid_option(&mut input, vec!["filled", "empty"], "filled").as_str() {
         "filled" => {

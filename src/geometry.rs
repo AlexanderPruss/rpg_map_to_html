@@ -195,8 +195,6 @@ fn generate_generic_geometry_interactively() -> Geometry {
     serde_json::from_reader(BufReader::new(File::open(path).unwrap())).unwrap()
 }
 
-
-
 #[cfg(test)]
 mod test {
 
