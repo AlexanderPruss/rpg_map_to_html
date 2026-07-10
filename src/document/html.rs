@@ -1,3 +1,4 @@
+use crate::PixelPoint;
 use crate::config::TemplateConfig;
 use crate::document::html::NextLineMatch::*;
 use crate::document::markdown_content::{
@@ -6,14 +7,13 @@ use crate::document::markdown_content::{
 };
 use crate::document::{DocumentContext, Template, TemplateFiles, Token, replace_if_contains};
 use crate::geometry::CellMap;
+use crate::image_handling::map_cutout::CutoutImage;
 use crate::image_handling::table_of_contents::TableOfContentsMapImage;
-use crate::{PixelPoint};
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Lines, Write};
 use std::iter::Peekable;
 use std::path::PathBuf;
-use crate::image_handling::map_cutout::CutoutImage;
 
 static HTML_DOC_FILENAME: &str = "rpg_map_doc.html";
 static STYLES_FILENAME: &str = "styles.css";
@@ -43,7 +43,10 @@ pub fn write_html_doc(
     cutout_images: &Vec<CutoutImage>,
     config: &Option<TemplateConfig>,
 ) {
-    let coordinates_to_keep: HashSet<&String> = cutout_images.iter().map(|cutout| &cutout.coordinate).collect();
+    let coordinates_to_keep: HashSet<&String> = cutout_images
+        .iter()
+        .map(|cutout| &cutout.coordinate)
+        .collect();
     let mut ordered_cells: Vec<&String> = cell_map
         .cells_by_coordinate
         .iter()
@@ -53,7 +56,8 @@ pub fn write_html_doc(
     ordered_cells.sort();
     add_md_content_for_missing_cells(target_directory, ordered_cells);
 
-    let offset_by_coordinate = cutout_images.iter()
+    let offset_by_coordinate = cutout_images
+        .iter()
         .map(|cutout_image| (cutout_image.coordinate.clone(), cutout_image))
         .collect();
     let context = DocumentContext::new(
@@ -63,7 +67,7 @@ pub fn write_html_doc(
         &config,
         cell_map,
         &table_of_contents_images,
-        offset_by_coordinate
+        offset_by_coordinate,
     );
     generate_styles(target_directory, &config, &cutout_width_height);
     generate_html_doc(context);
@@ -207,7 +211,7 @@ fn fill_templates_if_found<I: Iterator<Item = Result<String, std::io::Error>>>(
 enum Column {
     Left,
     Right,
-    ExtraRight
+    ExtraRight,
 }
 
 fn fill_table_of_contents_templates<I: Iterator<Item = Result<String, std::io::Error>>>(
@@ -243,8 +247,17 @@ fn fill_table_of_contents_polygon_links<I: Iterator<Item = Result<String, std::i
         &mut reader_writer.writer,
         context.cell_map,
         prefix,
-        table_of_contents_image.offset*-1, //TODO: This is silly, standardize it lol
-        &table_of_contents_image.coordinates_contained,
+        table_of_contents_image.offset * -1, //TODO: This is silly, standardize it lol
+        table_of_contents_image
+            .coordinates_contained
+            .iter()
+            .filter(|coordinate| {
+                context
+                    .cutout_images_by_coordinate
+                    .get(*coordinate)
+                    .is_some()
+            })
+            .collect(),
     )
 }
 
@@ -272,7 +285,7 @@ fn fill_zoomed_in_map_polygon_links<I: Iterator<Item = Result<String, std::io::E
         context.cell_map,
         prefix,
         cutout_image.offset_from_original_image,
-        &cell.neighbor_coordinates,
+        cell.neighbor_coordinates.iter().collect(),
     )
 }
 
@@ -281,7 +294,7 @@ fn write_polygon_links(
     cell_map: &CellMap,
     prefix: &str,
     offset: PixelPoint,
-    coordinates_to_link: &HashSet<String>,
+    coordinates_to_link: HashSet<&String>,
 ) {
     for coordinate in coordinates_to_link {
         let cell = cell_map.cells_by_coordinate.get(coordinate);
@@ -422,7 +435,11 @@ struct Section {
     template: TemplateFiles,
 }
 
-fn fill_sections<I: Iterator<Item = Result<String, std::io::Error>>>(context: &mut DocumentContext, reader_writer: &mut ReaderWriter<I>, prefix: &String) {
+fn fill_sections<I: Iterator<Item = Result<String, std::io::Error>>>(
+    context: &mut DocumentContext,
+    reader_writer: &mut ReaderWriter<I>,
+    prefix: &String,
+) {
     loop {
         let next_section: Option<Section> = read_next_section(&mut reader_writer.md_lines, prefix);
         if next_section.is_none() {
@@ -434,7 +451,10 @@ fn fill_sections<I: Iterator<Item = Result<String, std::io::Error>>>(context: &m
     }
 }
 
-fn read_next_section<I: Iterator<Item = Result<String, std::io::Error>>>(md_lines: &mut Peekable<I>, prefix: &String) -> Option<Section> {
+fn read_next_section<I: Iterator<Item = Result<String, std::io::Error>>>(
+    md_lines: &mut Peekable<I>,
+    prefix: &String,
+) -> Option<Section> {
     iterate_until_header_or_eof(md_lines);
     let header_line = md_lines.peek();
     if header_line.is_none() {
@@ -466,7 +486,10 @@ fn read_next_section<I: Iterator<Item = Result<String, std::io::Error>>>(md_line
     let parser = pulldown_cmark::Parser::new(raw_content.as_str());
     let mut content = String::new();
     pulldown_cmark::html::push_html(&mut content, parser);
-    let content_lines : Vec<String> = content.lines().map(|line| format!("{prefix}{line}")).collect();
+    let content_lines: Vec<String> = content
+        .lines()
+        .map(|line| format!("{prefix}{line}"))
+        .collect();
     Some(Section {
         title,
         content: content_lines.join("\n"),
@@ -559,7 +582,9 @@ fn next_line_starts_with<I: Iterator<Item = Result<String, std::io::Error>>>(
 }
 
 /// Iterates until the next (peeked) line is either a header or EOF. Returns all lines encountered.
-fn iterate_until_header_or_eof<I: Iterator<Item = Result<String, std::io::Error>>>(md_lines: &mut Peekable<I>) -> Vec<String> {
+fn iterate_until_header_or_eof<I: Iterator<Item = Result<String, std::io::Error>>>(
+    md_lines: &mut Peekable<I>,
+) -> Vec<String> {
     let mut lines: Vec<String> = vec![];
     loop {
         if next_line_starts_with(md_lines, "#") != NoMatch {

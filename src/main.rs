@@ -33,6 +33,7 @@ fn interactive_mode() {
         );
     }
     let config = config::generate_config_interactively();
+    println!("Starting document generation.");
     generate_docs(config);
 }
 
