@@ -178,52 +178,10 @@ pub(crate) fn generate_geometry_interactively() -> Geometry {
     let mut input = String::new();
     match read_input_until_valid_option(&mut input, vec!["hexagons", "generic"], "hexagons").as_str() {
         "hexagons" => {
-            generate_hexagon_geometry_interactively()
+            hexagons::generate_geometry_interactively()
         } 
         _ => {
             generate_generic_geometry_interactively()
-        }
-    }
-}
-
-fn generate_hexagon_geometry_interactively() -> Geometry {
-    let mut input = String::new();
-    println!("Does the hex map have flat vertical sides or flat horizontal sides? Vertical/Horizontal (default: Horizontal)");
-    let flat_sides = match read_input_until_valid_option(&mut input, vec!["vertical", "horizontal"], "horizontal").as_str() {
-        "vertical" => {
-            FlatVerticalSides
-        }
-        _ => {
-            FlatHorizontalSides
-        }
-    };
-    
-    println!("Is the top-left corner of the hex map filled or empty? Filled/Empty (default: Filled)");
-    let filled_top_left_corner = match read_input_until_valid_option(&mut input, vec!["filled", "empty"], "filled").as_str() {
-        "filled" => {
-            FILLED
-        }
-        _ => {
-            EMPTY 
-        }
-    };
-    
-    println!("Number of rows: ");
-    let number_of_rows : u8 = read_input(&mut input).parse().unwrap();
-    println!("Number of columns: ");
-    let number_of_columns : u8 = read_input(&mut input).parse().unwrap();
-    println!("Hexagon height (float, any units): (ex: 10.0)");
-    let hexagon_height : f32 = read_input(&mut input).parse().unwrap();
-    println!("Hexagon width (float, any units): (ex: 20.0)");
-    let hexagon_width : f32 = read_input(&mut input).parse().unwrap();
-    Hexagons {
-        definition: HexagonGeometryDefinition{
-            flat_sides,
-            filled_top_left_corner,
-            number_of_rows,
-            number_of_columns,
-            hexagon_height,
-            hexagon_width,
         }
     }
 }
