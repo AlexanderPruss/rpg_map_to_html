@@ -4,6 +4,7 @@ use crate::image_handling::empty_cell_detection::is_cell_empty;
 use crate::image_handling::image_config::{ImageHandling, SkipEmptyCells};
 use image::{DynamicImage, ImageBuffer, ImageFormat, Rgba};
 use std::path::PathBuf;
+use crate::image_handling::IMAGE_SUBDIRECTORY;
 
 #[derive(Debug, PartialEq)]
 pub struct CutoutImage {
@@ -99,6 +100,7 @@ fn save_cutout_map_image(
 ) -> CutoutImage {
     let mut path = PathBuf::new();
     path.push(target_directory);
+    path.push(IMAGE_SUBDIRECTORY);
     path.push(cell.coordinate.clone() + ".png");
     let padded_image_size = PixelPoint {
         x: padded_image.width() as i32,
@@ -201,6 +203,7 @@ mod test {
         use crate::image_handling::test::fixtures::FourByFourImages;
         use image::Rgba;
         use std::path::PathBuf;
+        use crate::image_handling::IMAGE_SUBDIRECTORY;
 
         #[test]
         fn creates_cutout_images_for_non_empty_cells() {
@@ -246,6 +249,7 @@ mod test {
             assert_eq!(filled_coordinates.len(), cutout_images.len());
             filled_coordinates.iter().for_each(|coordinate| {
                 let mut cutout_image_path = PathBuf::from(&target_directory);
+                cutout_image_path.push(IMAGE_SUBDIRECTORY);
                 cutout_image_path.push(coordinate.clone() + ".png");
                 let cutout_image = image::ImageReader::open(cutout_image_path)
                     .unwrap()
@@ -313,6 +317,7 @@ mod test {
         use crate::image_handling::test::fixtures::FourByFourImages;
         use image::Rgba;
         use std::path::PathBuf;
+        use crate::image_handling::IMAGE_SUBDIRECTORY;
 
         fn test_config() -> ImageHandling {
             ImageHandling {
@@ -357,6 +362,7 @@ mod test {
             let cutout_image =
                 save_cutout_map_image(&padded_image, padding, cell, &target_directory, &config);
             let mut cutout_image_path = PathBuf::from(target_directory);
+            cutout_image_path.push(IMAGE_SUBDIRECTORY);
             cutout_image_path.push(cell.coordinate.clone() + ".png");
             let actual_cutout_image = image::ImageReader::open(cutout_image_path)
                 .unwrap()

@@ -3,6 +3,7 @@ use crate::config::TemplateConfig;
 use crate::document::Template::*;
 use crate::document::Token::*;
 use crate::geometry::CellMap;
+use crate::image_handling::IMAGE_SUBDIRECTORY;
 use crate::image_handling::map_cutout::CutoutImage;
 use crate::image_handling::table_of_contents::TableOfContentsMapImage;
 use regex::{Captures, Regex};
@@ -306,7 +307,8 @@ impl<'document> DocumentContext<'document> {
     }
 
     fn set_current_table_of_contents_image(&mut self, image: &'document TableOfContentsMapImage) {
-        self.current_image_path = Some(image.filename.clone());
+        self.current_image_path =
+            Some(format!("{}/{}", IMAGE_SUBDIRECTORY, image.filename.clone()));
         self.current_image_size = Some(image.size);
         self.current_svg_viewbox = Some(format!("0 0 {} {}", image.size.x, image.size.y));
         self.current_table_of_contents_image = Some(image);
@@ -324,13 +326,10 @@ impl<'document> DocumentContext<'document> {
                 image_size = cutout_image.image_size;
             }
         };
-        self.current_image_path = Some(format!("{}.png", coordinate));
+        self.current_image_path = Some(format!("{}/{}.png", IMAGE_SUBDIRECTORY, coordinate));
         self.current_coordinate = Some(coordinate);
         self.current_image_size = Some(self.cutout_image_size);
-        self.current_svg_viewbox = Some(format!(
-            "0 0 {} {}",
-            image_size.x, image_size.y
-        ));
+        self.current_svg_viewbox = Some(format!("0 0 {} {}", image_size.x, image_size.y));
 
         self.current_image_width_height_css = Some(format!(
             "width:{}px; height:{}px;",
@@ -428,7 +427,7 @@ pub mod test {
 9. {{VIEW_BOX}}
                 ";
                 let expected = r"
-1. abc 2. jkl.png
+1. abc 2. generated-images/jkl.png
 3. width:100px; height:200px;
 4. jkl
 5. mno

@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::{fs, io};
 use std::ops::{Add, Mul, Sub};
 use std::path::{ PathBuf};
+use crate::image_handling::IMAGE_SUBDIRECTORY;
 
 pub mod config;
 pub mod geometry;
@@ -24,8 +25,10 @@ pub fn generate_docs(config: Config)  {
     let map_dimensions = PixelPoint{x: map_image.width() as i32, y: map_image.height() as i32 };
     let map_margin = config.map_image.image_margins.unwrap_or(PixelPoint { x: 0, y: 0 });
     let target_directory = &config.target_directory;
-    if !fs::exists(target_directory).unwrap(){
-        fs::create_dir_all(target_directory).unwrap();
+    let mut image_directory = PathBuf::from(target_directory);
+    image_directory.push(IMAGE_SUBDIRECTORY);
+    if !fs::exists(&image_directory).unwrap(){
+        fs::create_dir_all(image_directory).unwrap();
     }
 
     //Geometry

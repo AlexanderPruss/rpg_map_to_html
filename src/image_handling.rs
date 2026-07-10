@@ -12,6 +12,8 @@ pub mod visualize_cell_map;
 
 mod empty_cell_detection;
 
+pub static IMAGE_SUBDIRECTORY : &str = "generated-images";
+
 impl BoundingPolygon {
     /// Draws the polygon's line segments onto the given [image] in-place.
     /// Lines are drawn with a + shaped brush.

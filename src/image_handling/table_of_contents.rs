@@ -2,7 +2,8 @@ use crate::geometry::CellMap;
 use crate::{PixelBox, PixelPoint};
 use image::{DynamicImage, ImageFormat};
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{PathBuf};
+use crate::image_handling::IMAGE_SUBDIRECTORY;
 
 #[derive(Debug, PartialEq)]
 pub struct TableOfContentsMapImage {
@@ -39,7 +40,8 @@ pub fn save_table_of_contents_map_images(
         x: max_image_size.x.min(original_image.width() as i32),
         y: max_image_size.y.min(original_image.height() as i32),
     };
-
+    let mut image_directory = PathBuf::from(target_directory);
+    image_directory.push(IMAGE_SUBDIRECTORY);
     let mut table_of_contents_images: Vec<TableOfContentsMapImage> = vec![];
     loop {
         let max_drawable = current_offset + *max_image_size;
@@ -62,7 +64,7 @@ pub fn save_table_of_contents_map_images(
             },
         );
         table_of_contents_images.push(save(
-            target_directory,
+            &image_directory,
             original_image,
             format!(
                 "table_of_contents_{}_{}.png",
@@ -147,6 +149,7 @@ mod test {
         use crate::{PixelBox, PixelPoint};
         use std::collections::HashMap;
         use std::path::PathBuf;
+        use crate::image_handling::IMAGE_SUBDIRECTORY;
 
         fn two_fifty_px_by_two_fifty_px_cell_map(upper_bound: PixelPoint) -> CellMap {
             let mut cells_by_coordinate: HashMap<String, Cell> = HashMap::new();
@@ -216,6 +219,7 @@ mod test {
             let mut expected_toc_image_iter = expected_toc_images.iter();
             for toc_image in toc_images {
                 let mut result_filepath = PathBuf::from(&target_directory);
+                result_filepath.push(IMAGE_SUBDIRECTORY);
                 result_filepath.push(&toc_image.filename);
                 let mut expected_filepath = PathBuf::from(&expected_directory);
                 expected_filepath.push(&toc_image.filename);
