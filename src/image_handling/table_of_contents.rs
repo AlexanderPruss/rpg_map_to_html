@@ -34,7 +34,7 @@ pub fn save_table_of_contents_map_images(
 /// is presented, and all of its non-empty cells can be clicked on to navigate to that cell's page.
 ///
 /// However, the original image might be too large to fit onto one page. If this is the case, the image
-/// is split up into smaller, overlapping images of identical size, and a page is drawn for each of these images. //TODO: Test caching logic probs
+/// is split up into smaller, overlapping images of identical size, and a page is drawn for each of these images.
 ///
 /// If cached values are provided, the calculation prefers cached values when they are plausible.
 pub fn save_table_of_contents_map_images_with_cache(
@@ -164,13 +164,12 @@ fn filter_coordinates_contained(cell_map: &CellMap, pixel_box: PixelBox) -> Hash
 
 #[cfg(test)]
 mod test {
-
     mod save_table_of_contents_map_images {
         use crate::geometry::{BoundingPolygon, Cell, CellMap};
         use crate::image_handling::IMAGE_SUBDIRECTORY;
         use crate::image_handling::table_of_contents::{
             TableOfContentsMapImage, filter_coordinates_contained,
-            save_table_of_contents_map_images, save_table_of_contents_map_images_with_cache,
+            save_table_of_contents_map_images,
         };
         use crate::image_handling::test::fixtures::get_test_resources_path;
         use crate::{PixelBox, PixelPoint};
@@ -303,10 +302,144 @@ mod test {
         }
 
         mod caching {
+            use crate::image_handling::IMAGE_SUBDIRECTORY;
+            use crate::image_handling::table_of_contents::test::save_table_of_contents_map_images::two_fifty_px_by_two_fifty_px_cell_map;
+            use crate::image_handling::table_of_contents::{
+                TableOfContentsMapImage, save_table_of_contents_map_images_with_cache,
+            };
+            use crate::image_handling::test::fixtures::get_test_resources_path;
+            use crate::{PixelBox, PixelPoint};
+            use std::collections::{HashMap, HashSet};
+            use std::fs;
+            use std::path::{Path, PathBuf};
 
             #[test]
-            fn does_not_recreate_cached_images() {
-                todo!()
+            fn only_saves_images_if_no_cached_image_is_present() {
+                let mut test_case = get_test_resources_path();
+                test_case.push("table_of_contents_images/three_by_three_map");
+                let original_filename = "map_2400_3000.png";
+                let mut setup_file_path = PathBuf::from(&test_case);
+                setup_file_path.push("setup");
+                setup_file_path.push(original_filename);
+                let original_map_image = image::open(setup_file_path).unwrap();
+                let expected_filenames: Vec<String> = vec![
+                    PixelPoint { x: 0, y: 0 },
+                    PixelPoint { x: 800, y: 0 },
+                    PixelPoint { x: 1500, y: 0 },
+                    PixelPoint { x: 0, y: 1100 },
+                    PixelPoint { x: 800, y: 1100 },
+                    PixelPoint { x: 1500, y: 1100 },
+                    PixelPoint { x: 0, y: 1800 },
+                    PixelPoint { x: 800, y: 1800 },
+                    PixelPoint { x: 1500, y: 1800 },
+                ]
+                .iter()
+                .map(|point| format!("table_of_contents_{}_{}.png", point.x, point.y))
+                .collect();
+
+                let cell_map = two_fifty_px_by_two_fifty_px_cell_map(PixelPoint {
+                    x: original_map_image.width() as i32,
+                    y: original_map_image.height() as i32,
+                });
+                let mut target_directory = PathBuf::from(&test_case);
+                target_directory.push("cached_result");
+                //Delete any pngs floating around the target directory
+                fs::read_dir(&target_directory)
+                    .unwrap()
+                    .filter(|file| {
+                        file.as_ref()
+                            .unwrap()
+                            .file_name()
+                            .to_str()
+                            .unwrap()
+                            .ends_with(".png")
+                    })
+                    .for_each(|file| fs::remove_file(file.unwrap().path()).unwrap());
+
+                let cached_by_filename = HashMap::from([
+                    (
+                        "table_of_contents_0_1800.png".to_string(),
+                        TableOfContentsMapImage {
+                            filename: "table_of_contents_0_1800.png".to_string(),
+                            size: PixelPoint { x: 1, y: 2 },
+                            offset: PixelPoint { x: 3, y: 4 },
+                            coordinates_contained: Default::default(),
+                        },
+                    ),
+                    (
+                        "table_of_contents_800_0.png".to_string(),
+                        TableOfContentsMapImage {
+                            filename: "table_of_contents_800_0.png".to_string(),
+                            size: PixelPoint { x: 5, y: 6 },
+                            offset: PixelPoint { x: 7, y: 8 },
+                            coordinates_contained: Default::default(),
+                        },
+                    ),
+                ]);
+                let cached_filenames = HashSet::from([
+                    "table_of_contents_0_1800.png".to_string(),
+                    "table_of_contents_800_0.png".to_string(),
+                ]);
+                let resulting_filenames = HashSet::from([
+                    "table_of_contents_0_1800.png".to_string(),
+                    "table_of_contents_800_0.png".to_string(),
+                ]);
+
+                let toc_images = save_table_of_contents_map_images_with_cache(
+                    &target_directory,
+                    &original_map_image,
+                    &PixelPoint { x: 900, y: 1200 },
+                    &cell_map,
+                    &cached_by_filename,
+                );
+
+                //Ensure no cached files were created.
+                fs::read_dir(&target_directory)
+                    .unwrap()
+                    .filter(|file| {
+                        let filename = file.as_ref().unwrap().file_name();
+                        let filename_option = filename.to_str().unwrap().strip_suffix(".png");
+                        filename_option.is_some()
+                            && cached_filenames.contains(filename_option.unwrap())
+                    })
+                    .for_each(|file| {
+                        panic!(
+                            "The file {} should not exist, it should have been cached",
+                            file.unwrap().file_name().to_str().unwrap()
+                        )
+                    });
+
+                let mut expected_directory = PathBuf::from(&test_case);
+                expected_directory.push("expected");
+                assert_eq!(toc_images.len(), 9);
+                let mut expected_path = PathBuf::from(&target_directory);
+                expected_path.push("../expected");
+                for filename in expected_filenames {
+                    if cached_filenames.contains(&filename) {
+                        let computed = toc_images
+                            .iter()
+                            .find(|toc_image| toc_image.filename == filename)
+                            .unwrap();
+                        let expected = cached_by_filename.get(&filename).unwrap();
+                        assert_eq!(expected, computed)
+                    } else {
+                        let mut toc_image_path = PathBuf::from(&target_directory);
+                        toc_image_path.push(IMAGE_SUBDIRECTORY);
+                        toc_image_path.push(&filename);
+                        let cutout_image = image::ImageReader::open(toc_image_path)
+                            .unwrap()
+                            .decode()
+                            .unwrap();
+
+                        expected_path.push(&filename);
+                        let expected_image = image::ImageReader::open(expected_path.clone())
+                            .unwrap()
+                            .decode()
+                            .unwrap();
+                        expected_path.push("..");
+                        assert_eq!(expected_image, cutout_image);
+                    }
+                }
             }
         }
     }

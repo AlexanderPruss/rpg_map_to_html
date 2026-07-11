@@ -693,40 +693,78 @@ mod test {
     }
 
     mod fit_cutout_image_to_bounds {
+        use crate::PixelPoint;
+        use crate::image_handling::map_cutout::fit_cutout_image_to_bounds;
 
         mod invalid_input {
+            use crate::PixelPoint;
+            use crate::image_handling::map_cutout::fit_cutout_image_to_bounds;
+
             #[test]
             #[should_panic]
             fn panics_if_the_padded_image_is_too_small_to_fit_a_cutout_image() {
-                todo!()
+                let top_left_corner = PixelPoint { x: 0, y: 0 };
+                let cutout_image_size = PixelPoint { x: 100, y: 100 };
+                let padded_image_size = PixelPoint { x: 99, y: 99 };
+                fit_cutout_image_to_bounds(top_left_corner, &cutout_image_size, &padded_image_size);
             }
 
             #[test]
             #[should_panic]
             fn panics_if_the_point_is_right_of_the_image() {
-                todo!()
+                let top_left_corner = PixelPoint { x: 111, y: 0 };
+                let cutout_image_size = PixelPoint { x: 100, y: 100 };
+                let padded_image_size = PixelPoint { x: 110, y: 110 };
+                fit_cutout_image_to_bounds(top_left_corner, &cutout_image_size, &padded_image_size);
             }
 
             #[test]
             #[should_panic]
             fn panics_if_the_point_is_below_the_image() {
-                todo!()
+                let top_left_corner = PixelPoint { x: 50, y: 111 };
+                let cutout_image_size = PixelPoint { x: 100, y: 100 };
+                let padded_image_size = PixelPoint { x: 110, y: 110 };
+                fit_cutout_image_to_bounds(top_left_corner, &cutout_image_size, &padded_image_size);
             }
         }
 
         #[test]
         fn returns_the_point_unchanged_if_a_cutout_image_fits_there_already() {
-            todo!()
+            let top_left_corner = PixelPoint { x: 10, y: 10 };
+            let cutout_image_size = PixelPoint { x: 100, y: 100 };
+            let padded_image_size = PixelPoint { x: 110, y: 110 };
+            let expected = PixelPoint { x: 10, y: 10 };
+
+            assert_eq!(
+                expected,
+                fit_cutout_image_to_bounds(top_left_corner, &cutout_image_size, &padded_image_size)
+            );
         }
 
         #[test]
         fn shifts_points_up_and_left_to_allow_a_cutout_image_to_fit() {
-            todo!()
+            let top_left_corner = PixelPoint { x: 30, y: 30 };
+            let cutout_image_size = PixelPoint { x: 100, y: 100 };
+            let padded_image_size = PixelPoint { x: 110, y: 110 };
+            let expected = PixelPoint { x: 10, y: 10 };
+
+            assert_eq!(
+                expected,
+                fit_cutout_image_to_bounds(top_left_corner, &cutout_image_size, &padded_image_size)
+            );
         }
 
         #[test]
         fn shifts_points_down_and_right_to_allow_a_cutout_image_to_fit() {
-            todo!()
+            let top_left_corner = PixelPoint { x: -10, y: -30 };
+            let cutout_image_size = PixelPoint { x: 100, y: 100 };
+            let padded_image_size = PixelPoint { x: 110, y: 110 };
+            let expected = PixelPoint { x: 0, y: 0 };
+
+            assert_eq!(
+                expected,
+                fit_cutout_image_to_bounds(top_left_corner, &cutout_image_size, &padded_image_size)
+            );
         }
     }
 }
