@@ -1,25 +1,21 @@
-use crate::PixelPoint;
+use std::collections::HashMap;
+use crate::{PixelBox, PixelPoint};
 use crate::geometry::{Cell, CellMap};
 use crate::image_handling::empty_cell_detection::is_cell_empty;
 use crate::image_handling::image_config::{ImageHandling, SkipEmptyCells};
 use image::{DynamicImage, ImageBuffer, ImageFormat, Rgba};
 use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
+use crate::caching::ChangedImage;
 use crate::image_handling::IMAGE_SUBDIRECTORY;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct CutoutImage {
     pub coordinate: String,
     pub offset_from_original_image: PixelPoint,
     pub image_size: PixelPoint,
 }
 
-/// Cuts out the zoomed-in map images that are displayed on the details page of any given cell.
-///
-/// The map is padded to a minimum margin if needed in order to make the cutouts for cells on the edge
-/// look nicer.
-///
-/// The bounding polygon is drawn around each cell in its own cutout.
 pub fn save_cutout_images(
     target_directory: &PathBuf,
     cell_map: &CellMap,
@@ -28,6 +24,36 @@ pub fn save_cutout_images(
     skip_empty_cells: &SkipEmptyCells,
     image_handling: &ImageHandling,
 ) -> Vec<CutoutImage> {
+    save_cutout_images_with_cache(
+        target_directory,
+        cell_map,
+        original_image,
+        image_margins,
+        skip_empty_cells,
+        image_handling,
+        vec![],
+        &ChangedImage::AllNew
+    )
+}
+
+/// Cuts out the zoomed-in map images that are displayed on the details page of any given cell.
+///
+/// The map is padded to a minimum margin if needed in order to make the cutouts for cells on the edge
+/// look nicer.
+///
+/// The bounding polygon is drawn around each cell in its own cutout.
+pub fn save_cutout_images_with_cache(
+    target_directory: &PathBuf,
+    cell_map: &CellMap,
+    original_image: &DynamicImage,
+    image_margins: PixelPoint,
+    skip_empty_cells: &SkipEmptyCells,
+    image_handling: &ImageHandling,
+    cached_cutout_images: Vec<CutoutImage>,
+    changed_image: &ChangedImage
+) -> Vec<CutoutImage> {
+    let cached_images_by_coordinate : HashMap<String, CutoutImage> = cached_cutout_images.into_iter().map(|image| (image.coordinate.clone(), image)).collect();
+
     let empty_color = Rgba::from(skip_empty_cells.empty_color_rgba);
     let (padded_image, padding) = pad_image(
         original_image,
@@ -47,16 +73,46 @@ pub fn save_cutout_images(
                     &empty_color,
                 )
         })
-        .map(|(_coordinate, cell)| {
-            save_cutout_map_image(
-                &padded_image,
-                padding,
-                cell,
-                target_directory,
-                &image_handling,
-            )
+        .map(|(coordinate, cell)| {
+            match check_cache_hit(coordinate, &cached_images_by_coordinate, changed_image) {
+                None => save_cutout_map_image(
+                    &padded_image,
+                    padding,
+                    cell,
+                    target_directory,
+                    &image_handling,
+                ),
+                Some(cached) => cached
+            }
         })
         .collect()
+}
+
+/// Checks if we can use an image from the cache.
+///
+/// We use a cached image if
+/// * A cached image exists
+/// * The image is not brand new
+/// * If the image has changes, none of the change pixels overlap with the cached image
+fn check_cache_hit(
+    coordinate: &String,
+    cached_images_by_coordinate : &HashMap<String, CutoutImage>,
+    changed_image: &ChangedImage,
+) -> Option<CutoutImage> {
+    let cached_cutout_image = cached_images_by_coordinate.get(coordinate)?;
+    let changed_pixels =  match changed_image{
+        ChangedImage::NoChanges => return Some(cached_cutout_image.clone()),
+        ChangedImage::AllNew => return None,
+        ChangedImage::Changes { bounding_box } => bounding_box
+    };
+    let pixels_of_image = PixelBox{
+        top_left_corner: cached_cutout_image.offset_from_original_image,
+        bottom_right_corner: cached_cutout_image.offset_from_original_image + cached_cutout_image.image_size
+    };
+    if pixels_of_image.intersects(changed_pixels) {
+        return None
+    }
+    Some(cached_cutout_image.clone())
 }
 
 /// Ensures that the image has a margin of at least [minimum_margin], creating/extending the

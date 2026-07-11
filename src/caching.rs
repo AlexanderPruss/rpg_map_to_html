@@ -1,4 +1,4 @@
-use crate::caching::ChangedPixels::{AllNew, NoChanges};
+use crate::caching::ChangedImage::{AllNew, NoChanges};
 use crate::config::{Config, LAST_USED_CONFIG};
 use crate::geometry::CellMap;
 use crate::image_handling::map_cutout::CutoutImage;
@@ -11,11 +11,11 @@ pub struct CachedComputedObjects {
     pub cell_map: CellMap,
     pub table_of_contents_map_images: Vec<TableOfContentsMapImage>,
     pub cutout_images: Vec<CutoutImage>,
-    pub changed_pixel_box: ChangedPixels,
+    pub changed_image: ChangedImage,
 }
 
 /// Whether pixels of the map image have changed between two runs of the generator.
-pub enum ChangedPixels {
+pub enum ChangedImage {
     NoChanges,
     Changes { bounding_box: PixelBox },
     AllNew,
@@ -53,7 +53,7 @@ pub fn get_cached_objects(
         cell_map,
         table_of_contents_map_images,
         cutout_images,
-        changed_pixel_box: find_changed_pixels(map_image, &previous_image),
+        changed_image: find_changed_pixels(map_image, &previous_image),
     })
 }
 
@@ -87,7 +87,7 @@ pub fn persist_cached_objects(
 
 /// Returns a box bounding all pixels that have changed between the last two runs
 /// //TODO: Test please
-fn find_changed_pixels(map_image: &DynamicImage, previous_image: &DynamicImage) -> ChangedPixels {
+fn find_changed_pixels(map_image: &DynamicImage, previous_image: &DynamicImage) -> ChangedImage {
     if map_image.width() != previous_image.width() || map_image.height() != previous_image.height()
     {
         return AllNew;
@@ -132,6 +132,6 @@ fn find_changed_pixels(map_image: &DynamicImage, previous_image: &DynamicImage) 
     }
     match changed_pixel_bounding_box {
         None => NoChanges,
-        Some(bounding_box) => ChangedPixels::Changes { bounding_box },
+        Some(bounding_box) => ChangedImage::Changes { bounding_box },
     }
 }

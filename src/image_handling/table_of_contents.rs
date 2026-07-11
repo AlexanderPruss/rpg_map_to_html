@@ -1,10 +1,12 @@
+use crate::caching::{ ChangedImage};
 use crate::geometry::CellMap;
+use crate::image_handling::IMAGE_SUBDIRECTORY;
 use crate::{PixelBox, PixelPoint};
 use image::{DynamicImage, ImageFormat};
-use std::collections::HashSet;
-use std::path::{PathBuf};
 use serde::{Deserialize, Serialize};
-use crate::image_handling::IMAGE_SUBDIRECTORY;
+use std::collections::HashSet;
+use std::path::PathBuf;
+use std::vec::IntoIter;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct TableOfContentsMapImage {
@@ -14,16 +16,37 @@ pub struct TableOfContentsMapImage {
     pub coordinates_contained: HashSet<String>,
 }
 
-/// The start of the HTML document contains a table-of-contents in image form. The original map
-/// is presented, and all of its non-empty cells can be clicked on to navigate to that cell's page.
-///
-/// However, the original image might be too large to fit onto one page. If this is the case, the image
-/// is split up into smaller, overlapping images of identical size, and a page is drawn for each of these images.
+/// As [save_table_of_contents_map_images_with_cache], but without caching.
 pub fn save_table_of_contents_map_images(
     target_directory: &PathBuf,
     original_image: &DynamicImage,
     max_image_size: &PixelPoint,
+    cell_map: &CellMap
+) -> Vec<TableOfContentsMapImage> {
+    save_table_of_contents_map_images_with_cache(
+        target_directory,
+        original_image,
+        max_image_size,
+        cell_map,
+        vec![],
+        &ChangedImage::AllNew
+    )
+}
+
+/// The start of the HTML document contains a table-of-contents in image form. The original map
+/// is presented, and all of its non-empty cells can be clicked on to navigate to that cell's page.
+///
+/// However, the original image might be too large to fit onto one page. If this is the case, the image
+/// is split up into smaller, overlapping images of identical size, and a page is drawn for each of these images. //TODO: Test caching logic probs
+/// 
+/// If cached values are provided, the calculation prefers cached values when they are plausible.
+pub fn save_table_of_contents_map_images_with_cache(
+    target_directory: &PathBuf,
+    original_image: &DynamicImage,
+    max_image_size: &PixelPoint,
     cell_map: &CellMap,
+    cached_images: Vec<TableOfContentsMapImage>,
+    changed_image: &ChangedImage
 ) -> Vec<TableOfContentsMapImage> {
     if max_image_size.x <= 1 || max_image_size.y <= 1 {
         panic!("Max image sizes for table of contents images have to be larger than 1x1.")
@@ -44,6 +67,7 @@ pub fn save_table_of_contents_map_images(
     let mut image_directory = PathBuf::from(target_directory);
     image_directory.push(IMAGE_SUBDIRECTORY);
     let mut table_of_contents_images: Vec<TableOfContentsMapImage> = vec![];
+    let mut cached_images_iter = cached_images.into_iter();
     loop {
         let max_drawable = current_offset + *max_image_size;
         let x_maxed = max_drawable.x >= original_image.width() as i32;
@@ -57,24 +81,27 @@ pub fn save_table_of_contents_map_images(
             effective_offset.y = original_image.height() as i32 - saved_image_size.y;
         }
 
-        let coordinates_contained = filter_coordinates_contained(
-            cell_map,
-            PixelBox {
-                top_left_corner: effective_offset,
-                bottom_right_corner: effective_offset + *max_image_size,
-            },
-        );
-        table_of_contents_images.push(save(
-            &image_directory,
-            original_image,
-            format!(
-                "table_of_contents_{}_{}.png",
-                effective_offset.x, effective_offset.y
+        let coordinates_contained = filter_coordinates_contained(cell_map, PixelBox {
+            top_left_corner: effective_offset,
+            bottom_right_corner: effective_offset + *max_image_size,
+        });
+        let cache_hit =
+            check_and_advance_cache(&mut cached_images_iter, &changed_image);
+        let table_of_contents_image = match cache_hit {
+            None => save(
+                &image_directory,
+                original_image,
+                format!(
+                    "table_of_contents_{}_{}.png",
+                    effective_offset.x, effective_offset.y
+                ),
+                effective_offset,
+                saved_image_size,
+                coordinates_contained,
             ),
-            effective_offset,
-            saved_image_size,
-            coordinates_contained,
-        ));
+            Some(cached_image) => cached_image
+        };
+        table_of_contents_images.push(table_of_contents_image);
 
         //We're done once we reach the bottom-right corner.
         if x_maxed && y_maxed {
@@ -94,6 +121,32 @@ pub fn save_table_of_contents_map_images(
         }
     }
     table_of_contents_images
+}
+
+/// Checks if we can use an image from the cache, advancing the cache iterator. 
+/// 
+/// We use a cached image if
+/// * A cached image exists
+/// * The image is not brand new
+/// * If the image has changes, none of the change pixels overlap with the cached image
+fn check_and_advance_cache(
+    cached_table_of_contents_iter: &mut IntoIter<TableOfContentsMapImage>,
+    changed_image: &ChangedImage,
+) -> Option<TableOfContentsMapImage> {
+    let cached_table_of_contents_image = cached_table_of_contents_iter.next()?;
+    let changed_pixels =  match changed_image{
+        ChangedImage::NoChanges => return Some(cached_table_of_contents_image),
+        ChangedImage::AllNew => return None,
+        ChangedImage::Changes { bounding_box } => bounding_box
+    };
+    let pixels_of_image = PixelBox{
+        top_left_corner: cached_table_of_contents_image.offset,
+        bottom_right_corner: cached_table_of_contents_image.offset + cached_table_of_contents_image.size
+    };
+    if pixels_of_image.intersects(changed_pixels) {
+        return None
+    }
+    Some(cached_table_of_contents_image)
 }
 
 fn save(
@@ -142,15 +195,12 @@ mod test {
 
     mod save_table_of_contents_map_images {
         use crate::geometry::{BoundingPolygon, Cell, CellMap};
-        use crate::image_handling::table_of_contents::{
-            TableOfContentsMapImage, filter_coordinates_contained,
-            save_table_of_contents_map_images,
-        };
+        use crate::image_handling::IMAGE_SUBDIRECTORY;
+        use crate::image_handling::table_of_contents::{TableOfContentsMapImage, filter_coordinates_contained, save_table_of_contents_map_images_with_cache, save_table_of_contents_map_images};
         use crate::image_handling::test::fixtures::get_test_resources_path;
         use crate::{PixelBox, PixelPoint};
         use std::collections::HashMap;
         use std::path::PathBuf;
-        use crate::image_handling::IMAGE_SUBDIRECTORY;
 
         fn two_fifty_px_by_two_fifty_px_cell_map(upper_bound: PixelPoint) -> CellMap {
             let mut cells_by_coordinate: HashMap<String, Cell> = HashMap::new();
