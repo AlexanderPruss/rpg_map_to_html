@@ -34,7 +34,7 @@ impl Transform for ReflectOverXAxis {
             number_of_columns: geometry.number_of_columns,
             hexagon_height: geometry.hexagon_height,
             hexagon_width: geometry.hexagon_width,
-            filled_top_left_corner
+            filled_top_left_corner,
         }
     }
 }

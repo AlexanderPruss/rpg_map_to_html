@@ -130,7 +130,7 @@ pub fn parse_config(config_path: PathBuf) -> Option<Config> {
         serde_json::from_reader(BufReader::new(file.unwrap()));
     match config_result {
         Ok(config) => Some(config),
-        Err(_) => None
+        Err(_) => None,
     }
 }
 

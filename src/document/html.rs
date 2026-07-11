@@ -625,7 +625,6 @@ mod test {
         fn returns_none_if_the_next_header_is_not_a_section() {
             todo!()
         }
-
     }
 
     mod iterate_until_page_starts {
@@ -677,17 +676,17 @@ mod test {
     mod next_line_starts_with {
 
         #[test]
-        fn determines_that_the_iterator_is_at_eof(){
+        fn determines_that_the_iterator_is_at_eof() {
             todo!()
         }
 
         #[test]
-        fn determines_that_the_iterator_is_at_a_match_without_advancing_the_iterator(){
+        fn determines_that_the_iterator_is_at_a_match_without_advancing_the_iterator() {
             todo!()
         }
 
         #[test]
-        fn determines_that_the_iterator_is_not_at_a_match_without_advancing_the_iterator(){
+        fn determines_that_the_iterator_is_not_at_a_match_without_advancing_the_iterator() {
             todo!()
         }
     }
@@ -695,22 +694,22 @@ mod test {
     mod iterate_until_header_or_eof {
 
         #[test]
-        fn iterates_until_a_header_is_reached(){
+        fn iterates_until_a_header_is_reached() {
             todo!()
         }
 
         #[test]
-        fn iterates_until_eof_is_reached(){
+        fn iterates_until_eof_is_reached() {
             todo!()
         }
 
         #[test]
-        fn stops_immediately_if_the_next_line_is_already_a_header(){
+        fn stops_immediately_if_the_next_line_is_already_a_header() {
             todo!()
         }
 
         #[test]
-        fn stops_immediately_if_the_next_line_is_already_eof(){
+        fn stops_immediately_if_the_next_line_is_already_eof() {
             todo!()
         }
     }

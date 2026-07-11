@@ -1,13 +1,13 @@
+use crate::geometry::Geometry::Hexagons;
 use crate::geometry::hexagons::FilledTopLeftCorner::{EMPTY, FILLED};
 use crate::geometry::hexagons::FlatSides::FlatVerticalSides;
 use crate::geometry::hexagons::standardized::StandardizedHexCellMap;
 use crate::geometry::hexagons::transform::InvertibleStandardizedGeometry;
 use crate::geometry::{BoundingPolygon, Cell, CellMap, ComputesCellMap, Geometry};
-use crate::{read_input, read_input_until_valid_option, PixelBox, PixelPoint};
+use crate::{PixelBox, PixelPoint, read_input, read_input_until_valid_option};
 use FlatSides::FlatHorizontalSides;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use crate::geometry::Geometry::Hexagons;
 
 mod transform;
 
@@ -232,17 +232,22 @@ impl ComputesCellMap for HexagonGeometryDefinition {
 
 pub fn generate_geometry_interactively() -> Geometry {
     let mut input = String::new();
-    println!("Does the hex map have flat vertical sides or flat horizontal sides? Vertical/Horizontal (default: Horizontal)");
-    let flat_sides = match read_input_until_valid_option(&mut input, vec!["vertical", "horizontal"], "horizontal").as_str() {
-        "vertical" => {
-            FlatVerticalSides
-        }
-        _ => {
-            FlatHorizontalSides
-        }
+    println!(
+        "Does the hex map have flat vertical sides or flat horizontal sides? Vertical/Horizontal (default: Horizontal)"
+    );
+    let flat_sides = match read_input_until_valid_option(
+        &mut input,
+        vec!["vertical", "horizontal"],
+        "horizontal",
+    )
+    .as_str()
+    {
+        "vertical" => FlatVerticalSides,
+        _ => FlatHorizontalSides,
     };
 
-    println!(r"
+    println!(
+        r"
 Filled:
 
    ..........
@@ -269,33 +274,32 @@ Empty:
    ..........
 
 Is the top-left corner of the hex map filled or empty? Filled/Empty (default: Filled)
-    ");
-    let filled_top_left_corner = match read_input_until_valid_option(&mut input, vec!["filled", "empty"], "filled").as_str() {
-        "filled" => {
-            FILLED
-        }
-        _ => {
-            EMPTY
-        }
-    };
+    "
+    );
+    let filled_top_left_corner =
+        match read_input_until_valid_option(&mut input, vec!["filled", "empty"], "filled").as_str()
+        {
+            "filled" => FILLED,
+            _ => EMPTY,
+        };
 
     println!("Number of rows: ");
-    let number_of_rows : u8 = read_input(&mut input).parse().unwrap();
+    let number_of_rows: u8 = read_input(&mut input).parse().unwrap();
     println!("Number of columns: ");
-    let number_of_columns : u8 = read_input(&mut input).parse().unwrap();
+    let number_of_columns: u8 = read_input(&mut input).parse().unwrap();
     println!("Hexagon height (float, any units): (ex: 10.0)");
-    let hexagon_height : f32 = read_input(&mut input).parse().unwrap();
+    let hexagon_height: f32 = read_input(&mut input).parse().unwrap();
     println!("Hexagon width (float, any units): (ex: 20.0)");
-    let hexagon_width : f32 = read_input(&mut input).parse().unwrap();
+    let hexagon_width: f32 = read_input(&mut input).parse().unwrap();
     Hexagons {
-        definition: HexagonGeometryDefinition{
+        definition: HexagonGeometryDefinition {
             flat_sides,
             filled_top_left_corner,
             number_of_rows,
             number_of_columns,
             hexagon_height,
             hexagon_width,
-        }
+        },
     }
 }
 

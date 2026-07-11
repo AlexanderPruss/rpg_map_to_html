@@ -1,15 +1,13 @@
 use crate::PixelPoint;
-use crate::geometry::{
-    BoundingPolygon,  persist_cell_map_as_geometry,
-};
+use crate::geometry::BoundingPolygon;
 use crate::image_handling::map_cutout::CutoutImage;
 use crate::image_handling::table_of_contents::TableOfContentsMapImage;
-use image::{DynamicImage,  Rgba};
+use image::{DynamicImage, Rgba};
 use imageproc::drawing::draw_line_segment_mut;
 use std::fs::File;
 use std::io::{BufReader, Write};
 use std::ops::Add;
-use std::path::{ PathBuf};
+use std::path::PathBuf;
 
 pub mod image_config;
 
@@ -156,12 +154,12 @@ mod test {
     }
 
     mod persist_and_load_computed_images {
+        use crate::PixelPoint;
         use crate::image_handling::map_cutout::CutoutImage;
         use crate::image_handling::table_of_contents::TableOfContentsMapImage;
         use crate::image_handling::test::fixtures::FourByFourImages;
         use crate::image_handling::{load_persisted_image_metadata, persist_image_metadata};
-        use crate::{ PixelPoint};
-        use std::collections::{ HashSet};
+        use std::collections::HashSet;
         use std::path::PathBuf;
 
         #[test]

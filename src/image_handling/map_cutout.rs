@@ -405,16 +405,10 @@ mod test {
                 fs::read_dir(&target_directory)
                     .unwrap()
                     .filter(|file| {
-                        let filename = file.as_ref()
-                            .unwrap()
-                            .file_name();
-                        let coordinate_option = filename
-                            .to_str()
-                            .unwrap()
-                            .strip_suffix(".png");
-                        coordinate_option.is_some() && cached_coordinates.contains(
-                            coordinate_option.unwrap()
-                        )
+                        let filename = file.as_ref().unwrap().file_name();
+                        let coordinate_option = filename.to_str().unwrap().strip_suffix(".png");
+                        coordinate_option.is_some()
+                            && cached_coordinates.contains(coordinate_option.unwrap())
                     })
                     .for_each(|file| {
                         panic!(

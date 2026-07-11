@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use crate::caching::ChangedImage::{AllNew, NoChanges};
 use crate::config::{Config, LAST_USED_CONFIG};
 use crate::geometry::CellMap;
@@ -6,6 +5,7 @@ use crate::image_handling::map_cutout::CutoutImage;
 use crate::image_handling::table_of_contents::TableOfContentsMapImage;
 use crate::{PixelBox, PixelPoint, config, geometry, image_handling};
 use image::{DynamicImage, GenericImageView};
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 /// Contains valid cached objects; valid meaning that the caching mechanism has already verified
@@ -13,7 +13,7 @@ use std::path::PathBuf;
 pub struct CachedComputedObjects {
     pub cell_map: CellMap,
     pub table_of_contents_map_images_by_filename: HashMap<String, TableOfContentsMapImage>,
-    pub cutout_images_by_coordinate: HashMap<String, CutoutImage>
+    pub cutout_images_by_coordinate: HashMap<String, CutoutImage>,
 }
 
 /// Whether pixels of the map image have changed between two runs of the generator.
@@ -54,33 +54,30 @@ pub fn get_cached_objects(
     let cell_map = geometry::load_persisted_cell_map(&previous_config.target_directory)?;
     Some(CachedComputedObjects {
         cell_map,
-        table_of_contents_map_images_by_filename: table_of_contents_map_images.into_iter().filter(
-            |cached|
-                match &changed_pixel_box {
-                    NoChanges => true,
-                    ChangedImage::Changes { bounding_box } => !bounding_box.intersects(&PixelBox{
-                        top_left_corner: cached.offset,
-                        bottom_right_corner: cached.offset + cached.size
-                    }),
-                    AllNew => panic!("Should never return cached values if the image is all new.")
-                }
-        ).map( |cached|
-            (cached.filename.clone(), cached)
-        ).collect(),
-        cutout_images_by_coordinate: cutout_images.into_iter().filter(
-            |cached|
-                match &changed_pixel_box {
-                    NoChanges => true,
-                    ChangedImage::Changes { bounding_box } => !bounding_box.intersects(&PixelBox {
-                        top_left_corner: cached.offset_from_original_image,
-                        bottom_right_corner: cached.offset_from_original_image
-                            + cached.image_size,
-                    }),
-                    AllNew => panic!("Should never return cached values if the image is all new.")
-                }
-        ).map( |cached|
-            (cached.coordinate.clone(), cached)
-        ).collect()
+        table_of_contents_map_images_by_filename: table_of_contents_map_images
+            .into_iter()
+            .filter(|cached| match &changed_pixel_box {
+                NoChanges => true,
+                ChangedImage::Changes { bounding_box } => !bounding_box.intersects(&PixelBox {
+                    top_left_corner: cached.offset,
+                    bottom_right_corner: cached.offset + cached.size,
+                }),
+                AllNew => panic!("Should never return cached values if the image is all new."),
+            })
+            .map(|cached| (cached.filename.clone(), cached))
+            .collect(),
+        cutout_images_by_coordinate: cutout_images
+            .into_iter()
+            .filter(|cached| match &changed_pixel_box {
+                NoChanges => true,
+                ChangedImage::Changes { bounding_box } => !bounding_box.intersects(&PixelBox {
+                    top_left_corner: cached.offset_from_original_image,
+                    bottom_right_corner: cached.offset_from_original_image + cached.image_size,
+                }),
+                AllNew => panic!("Should never return cached values if the image is all new."),
+            })
+            .map(|cached| (cached.coordinate.clone(), cached))
+            .collect(),
     })
 }
 
@@ -161,15 +158,20 @@ fn find_changed_pixels(map_image: &DynamicImage, previous_image: &DynamicImage) 
     match changed_pixel_bounding_box {
         None => NoChanges,
         Some(bounding_box) => {
-            if (bounding_box == PixelBox{
-                top_left_corner: PixelPoint {x:0, y:0},
-                bottom_right_corner: PixelPoint {x: map_image.width() as i32, y: map_image.height() as i32 },
-            }) {
+            if (bounding_box
+                == PixelBox {
+                    top_left_corner: PixelPoint { x: 0, y: 0 },
+                    bottom_right_corner: PixelPoint {
+                        x: map_image.width() as i32,
+                        y: map_image.height() as i32,
+                    },
+                })
+            {
                 AllNew
             } else {
                 ChangedImage::Changes { bounding_box }
             }
-        },
+        }
     }
 }
 
@@ -187,26 +189,26 @@ mod test {
     mod get_cached_objects {
 
         #[test]
-        fn returns_none_if_the_config_has_changed(){
+        fn returns_none_if_the_config_has_changed() {
             todo!()
         }
 
         #[test]
-        fn returns_none_if_the_config_cache_does_not_exist(){
+        fn returns_none_if_the_config_cache_does_not_exist() {
             todo!()
         }
 
         #[test]
-        fn returns_none_if_the_image_has_changed_completely(){
+        fn returns_none_if_the_image_has_changed_completely() {
             todo!()
         }
         #[test]
-        fn returns_all_cached_values_if_the_image_is_unchanged(){
+        fn returns_all_cached_values_if_the_image_is_unchanged() {
             todo!()
         }
 
         #[test]
-        fn filters_out_cached_values_intersecting_changed_pixels(){
+        fn filters_out_cached_values_intersecting_changed_pixels() {
             todo!()
         }
     }

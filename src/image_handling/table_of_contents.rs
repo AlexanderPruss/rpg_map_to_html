@@ -19,14 +19,14 @@ pub fn save_table_of_contents_map_images(
     target_directory: &PathBuf,
     original_image: &DynamicImage,
     max_image_size: &PixelPoint,
-    cell_map: &CellMap
+    cell_map: &CellMap,
 ) -> Vec<TableOfContentsMapImage> {
     save_table_of_contents_map_images_with_cache(
         target_directory,
         original_image,
         max_image_size,
         cell_map,
-        &HashMap::new()
+        &HashMap::new(),
     )
 }
 
@@ -76,10 +76,13 @@ pub fn save_table_of_contents_map_images_with_cache(
             effective_offset.y = original_image.height() as i32 - saved_image_size.y;
         }
 
-        let coordinates_contained = filter_coordinates_contained(cell_map, PixelBox {
-            top_left_corner: effective_offset,
-            bottom_right_corner: effective_offset + *max_image_size,
-        });
+        let coordinates_contained = filter_coordinates_contained(
+            cell_map,
+            PixelBox {
+                top_left_corner: effective_offset,
+                bottom_right_corner: effective_offset + *max_image_size,
+            },
+        );
         let filename = format!(
             "table_of_contents_{}_{}.png",
             effective_offset.x, effective_offset.y
@@ -94,7 +97,7 @@ pub fn save_table_of_contents_map_images_with_cache(
                 saved_image_size,
                 coordinates_contained,
             ),
-            Some(cached_image) => cached_image.clone()
+            Some(cached_image) => cached_image.clone(),
         };
         table_of_contents_images.push(table_of_contents_image);
 
@@ -165,7 +168,10 @@ mod test {
     mod save_table_of_contents_map_images {
         use crate::geometry::{BoundingPolygon, Cell, CellMap};
         use crate::image_handling::IMAGE_SUBDIRECTORY;
-        use crate::image_handling::table_of_contents::{TableOfContentsMapImage, filter_coordinates_contained, save_table_of_contents_map_images_with_cache, save_table_of_contents_map_images};
+        use crate::image_handling::table_of_contents::{
+            TableOfContentsMapImage, filter_coordinates_contained,
+            save_table_of_contents_map_images, save_table_of_contents_map_images_with_cache,
+        };
         use crate::image_handling::test::fixtures::get_test_resources_path;
         use crate::{PixelBox, PixelPoint};
         use std::collections::HashMap;

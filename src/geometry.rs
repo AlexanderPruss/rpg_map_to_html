@@ -1,11 +1,10 @@
-use crate::{read_input, read_input_until_valid_option, PixelBox, PixelPoint};
+use crate::geometry::Geometry::Hexagons;
+use crate::{PixelBox, PixelPoint, read_input, read_input_until_valid_option};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Write};
-use std::path::{ PathBuf};
-use crate::geometry::Geometry::Hexagons;
+use std::path::PathBuf;
 
 pub mod hexagons;
 
@@ -27,7 +26,8 @@ pub enum Geometry {
 }
 
 pub trait ComputesCellMap {
-    fn compute_cell_map<'map>(&self, map_dimensions: PixelPoint, map_margin: PixelPoint) -> CellMap;
+    fn compute_cell_map<'map>(&self, map_dimensions: PixelPoint, map_margin: PixelPoint)
+    -> CellMap;
 }
 
 impl ComputesCellMap for Geometry {
@@ -80,9 +80,12 @@ pub fn load_persisted_cell_map(target_directory: &PathBuf) -> Option<CellMap> {
     let mut geometry_path = PathBuf::from(target_directory);
     geometry_path.push(CACHED_GEOMETRY_FILE);
     let geometry_file = File::open(geometry_path);
-    if geometry_file.is_err() {return None};
+    if geometry_file.is_err() {
+        return None;
+    };
 
-    let geometry_result: serde_json::Result<Geometry> = serde_json::from_reader(BufReader::new(geometry_file.unwrap()));
+    let geometry_result: serde_json::Result<Geometry> =
+        serde_json::from_reader(BufReader::new(geometry_file.unwrap()));
     if geometry_result.is_err() {
         return None;
     }
@@ -91,7 +94,7 @@ pub fn load_persisted_cell_map(target_directory: &PathBuf) -> Option<CellMap> {
             //We expect a generic geometry, but don't panic; just return None and let it be recomputed
             None
         }
-        Geometry::Generic { cell_map } => Some(cell_map)
+        Geometry::Generic { cell_map } => Some(cell_map),
     }
 }
 
@@ -198,13 +201,11 @@ impl BoundingPolygon {
 pub(crate) fn generate_geometry_interactively() -> Geometry {
     println!("Geometry type: Generic/Hexagons (Default: Hexagons)");
     let mut input = String::new();
-    match read_input_until_valid_option(&mut input, vec!["hexagons", "generic"], "hexagons").as_str() {
-        "hexagons" => {
-            hexagons::generate_geometry_interactively()
-        } 
-        _ => {
-            generate_generic_geometry_interactively()
-        }
+    match read_input_until_valid_option(&mut input, vec!["hexagons", "generic"], "hexagons")
+        .as_str()
+    {
+        "hexagons" => hexagons::generate_geometry_interactively(),
+        _ => generate_generic_geometry_interactively(),
     }
 }
 
@@ -222,7 +223,9 @@ mod test {
 
     mod persist_and_load_cell_map {
         use crate::document::test::fixtures::assert_files_equal;
-        use crate::geometry::{BoundingPolygon, Cell, CellMap, persist_cell_map_as_geometry, load_persisted_cell_map};
+        use crate::geometry::{
+            BoundingPolygon, Cell, CellMap, load_persisted_cell_map, persist_cell_map_as_geometry,
+        };
         use crate::{PixelBox, PixelPoint};
         use std::collections::{HashMap, HashSet};
         use std::path::PathBuf;
@@ -524,4 +527,3 @@ mod test {
         }
     }
 }
-

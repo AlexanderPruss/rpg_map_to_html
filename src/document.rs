@@ -523,7 +523,6 @@ pub mod test {
 
         #[test]
         fn identifies_all_templates_and_their_whitespace_prefixes() {
-
             let all_templates = r"
 1. [[TABLE_OF_CONTENTS]]
 2.  [[TABLE_OF_CONTENTS_POLYGON_LINKS]]
@@ -536,38 +535,38 @@ pub mod test {
 
                 ";
             let expected = vec![
-              TemplateMatch{
-                  leading_whitespace: " ".to_string(),
-                  template: Template::TableOfContents,
-              },
-              TemplateMatch{
-                  leading_whitespace: "  ".to_string(),
-                  template: Template::TableOfContentsPolygonLinks,
-              },
-              TemplateMatch{
-                  leading_whitespace: "   ".to_string(),
-                  template: Template::ZoomedInMapPolygonLinks,
-              },
-              TemplateMatch{
-                  leading_whitespace: "    ".to_string(),
-                  template: Template::CellPages,
-              },
-              TemplateMatch{
-                  leading_whitespace: "     ".to_string(),
-                  template: Template::LeftColumn,
-              },
-              TemplateMatch{
-                  leading_whitespace: "      ".to_string(),
-                  template: Template::RightColumn,
-              },
-              TemplateMatch{
-                  leading_whitespace: "       ".to_string(),
-                  template: Template::Sections,
-              },
-              TemplateMatch{
-                  leading_whitespace: "        ".to_string(),
-                  template: Template::ExtraRightColumn,
-              }
+                TemplateMatch {
+                    leading_whitespace: " ".to_string(),
+                    template: Template::TableOfContents,
+                },
+                TemplateMatch {
+                    leading_whitespace: "  ".to_string(),
+                    template: Template::TableOfContentsPolygonLinks,
+                },
+                TemplateMatch {
+                    leading_whitespace: "   ".to_string(),
+                    template: Template::ZoomedInMapPolygonLinks,
+                },
+                TemplateMatch {
+                    leading_whitespace: "    ".to_string(),
+                    template: Template::CellPages,
+                },
+                TemplateMatch {
+                    leading_whitespace: "     ".to_string(),
+                    template: Template::LeftColumn,
+                },
+                TemplateMatch {
+                    leading_whitespace: "      ".to_string(),
+                    template: Template::RightColumn,
+                },
+                TemplateMatch {
+                    leading_whitespace: "       ".to_string(),
+                    template: Template::Sections,
+                },
+                TemplateMatch {
+                    leading_whitespace: "        ".to_string(),
+                    template: Template::ExtraRightColumn,
+                },
             ];
             let title = "abc".to_string();
             let target = PathBuf::from("target");
@@ -603,10 +602,7 @@ pub mod test {
                 cutout_images,
             );
             let line_without_templates = "Just vibing in a dungeon";
-            assert_eq!(
-                0,
-                context.template_matches(line_without_templates).len()
-            );
+            assert_eq!(0, context.template_matches(line_without_templates).len());
         }
 
         #[test]
@@ -630,5 +626,4 @@ pub mod test {
             context.template_matches(line_without_tokens);
         }
     }
-
 }
