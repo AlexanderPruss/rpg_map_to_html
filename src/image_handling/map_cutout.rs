@@ -1,9 +1,8 @@
-use crate::caching::ChangedImage;
+use crate::PixelPoint;
 use crate::geometry::{Cell, CellMap};
 use crate::image_handling::IMAGE_SUBDIRECTORY;
 use crate::image_handling::empty_cell_detection::is_cell_empty;
 use crate::image_handling::image_config::{ImageHandling, SkipEmptyCells};
-use crate::{PixelBox, PixelPoint};
 use image::{DynamicImage, ImageBuffer, ImageFormat, Rgba};
 use serde::{Deserialize, Serialize};
 use std::cmp::max;
@@ -32,8 +31,7 @@ pub fn save_cutout_images(
         image_margins,
         skip_empty_cells,
         image_handling,
-        vec![],
-        &ChangedImage::AllNew,
+        &HashMap::new(),
     )
 }
 
@@ -50,14 +48,8 @@ pub fn save_cutout_images_with_cache(
     image_margins: PixelPoint,
     skip_empty_cells: &SkipEmptyCells,
     image_handling: &ImageHandling,
-    cached_cutout_images: Vec<CutoutImage>,
-    changed_image: &ChangedImage,
+    cached_by_coordinate: &HashMap<String, CutoutImage>,
 ) -> Vec<CutoutImage> {
-    let cached_images_by_coordinate: HashMap<String, CutoutImage> = cached_cutout_images
-        .into_iter()
-        .map(|image| (image.coordinate.clone(), image))
-        .collect();
-
     let empty_color = Rgba::from(skip_empty_cells.empty_color_rgba);
     let (padded_image, padding) = pad_image(
         original_image,
@@ -79,8 +71,8 @@ pub fn save_cutout_images_with_cache(
                     &empty_color,
                 )
         })
-        .map(|(coordinate, cell)| {
-            match check_cache_hit(coordinate, &cached_images_by_coordinate, changed_image) {
+        .map(
+            |(coordinate, cell)| match cached_by_coordinate.get(coordinate) {
                 None => save_cutout_map_image(
                     &padded_image,
                     padding,
@@ -88,38 +80,10 @@ pub fn save_cutout_images_with_cache(
                     target_directory,
                     &image_handling,
                 ),
-                Some(cached) => cached,
-            }
-        })
+                Some(cached) => cached.clone(),
+            },
+        )
         .collect()
-}
-
-/// Checks if we can use an image from the cache.
-///
-/// We use a cached image if
-/// * A cached image exists
-/// * The image is not brand new
-/// * If the image has changes, none of the change pixels overlap with the cached image
-fn check_cache_hit(
-    coordinate: &String,
-    cached_images_by_coordinate: &HashMap<String, CutoutImage>,
-    changed_image: &ChangedImage,
-) -> Option<CutoutImage> {
-    let cached_cutout_image = cached_images_by_coordinate.get(coordinate)?;
-    let changed_pixels = match changed_image {
-        ChangedImage::NoChanges => return Some(cached_cutout_image.clone()),
-        ChangedImage::AllNew => return None,
-        ChangedImage::Changes { bounding_box } => bounding_box,
-    };
-    let pixels_of_image = PixelBox {
-        top_left_corner: cached_cutout_image.offset_from_original_image,
-        bottom_right_corner: cached_cutout_image.offset_from_original_image
-            + cached_cutout_image.image_size,
-    };
-    if pixels_of_image.intersects(changed_pixels) {
-        return None;
-    }
-    Some(cached_cutout_image.clone())
 }
 
 /// Ensures that the image has a margin of at least [minimum_margin], creating/extending the
@@ -145,10 +109,10 @@ fn pad_image(
         y: image.height() as i32,
     } + additional_padding_needed;
     if padded_image_size.x < zoomed_in_map_size.x {
-        additional_padding_needed.x = (zoomed_in_map_size.x - image.width() as i32)/2 + 1;
+        additional_padding_needed.x = (zoomed_in_map_size.x - image.width() as i32) / 2 + 1;
     }
     if padded_image_size.y < zoomed_in_map_size.y {
-        additional_padding_needed.y = (zoomed_in_map_size.y - image.height() as i32)/2 + 1;
+        additional_padding_needed.y = (zoomed_in_map_size.y - image.height() as i32) / 2 + 1;
     }
 
     if (additional_padding_needed == PixelPoint { x: 0, y: 0 }) {
@@ -211,7 +175,7 @@ fn save_cutout_map_image(
     //if the cell stays centered. If this is the case, adjust cutout so that it fits inside the image,
     //which has the effect of no longer centering the cutout on the cell.
     let original_top_left_corner = cutout_top_left_corner;
-    cutout_top_left_corner = fit_to_bounds(
+    cutout_top_left_corner = fit_cutout_image_to_bounds(
         cutout_top_left_corner,
         &image_handling.zoomed_in_map_image_size,
         &padded_image_size,
@@ -250,28 +214,35 @@ fn save_cutout_map_image(
 /// fits inside the containing image.
 ///
 /// Panics if fitting to bounds is not possible.
-fn fit_to_bounds(
-    mut point: PixelPoint,
+fn fit_cutout_image_to_bounds(
+    mut top_left_corner: PixelPoint,
     cutout_image_size: &PixelPoint,
     padded_image_size: &PixelPoint,
 ) -> PixelPoint {
-    if point.x < 0 {
-        point.x = 0;
-    }
-    if point.y < 0 {
-        point.y = 0;
+    if top_left_corner.x > padded_image_size.x || top_left_corner.y > padded_image_size.y {
+        panic!("Tried to start a cutout image on a point outside of the padded image.");
     }
     if padded_image_size.x < cutout_image_size.x || padded_image_size.y < cutout_image_size.y {
         panic!("The padded map image was somehow smaller than the cutout image size");
     }
-    let distance_to_positive_boundary = *padded_image_size - *cutout_image_size - point;
-    if distance_to_positive_boundary.x < 0 {
-        point.x += distance_to_positive_boundary.x;
+
+    //It's possible a cutout image starting on the cell would go tou of the bounds to the top-left.
+    //If that's the case, just scootch it forward.
+    if top_left_corner.x < 0 {
+        top_left_corner.x = 0;
     }
-    if distance_to_positive_boundary.y < 0 {
-        point.y += distance_to_positive_boundary.y;
+    if top_left_corner.y < 0 {
+        top_left_corner.y = 0;
     }
-    point
+    //It's possible a cutout image starting on the point would go out of bounds to the bottom-right.
+    //If that's the case, set it back the appropriate distance.
+    if top_left_corner.x + cutout_image_size.x > padded_image_size.x {
+        top_left_corner.x = padded_image_size.x - cutout_image_size.x;
+    }
+    if top_left_corner.y + cutout_image_size.y > padded_image_size.y {
+        top_left_corner.y = padded_image_size.y - cutout_image_size.y;
+    }
+    top_left_corner
 }
 
 #[cfg(test)]
@@ -348,6 +319,138 @@ mod test {
                 assert_eq!(expected_image, cutout_image);
             });
         }
+
+        mod caching {
+            use super::*;
+            use crate::image_handling::map_cutout::{CutoutImage, save_cutout_images_with_cache};
+            use std::collections::{HashMap, HashSet};
+            use std::fs;
+            #[test]
+            fn only_saves_images_if_no_cached_image_is_present() {
+                let image_handling = ImageHandling {
+                    zoomed_in_map_image_size: PixelPoint { x: 175, y: 175 },
+                    max_table_of_contents_map_image_size: PixelPoint { x: 0, y: 0 },
+                    minimum_map_margin: PixelPoint { x: 20, y: 20 },
+                    cell_outline_color: Rgba::from([255u8, 0, 0, 255]),
+                };
+                let skip_empty_cells = SkipEmptyCells {
+                    skipping_enabled: true,
+                    polygon_multiplier: 0.3,
+                    empty_color_rgba: Rgba::from([255u8, 255, 255, 255]),
+                };
+                let image = FourByFourImages::Standardized.load_image();
+                let snapshot = FourByFour::Standardized.to_snapshot();
+                let cached_coordinates =
+                    HashSet::from(["001.002".to_string(), "003.000".to_string()]);
+                let cached_by_coordinate: HashMap<String, CutoutImage> = HashMap::from([
+                    (
+                        "001.002".to_string(),
+                        CutoutImage {
+                            coordinate: "001.002".to_string(),
+                            offset_from_original_image: PixelPoint { x: 1000, y: 1000 },
+                            image_size: PixelPoint { x: 10001, y: 1001 },
+                        },
+                    ),
+                    (
+                        "003.000".to_string(),
+                        CutoutImage {
+                            coordinate: "003.000".to_string(),
+                            offset_from_original_image: PixelPoint { x: 2000, y: 2000 },
+                            image_size: PixelPoint { x: 20001, y: 2001 },
+                        },
+                    ),
+                ]);
+
+                let mut target_directory = FourByFourImages::Standardized.get_test_cases_path();
+                target_directory.push("cutout_images/cached_result");
+                //Delete any pngs floating around the target directory
+                fs::read_dir(&target_directory)
+                    .unwrap()
+                    .filter(|file| {
+                        file.as_ref()
+                            .unwrap()
+                            .file_name()
+                            .to_str()
+                            .unwrap()
+                            .ends_with(".png")
+                    })
+                    .for_each(|file| fs::remove_file(file.unwrap().path()).unwrap());
+                let mut expected_path = FourByFourImages::Standardized.get_test_cases_path();
+                expected_path.push("cutout_images/expected");
+
+                let cutout_images = save_cutout_images_with_cache(
+                    &target_directory,
+                    &snapshot.cell_map,
+                    &image,
+                    PixelPoint { x: 0, y: 0 },
+                    &skip_empty_cells,
+                    &image_handling,
+                    &cached_by_coordinate,
+                );
+
+                let filled_coordinates = HashSet::from([
+                    "000.002".to_string(),
+                    "000.003".to_string(),
+                    "001.001".to_string(),
+                    "001.002".to_string(),
+                    "001.003".to_string(),
+                    "002.000".to_string(),
+                    "002.001".to_string(),
+                    "002.002".to_string(),
+                    "003.000".to_string(),
+                ]);
+                assert_eq!(filled_coordinates.len(), cutout_images.len());
+
+                //Ensure no cached files were created.
+                fs::read_dir(&target_directory)
+                    .unwrap()
+                    .filter(|file| {
+                        let filename = file.as_ref()
+                            .unwrap()
+                            .file_name();
+                        let coordinate_option = filename
+                            .to_str()
+                            .unwrap()
+                            .strip_suffix(".png");
+                        coordinate_option.is_some() && cached_coordinates.contains(
+                            coordinate_option.unwrap()
+                        )
+                    })
+                    .for_each(|file| {
+                        panic!(
+                            "The file {} should not exist, it should have been cached",
+                            file.unwrap().file_name().to_str().unwrap()
+                        )
+                    });
+                filled_coordinates.iter().for_each(|coordinate| {
+                    if cached_coordinates.contains(coordinate) {
+                        let computed = cutout_images
+                            .iter()
+                            .find(|cutout| cutout.coordinate == *coordinate)
+                            .unwrap();
+                        let expected = cached_by_coordinate.get(coordinate).unwrap();
+                        assert_eq!(expected, computed)
+                    } else {
+                        let mut cutout_image_path = PathBuf::from(&target_directory);
+                        cutout_image_path.push(IMAGE_SUBDIRECTORY);
+                        cutout_image_path.push(coordinate.clone() + ".png");
+                        let cutout_image = image::ImageReader::open(cutout_image_path)
+                            .unwrap()
+                            .decode()
+                            .unwrap();
+                        let mut expected_filename = coordinate.clone();
+                        expected_filename.push_str(".png");
+                        expected_path.push(expected_filename);
+                        let expected_image = image::ImageReader::open(expected_path.clone())
+                            .unwrap()
+                            .decode()
+                            .unwrap();
+                        expected_path.push("..");
+                        assert_eq!(expected_image, cutout_image);
+                    }
+                });
+            }
+        }
     }
 
     mod pad_image {
@@ -364,8 +467,13 @@ mod test {
             let white = Rgba::from([0u8, 0, 0, 255]);
             let zoomed_in_map_size = PixelPoint { x: 100, y: 100 };
 
-            let (padded_image, added_margin) =
-                pad_image(&image, current_margin, minimum_margin,zoomed_in_map_size, white);
+            let (padded_image, added_margin) = pad_image(
+                &image,
+                current_margin,
+                minimum_margin,
+                zoomed_in_map_size,
+                white,
+            );
 
             assert_eq!(None, padded_image);
             assert_eq!(PixelPoint { x: 0, y: 0 }, added_margin);
@@ -385,8 +493,13 @@ mod test {
                 .decode()
                 .unwrap();
 
-            let (padded_image, added_margin) =
-                pad_image(&image, current_margin, minimum_margin, zoomed_in_map_size, green);
+            let (padded_image, added_margin) = pad_image(
+                &image,
+                current_margin,
+                minimum_margin,
+                zoomed_in_map_size,
+                green,
+            );
             assert_eq!(expected, padded_image.unwrap());
             assert_eq!(PixelPoint { x: 88, y: 138 }, added_margin);
         }
@@ -405,8 +518,13 @@ mod test {
                 .decode()
                 .unwrap();
 
-            let (padded_image, added_margin) =
-                pad_image(&image, current_margin, minimum_margin, zoomed_in_map_size, green);
+            let (padded_image, added_margin) = pad_image(
+                &image,
+                current_margin,
+                minimum_margin,
+                zoomed_in_map_size,
+                green,
+            );
 
             assert_eq!(expected, padded_image.unwrap());
             assert_eq!(PixelPoint { x: 10, y: 10 }, added_margin);
@@ -464,8 +582,13 @@ mod test {
                 .decode()
                 .unwrap();
 
-            let cutout_image =
-                save_cutout_map_image(&padded_image.unwrap(), padding, cell, &target_directory, &config);
+            let cutout_image = save_cutout_map_image(
+                &padded_image.unwrap(),
+                padding,
+                cell,
+                &target_directory,
+                &config,
+            );
             let mut cutout_image_path = PathBuf::from(target_directory);
             cutout_image_path.push(IMAGE_SUBDIRECTORY);
             cutout_image_path.push(cell.coordinate.clone() + ".png");
@@ -575,8 +698,41 @@ mod test {
         }
     }
 
-    mod fit_to_bounds {
+    mod fit_cutout_image_to_bounds {
 
-        //TODO - new tests here
+        mod invalid_input {
+            #[test]
+            #[should_panic]
+            fn panics_if_the_padded_image_is_too_small_to_fit_a_cutout_image() {
+                todo!()
+            }
+
+            #[test]
+            #[should_panic]
+            fn panics_if_the_point_is_right_of_the_image() {
+                todo!()
+            }
+
+            #[test]
+            #[should_panic]
+            fn panics_if_the_point_is_below_the_image() {
+                todo!()
+            }
+        }
+
+        #[test]
+        fn returns_the_point_unchanged_if_a_cutout_image_fits_there_already() {
+            todo!()
+        }
+
+        #[test]
+        fn shifts_points_up_and_left_to_allow_a_cutout_image_to_fit() {
+            todo!()
+        }
+
+        #[test]
+        fn shifts_points_down_and_right_to_allow_a_cutout_image_to_fit() {
+            todo!()
+        }
     }
 }

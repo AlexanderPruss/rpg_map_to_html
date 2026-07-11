@@ -1,18 +1,15 @@
 use crate::PixelPoint;
-use crate::geometry::Geometry::Hexagons;
 use crate::geometry::{
-    BoundingPolygon, CACHED_GEOMETRY_FILE, CellMap, Geometry, persist_cell_map_as_geometry,
+    BoundingPolygon,  persist_cell_map_as_geometry,
 };
 use crate::image_handling::map_cutout::CutoutImage;
 use crate::image_handling::table_of_contents::TableOfContentsMapImage;
-use image::{DynamicImage, GenericImageView, Rgba};
+use image::{DynamicImage,  Rgba};
 use imageproc::drawing::draw_line_segment_mut;
-use std::fs;
 use std::fs::File;
-use std::hash::{DefaultHasher, Hash, Hasher};
 use std::io::{BufReader, Write};
 use std::ops::Add;
-use std::path::{Path, PathBuf};
+use std::path::{ PathBuf};
 
 pub mod image_config;
 

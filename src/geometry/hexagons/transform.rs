@@ -43,7 +43,6 @@ impl InvertibleStandardizedGeometry {
             transforms_applied.push(Box::new(rotation));
         }
         if transformed_geometry.filled_top_left_corner == FilledTopLeftCorner::EMPTY {
-            //TODO: DERP DERP DERP DERP
             let (reflection, reflected_geometry) =
                 ReflectOverXAxis::reflect(transformed_dimensions, transformed_geometry);
             *transformed_geometry = reflected_geometry;

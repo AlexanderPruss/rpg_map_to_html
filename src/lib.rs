@@ -2,9 +2,9 @@ use crate::config::{Config};
 use crate::geometry::{ ComputesCellMap};
 use serde::{Deserialize, Serialize};
 use std::{fs, io};
+use std::collections::HashMap;
 use std::ops::{Add, Mul, Sub};
 use std::path::{ PathBuf};
-use crate::caching::{ ChangedImage};
 use crate::image_handling::IMAGE_SUBDIRECTORY;
 
 pub mod config;
@@ -36,12 +36,12 @@ pub fn generate_docs(config: Config)  {
 
     //Unwrapping cache and handling geometry
     //There's got to be a more idiomatic way of doing this
-    let (cell_map, cached_table_of_contents, cached_cutout_images, changed_image) = match cached_computations {
+    let (cell_map, cached_table_of_contents, cached_cutout_images) = match cached_computations {
         None => (config.geometry.compute_cell_map(
             map_dimensions,
             map_margin,
-        ), vec![], vec![], ChangedImage::AllNew),
-        Some(cached) => (cached.cell_map, cached.table_of_contents_map_images, cached.cutout_images, cached.changed_image)
+        ), HashMap::new(), HashMap::new()),
+        Some(cached) => (cached.cell_map, cached.table_of_contents_map_images_by_filename, cached.cutout_images_by_coordinate)
     };
     
     //Image handling
@@ -51,8 +51,7 @@ pub fn generate_docs(config: Config)  {
         &map_image,
         &image_handling.max_table_of_contents_map_image_size,
         &cell_map,
-        cached_table_of_contents,
-        &changed_image
+        &cached_table_of_contents,
     );
     let cutout_images = image_handling::map_cutout::save_cutout_images_with_cache(
         target_directory,
@@ -61,15 +60,14 @@ pub fn generate_docs(config: Config)  {
         map_margin,
         &skip_empty_cells,
         &image_handling,
-        cached_cutout_images,
-        &changed_image
+        &cached_cutout_images,
     );
 
     //Document
     document::html::write_html_doc(target_directory, &config.title, &cell_map, image_handling.zoomed_in_map_image_size, &table_of_contents_images, &cutout_images,  &config.template);
 
-    //Cleanup, caching
-    if changed_image != ChangedImage::NoChanges {
+    //Cleanup, caching. We can check if any non-caching happened by seeing if any non-cached cutout images were created.
+    if cached_cutout_images.len() != cutout_images.len() {
         image_handling::visualize_cell_map::save_cell_map_visualization(
             target_directory, &cell_map, &map_image, &image_handling.cell_outline_color
         );

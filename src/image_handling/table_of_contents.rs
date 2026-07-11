@@ -1,14 +1,12 @@
-use crate::caching::{ ChangedImage};
 use crate::geometry::CellMap;
 use crate::image_handling::IMAGE_SUBDIRECTORY;
 use crate::{PixelBox, PixelPoint};
 use image::{DynamicImage, ImageFormat};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
-use std::vec::IntoIter;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct TableOfContentsMapImage {
     pub filename: String,
     pub size: PixelPoint,
@@ -28,8 +26,7 @@ pub fn save_table_of_contents_map_images(
         original_image,
         max_image_size,
         cell_map,
-        vec![],
-        &ChangedImage::AllNew
+        &HashMap::new()
     )
 }
 
@@ -38,15 +35,14 @@ pub fn save_table_of_contents_map_images(
 ///
 /// However, the original image might be too large to fit onto one page. If this is the case, the image
 /// is split up into smaller, overlapping images of identical size, and a page is drawn for each of these images. //TODO: Test caching logic probs
-/// 
+///
 /// If cached values are provided, the calculation prefers cached values when they are plausible.
 pub fn save_table_of_contents_map_images_with_cache(
     target_directory: &PathBuf,
     original_image: &DynamicImage,
     max_image_size: &PixelPoint,
     cell_map: &CellMap,
-    cached_images: Vec<TableOfContentsMapImage>,
-    changed_image: &ChangedImage
+    cached_by_filename: &HashMap<String, TableOfContentsMapImage>,
 ) -> Vec<TableOfContentsMapImage> {
     if max_image_size.x <= 1 || max_image_size.y <= 1 {
         panic!("Max image sizes for table of contents images have to be larger than 1x1.")
@@ -67,7 +63,6 @@ pub fn save_table_of_contents_map_images_with_cache(
     let mut image_directory = PathBuf::from(target_directory);
     image_directory.push(IMAGE_SUBDIRECTORY);
     let mut table_of_contents_images: Vec<TableOfContentsMapImage> = vec![];
-    let mut cached_images_iter = cached_images.into_iter();
     loop {
         let max_drawable = current_offset + *max_image_size;
         let x_maxed = max_drawable.x >= original_image.width() as i32;
@@ -85,21 +80,21 @@ pub fn save_table_of_contents_map_images_with_cache(
             top_left_corner: effective_offset,
             bottom_right_corner: effective_offset + *max_image_size,
         });
-        let cache_hit =
-            check_and_advance_cache(&mut cached_images_iter, &changed_image);
+        let filename = format!(
+            "table_of_contents_{}_{}.png",
+            effective_offset.x, effective_offset.y
+        );
+        let cache_hit = cached_by_filename.get(&filename);
         let table_of_contents_image = match cache_hit {
             None => save(
                 &image_directory,
                 original_image,
-                format!(
-                    "table_of_contents_{}_{}.png",
-                    effective_offset.x, effective_offset.y
-                ),
+                filename,
                 effective_offset,
                 saved_image_size,
                 coordinates_contained,
             ),
-            Some(cached_image) => cached_image
+            Some(cached_image) => cached_image.clone()
         };
         table_of_contents_images.push(table_of_contents_image);
 
@@ -121,32 +116,6 @@ pub fn save_table_of_contents_map_images_with_cache(
         }
     }
     table_of_contents_images
-}
-
-/// Checks if we can use an image from the cache, advancing the cache iterator. 
-/// 
-/// We use a cached image if
-/// * A cached image exists
-/// * The image is not brand new
-/// * If the image has changes, none of the change pixels overlap with the cached image
-fn check_and_advance_cache(
-    cached_table_of_contents_iter: &mut IntoIter<TableOfContentsMapImage>,
-    changed_image: &ChangedImage,
-) -> Option<TableOfContentsMapImage> {
-    let cached_table_of_contents_image = cached_table_of_contents_iter.next()?;
-    let changed_pixels =  match changed_image{
-        ChangedImage::NoChanges => return Some(cached_table_of_contents_image),
-        ChangedImage::AllNew => return None,
-        ChangedImage::Changes { bounding_box } => bounding_box
-    };
-    let pixels_of_image = PixelBox{
-        top_left_corner: cached_table_of_contents_image.offset,
-        bottom_right_corner: cached_table_of_contents_image.offset + cached_table_of_contents_image.size
-    };
-    if pixels_of_image.intersects(changed_pixels) {
-        return None
-    }
-    Some(cached_table_of_contents_image)
 }
 
 fn save(
@@ -325,6 +294,14 @@ mod test {
                 PixelPoint { x: 900, y: 1200 },
                 vec![PixelPoint { x: 0, y: 0 }, PixelPoint { x: 800, y: 0 }],
             )
+        }
+
+        mod caching {
+
+            #[test]
+            fn does_not_recreate_cached_images() {
+                todo!()
+            }
         }
     }
 

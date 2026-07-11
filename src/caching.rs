@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::caching::ChangedImage::{AllNew, NoChanges};
 use crate::config::{Config, LAST_USED_CONFIG};
 use crate::geometry::CellMap;
@@ -7,16 +8,17 @@ use crate::{PixelBox, PixelPoint, config, geometry, image_handling};
 use image::{DynamicImage, GenericImageView};
 use std::path::PathBuf;
 
+/// Contains valid cached objects; valid meaning that the caching mechanism has already verified
+/// that these objects can be safely used without being recomputed.
 pub struct CachedComputedObjects {
     pub cell_map: CellMap,
-    pub table_of_contents_map_images: Vec<TableOfContentsMapImage>,
-    pub cutout_images: Vec<CutoutImage>,
-    pub changed_image: ChangedImage,
+    pub table_of_contents_map_images_by_filename: HashMap<String, TableOfContentsMapImage>,
+    pub cutout_images_by_coordinate: HashMap<String, CutoutImage>
 }
 
 /// Whether pixels of the map image have changed between two runs of the generator.
 #[derive(Debug, PartialEq)]
-pub enum ChangedImage {
+enum ChangedImage {
     NoChanges,
     Changes { bounding_box: PixelBox },
     AllNew,
@@ -50,9 +52,33 @@ pub fn get_cached_objects(
     println!("Recovered cached objects");
     Some(CachedComputedObjects {
         cell_map,
-        table_of_contents_map_images,
-        cutout_images,
-        changed_image: find_changed_pixels(map_image, &previous_image),
+        table_of_contents_map_images_by_filename: table_of_contents_map_images.into_iter().filter(
+            |cached|
+                match &changed_pixel_box {
+                    NoChanges => true,
+                    ChangedImage::Changes { bounding_box } => !bounding_box.intersects(&PixelBox{
+                        top_left_corner: cached.offset,
+                        bottom_right_corner: cached.offset + cached.size
+                    }),
+                    AllNew => false
+                }
+        ).map( |cached|
+            (cached.filename.clone(), cached)
+        ).collect(),
+        cutout_images_by_coordinate: cutout_images.into_iter().filter(
+            |cached|
+                match &changed_pixel_box {
+                    NoChanges => true,
+                    ChangedImage::Changes { bounding_box } => !bounding_box.intersects(&PixelBox {
+                        top_left_corner: cached.offset_from_original_image,
+                        bottom_right_corner: cached.offset_from_original_image
+                            + cached.image_size,
+                    }),
+                    AllNew => false
+                }
+        ).map( |cached|
+            (cached.coordinate.clone(), cached)
+        ).collect()
     })
 }
 
