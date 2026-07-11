@@ -144,11 +144,11 @@ fn pad_image(
         x: image.width() as i32,
         y: image.height() as i32,
     } + additional_padding_needed;
-    if padded_image_size.x < image.width() as i32 {
-        additional_padding_needed.x = image.width() as i32 - padded_image_size.x
+    if padded_image_size.x < zoomed_in_map_size.x {
+        additional_padding_needed.x = (zoomed_in_map_size.x - image.width() as i32)/2 + 1;
     }
-    if padded_image_size.y < image.height() as i32 {
-        additional_padding_needed.y = image.height() as i32 - padded_image_size.y
+    if padded_image_size.y < zoomed_in_map_size.y {
+        additional_padding_needed.y = (zoomed_in_map_size.y - image.height() as i32)/2 + 1;
     }
 
     if (additional_padding_needed == PixelPoint { x: 0, y: 0 }) {
@@ -372,7 +372,27 @@ mod test {
         }
 
         #[test]
-        fn pads_the_image_as_much_as_needed() {
+        fn pads_the_image_to_at_least_the_size_of_the_zoomed_in_map() {
+            let image = FourByFourImages::Standardized.load_image();
+            let current_margin = PixelPoint { x: 10, y: 10 };
+            let minimum_margin = PixelPoint { x: 20, y: 20 };
+            let zoomed_in_map_size = PixelPoint { x: 500, y: 500 };
+            let green = Rgba::from([0u8, 255, 0, 255]);
+            let mut expected_path = FourByFourImages::Standardized.get_test_cases_path();
+            expected_path.push("pad_too_small_image/expected.png");
+            let expected = image::ImageReader::open(expected_path)
+                .unwrap()
+                .decode()
+                .unwrap();
+
+            let (padded_image, added_margin) =
+                pad_image(&image, current_margin, minimum_margin, zoomed_in_map_size, green);
+            assert_eq!(expected, padded_image.unwrap());
+            assert_eq!(PixelPoint { x: 88, y: 138 }, added_margin);
+        }
+
+        #[test]
+        fn pads_the_image_until_it_has_at_least_the_minimum_margin() {
             let image = FourByFourImages::Standardized.load_image();
             let current_margin = PixelPoint { x: 10, y: 10 };
             let minimum_margin = PixelPoint { x: 20, y: 20 };
