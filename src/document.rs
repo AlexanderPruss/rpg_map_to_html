@@ -156,6 +156,7 @@ impl FromStr for Token {
 ///
 /// Templates are wrapped by double brackets;
 /// e.g. \[\[CELL_PAGES]] maps to [CellPages](Template/CellPages).
+#[derive(Debug, PartialEq)]
 pub enum Template {
     TableOfContents,
     TableOfContentsPolygonLinks,
@@ -396,6 +397,7 @@ impl<'document> DocumentContext<'document> {
     }
 }
 
+#[derive(Debug, PartialEq)]
 struct TemplateMatch {
     leading_whitespace: String,
     template: Template,
@@ -508,11 +510,125 @@ pub mod test {
                     cutout_images,
                 );
                 let line_without_tokens = "Just vibing in a dungeon when suddenly {{PANIC}}";
-                assert_eq!(
-                    line_without_tokens.to_string(),
-                    context.replace_tokens(line_without_tokens)
-                );
+                context.replace_tokens(line_without_tokens);
             }
         }
     }
+    mod template_matches {
+        use crate::PixelPoint;
+        use crate::document::{DocumentContext, Template, TemplateMatch};
+        use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
+        use std::collections::HashMap;
+        use std::path::PathBuf;
+
+        #[test]
+        fn identifies_all_templates_and_their_whitespace_prefixes() {
+
+            let all_templates = r"
+1. [[TABLE_OF_CONTENTS]]
+2.  [[TABLE_OF_CONTENTS_POLYGON_LINKS]]
+3.   [[ZOOMED_IN_MAP_POLYGON_LINKS]]
+4.    [[CELL_PAGES]]
+5.     [[LEFT_COLUMN]]
+6.      [[RIGHT_COLUMN]]
+7.       [[SECTIONS]]
+8.        [[EXTRA_RIGHT_COLUMN]]
+
+                ";
+            let expected = vec![
+              TemplateMatch{
+                  leading_whitespace: " ".to_string(),
+                  template: Template::TableOfContents,
+              },
+              TemplateMatch{
+                  leading_whitespace: "  ".to_string(),
+                  template: Template::TableOfContentsPolygonLinks,
+              },
+              TemplateMatch{
+                  leading_whitespace: "   ".to_string(),
+                  template: Template::ZoomedInMapPolygonLinks,
+              },
+              TemplateMatch{
+                  leading_whitespace: "    ".to_string(),
+                  template: Template::CellPages,
+              },
+              TemplateMatch{
+                  leading_whitespace: "     ".to_string(),
+                  template: Template::LeftColumn,
+              },
+              TemplateMatch{
+                  leading_whitespace: "      ".to_string(),
+                  template: Template::RightColumn,
+              },
+              TemplateMatch{
+                  leading_whitespace: "       ".to_string(),
+                  template: Template::Sections,
+              },
+              TemplateMatch{
+                  leading_whitespace: "        ".to_string(),
+                  template: Template::ExtraRightColumn,
+              }
+            ];
+            let title = "abc".to_string();
+            let target = PathBuf::from("target");
+            let cell_map = FourByFour::Standardized.to_snapshot().cell_map;
+            let toc_images = vec![];
+            let cutout_images = HashMap::new();
+            let context = DocumentContext::new(
+                &title,
+                PixelPoint { x: 100, y: 200 },
+                &target,
+                &None,
+                &cell_map,
+                &toc_images,
+                cutout_images,
+            );
+            assert_eq!(expected, context.template_matches(all_templates));
+        }
+
+        #[test]
+        fn returns_an_empty_vector_if_no_templates_were_found() {
+            let title = "abc".to_string();
+            let target = PathBuf::from("target");
+            let cell_map = FourByFour::Standardized.to_snapshot().cell_map;
+            let toc_images = vec![];
+            let cutout_images = HashMap::new();
+            let context = DocumentContext::new(
+                &title,
+                PixelPoint { x: 100, y: 200 },
+                &target,
+                &None,
+                &cell_map,
+                &toc_images,
+                cutout_images,
+            );
+            let line_without_templates = "Just vibing in a dungeon";
+            assert_eq!(
+                0,
+                context.template_matches(line_without_templates).len()
+            );
+        }
+
+        #[test]
+        #[should_panic]
+        fn panics_if_the_template_is_unknown() {
+            let title = "abc".to_string();
+            let target = PathBuf::from("target");
+            let cell_map = FourByFour::Standardized.to_snapshot().cell_map;
+            let toc_images = vec![];
+            let cutout_images = HashMap::new();
+            let context = DocumentContext::new(
+                &title,
+                PixelPoint { x: 100, y: 200 },
+                &target,
+                &None,
+                &cell_map,
+                &toc_images,
+                cutout_images,
+            );
+            let line_without_tokens = "Just vibing in a dungeon when suddenly [[PANIC]]";
+            context.template_matches(line_without_tokens);
+        }
+    }
+
 }

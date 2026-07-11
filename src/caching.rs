@@ -47,9 +47,11 @@ pub fn get_cached_objects(
     let (table_of_contents_map_images, cutout_images, previous_image) =
         image_handling::load_persisted_image_metadata(&config.target_directory, &image_filename)?;
     let changed_pixel_box = find_changed_pixels(map_image, &previous_image);
+    if changed_pixel_box == AllNew {
+        return None;
+    }
 
     let cell_map = geometry::load_persisted_cell_map(&previous_config.target_directory)?;
-    println!("Recovered cached objects");
     Some(CachedComputedObjects {
         cell_map,
         table_of_contents_map_images_by_filename: table_of_contents_map_images.into_iter().filter(
@@ -60,7 +62,7 @@ pub fn get_cached_objects(
                         top_left_corner: cached.offset,
                         bottom_right_corner: cached.offset + cached.size
                     }),
-                    AllNew => false
+                    AllNew => panic!("Should never return cached values if the image is all new.")
                 }
         ).map( |cached|
             (cached.filename.clone(), cached)
@@ -74,7 +76,7 @@ pub fn get_cached_objects(
                         bottom_right_corner: cached.offset_from_original_image
                             + cached.image_size,
                     }),
-                    AllNew => false
+                    AllNew => panic!("Should never return cached values if the image is all new.")
                 }
         ).map( |cached|
             (cached.coordinate.clone(), cached)
@@ -110,8 +112,9 @@ pub fn persist_cached_objects(
     );
 }
 
-/// Returns a box bounding all pixels that have changed between the last two runs
-/// //TODO: Test please
+/// Returns a box bounding all pixels that have changed between the last two runs.
+/// TODO: This should have terrible performance, can we do this with basically a matrix op instead?
+/// TODO: Still worth it as-is
 fn find_changed_pixels(map_image: &DynamicImage, previous_image: &DynamicImage) -> ChangedImage {
     if map_image.width() != previous_image.width() || map_image.height() != previous_image.height()
     {
@@ -157,6 +160,77 @@ fn find_changed_pixels(map_image: &DynamicImage, previous_image: &DynamicImage) 
     }
     match changed_pixel_bounding_box {
         None => NoChanges,
-        Some(bounding_box) => ChangedImage::Changes { bounding_box },
+        Some(bounding_box) => {
+            if (bounding_box == PixelBox{
+                top_left_corner: PixelPoint {x:0, y:0},
+                bottom_right_corner: PixelPoint {x: map_image.width() as i32, y: map_image.height() as i32 },
+            }) {
+                AllNew
+            } else {
+                ChangedImage::Changes { bounding_box }
+            }
+        },
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    mod persist_and_load_cached_objects {
+
+        #[test]
+        fn persists_and_reloads_cached_objects() {
+            todo!()
+        }
+    }
+
+    mod get_cached_objects {
+
+        #[test]
+        fn returns_none_if_the_config_has_changed(){
+            todo!()
+        }
+
+        #[test]
+        fn returns_none_if_the_config_cache_does_not_exist(){
+            todo!()
+        }
+
+        #[test]
+        fn returns_none_if_the_image_has_changed_completely(){
+            todo!()
+        }
+        #[test]
+        fn returns_all_cached_values_if_the_image_is_unchanged(){
+            todo!()
+        }
+
+        #[test]
+        fn filters_out_cached_values_intersecting_changed_pixels(){
+            todo!()
+        }
+    }
+
+    mod find_changed_pixels {
+
+        #[test]
+        fn identifies_an_image_as_new_if_its_dimensions_have_changed() {
+            todo!()
+        }
+
+        #[test]
+        fn identifies_an_image_as_new_if_its_changed_bounding_box_is_the_whole_image() {
+            todo!()
+        }
+
+        #[test]
+        fn identifies_when_images_have_not_changed() {
+            todo!()
+        }
+
+        #[test]
+        fn returns_a_bounding_box_containing_all_changed_pixels_for_partially_changed_images() {
+            todo!()
+        }
     }
 }

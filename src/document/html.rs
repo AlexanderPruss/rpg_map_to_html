@@ -593,3 +593,125 @@ fn iterate_until_header_or_eof<I: Iterator<Item = Result<String, std::io::Error>
         lines.push(md_lines.next().unwrap().unwrap());
     }
 }
+
+#[cfg(test)]
+mod test {
+
+    mod write_html_doc {
+
+        #[test]
+        fn creates_a_complete_html_document() {
+            todo!()
+        }
+    }
+
+    mod read_next_section {
+        #[test]
+        fn iterates_to_pages_and_identifies_the_next_section() {
+            todo!()
+        }
+
+        #[test]
+        fn identifies_sections_if_the_iterator_is_already_at_a_valid_section_header() {
+            todo!()
+        }
+
+        #[test]
+        fn returns_none_if_eof_is_reached() {
+            todo!()
+        }
+
+        #[test]
+        fn returns_none_if_the_next_header_is_not_a_section() {
+            todo!()
+        }
+
+    }
+
+    mod iterate_until_page_starts {
+
+        #[test]
+        fn iterates_to_pages_and_identifies_page_information() {
+            todo!()
+        }
+
+        #[test]
+        fn identifies_pages_if_the_iterator_is_already_at_a_valid_page_header() {
+            todo!()
+        }
+
+        #[test]
+        fn allows_pages_to_not_have_coordinates() {
+            todo!()
+        }
+
+        #[test]
+        fn allows_empty_page_descriptions() {
+            todo!()
+        }
+
+        #[test]
+        fn returns_none_if_the_file_ends_before_a_page_is_encountered() {
+            todo!()
+        }
+
+        #[test]
+        #[should_panic]
+        fn panics_if_a_header_that_is_not_a_page_header_is_encountered() {
+            todo!()
+        }
+
+        #[test]
+        #[should_panic]
+        fn panics_if_the_page_has_no_title_header() {
+            todo!()
+        }
+
+        #[test]
+        #[should_panic]
+        fn panics_if_the_page_ends_before_its_title_header() {
+            todo!()
+        }
+    }
+
+    mod next_line_starts_with {
+
+        #[test]
+        fn determines_that_the_iterator_is_at_eof(){
+            todo!()
+        }
+
+        #[test]
+        fn determines_that_the_iterator_is_at_a_match_without_advancing_the_iterator(){
+            todo!()
+        }
+
+        #[test]
+        fn determines_that_the_iterator_is_not_at_a_match_without_advancing_the_iterator(){
+            todo!()
+        }
+    }
+
+    mod iterate_until_header_or_eof {
+
+        #[test]
+        fn iterates_until_a_header_is_reached(){
+            todo!()
+        }
+
+        #[test]
+        fn iterates_until_eof_is_reached(){
+            todo!()
+        }
+
+        #[test]
+        fn stops_immediately_if_the_next_line_is_already_a_header(){
+            todo!()
+        }
+
+        #[test]
+        fn stops_immediately_if_the_next_line_is_already_eof(){
+            todo!()
+        }
+    }
+}
