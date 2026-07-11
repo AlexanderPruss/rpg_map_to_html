@@ -15,6 +15,7 @@ pub struct CachedComputedObjects {
 }
 
 /// Whether pixels of the map image have changed between two runs of the generator.
+#[derive(Debug, PartialEq)]
 pub enum ChangedImage {
     NoChanges,
     Changes { bounding_box: PixelBox },
@@ -45,10 +46,8 @@ pub fn get_cached_objects(
         image_handling::load_persisted_image_metadata(&config.target_directory, &image_filename)?;
     let changed_pixel_box = find_changed_pixels(map_image, &previous_image);
 
-    let cell_map = match changed_pixel_box {
-        NoChanges => geometry::load_persisted_cell_map(&previous_config.target_directory)?,
-        _ => return None
-    };
+    let cell_map = geometry::load_persisted_cell_map(&previous_config.target_directory)?;
+    println!("Recovered cached objects");
     Some(CachedComputedObjects {
         cell_map,
         table_of_contents_map_images,

@@ -1,13 +1,14 @@
-use std::collections::HashMap;
-use crate::{PixelBox, PixelPoint};
+use crate::caching::ChangedImage;
 use crate::geometry::{Cell, CellMap};
+use crate::image_handling::IMAGE_SUBDIRECTORY;
 use crate::image_handling::empty_cell_detection::is_cell_empty;
 use crate::image_handling::image_config::{ImageHandling, SkipEmptyCells};
+use crate::{PixelBox, PixelPoint};
 use image::{DynamicImage, ImageBuffer, ImageFormat, Rgba};
-use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
-use crate::caching::ChangedImage;
-use crate::image_handling::IMAGE_SUBDIRECTORY;
+use std::cmp::max;
+use std::collections::HashMap;
+use std::path::PathBuf;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct CutoutImage {
@@ -32,7 +33,7 @@ pub fn save_cutout_images(
         skip_empty_cells,
         image_handling,
         vec![],
-        &ChangedImage::AllNew
+        &ChangedImage::AllNew,
     )
 }
 
@@ -50,17 +51,22 @@ pub fn save_cutout_images_with_cache(
     skip_empty_cells: &SkipEmptyCells,
     image_handling: &ImageHandling,
     cached_cutout_images: Vec<CutoutImage>,
-    changed_image: &ChangedImage
+    changed_image: &ChangedImage,
 ) -> Vec<CutoutImage> {
-    let cached_images_by_coordinate : HashMap<String, CutoutImage> = cached_cutout_images.into_iter().map(|image| (image.coordinate.clone(), image)).collect();
+    let cached_images_by_coordinate: HashMap<String, CutoutImage> = cached_cutout_images
+        .into_iter()
+        .map(|image| (image.coordinate.clone(), image))
+        .collect();
 
     let empty_color = Rgba::from(skip_empty_cells.empty_color_rgba);
     let (padded_image, padding) = pad_image(
         original_image,
         image_margins,
         image_handling.minimum_map_margin,
+        image_handling.zoomed_in_map_image_size,
         skip_empty_cells.empty_color_rgba,
     );
+    let padded_image = padded_image.as_ref().unwrap_or_else(|| original_image);
     cell_map
         .cells_by_coordinate
         .iter()
@@ -82,7 +88,7 @@ pub fn save_cutout_images_with_cache(
                     target_directory,
                     &image_handling,
                 ),
-                Some(cached) => cached
+                Some(cached) => cached,
             }
         })
         .collect()
@@ -96,21 +102,22 @@ pub fn save_cutout_images_with_cache(
 /// * If the image has changes, none of the change pixels overlap with the cached image
 fn check_cache_hit(
     coordinate: &String,
-    cached_images_by_coordinate : &HashMap<String, CutoutImage>,
+    cached_images_by_coordinate: &HashMap<String, CutoutImage>,
     changed_image: &ChangedImage,
 ) -> Option<CutoutImage> {
     let cached_cutout_image = cached_images_by_coordinate.get(coordinate)?;
-    let changed_pixels =  match changed_image{
+    let changed_pixels = match changed_image {
         ChangedImage::NoChanges => return Some(cached_cutout_image.clone()),
         ChangedImage::AllNew => return None,
-        ChangedImage::Changes { bounding_box } => bounding_box
+        ChangedImage::Changes { bounding_box } => bounding_box,
     };
-    let pixels_of_image = PixelBox{
+    let pixels_of_image = PixelBox {
         top_left_corner: cached_cutout_image.offset_from_original_image,
-        bottom_right_corner: cached_cutout_image.offset_from_original_image + cached_cutout_image.image_size
+        bottom_right_corner: cached_cutout_image.offset_from_original_image
+            + cached_cutout_image.image_size,
     };
     if pixels_of_image.intersects(changed_pixels) {
-        return None
+        return None;
     }
     Some(cached_cutout_image.clone())
 }
@@ -118,20 +125,36 @@ fn check_cache_hit(
 /// Ensures that the image has a margin of at least [minimum_margin], creating/extending the
 /// image's margin and filling it with the [empty_color] if necessary.
 ///
-/// Returns the padded image as well as the padding added.
+/// If the map + the margin is smaller than the [zoome_in_map_size], the image is further padded.
+///
+/// Returns the padded image as well as the padding added. To prevent reallocating an entire image,
+/// the padded image is returned as on option, with None meaning the image was unchanged.
 fn pad_image(
     image: &DynamicImage,
     current_margin: PixelPoint,
     minimum_margin: PixelPoint,
+    zoomed_in_map_size: PixelPoint,
     empty_color: Rgba<u8>,
-) -> (DynamicImage, PixelPoint) {
-    if current_margin.x >= minimum_margin.x && current_margin.y >= minimum_margin.y {
-        return (image.clone(), PixelPoint { x: 0, y: 0 });
-    }
-    let additional_padding_needed = PixelPoint {
-        x: minimum_margin.y - current_margin.x,
-        y: minimum_margin.y - current_margin.y,
+) -> (Option<DynamicImage>, PixelPoint) {
+    let mut additional_padding_needed = PixelPoint {
+        x: max(0, minimum_margin.y - current_margin.x),
+        y: max(0, minimum_margin.y - current_margin.y),
     };
+    let padded_image_size = PixelPoint {
+        x: image.width() as i32,
+        y: image.height() as i32,
+    } + additional_padding_needed;
+    if padded_image_size.x < image.width() as i32 {
+        additional_padding_needed.x = image.width() as i32 - padded_image_size.x
+    }
+    if padded_image_size.y < image.height() as i32 {
+        additional_padding_needed.y = image.height() as i32 - padded_image_size.y
+    }
+
+    if (additional_padding_needed == PixelPoint { x: 0, y: 0 }) {
+        return (None, additional_padding_needed);
+    };
+
     let mut padded_buffer = ImageBuffer::from_pixel(
         image.width() + 2 * additional_padding_needed.x as u32,
         image.height() + 2 * additional_padding_needed.y as u32,
@@ -143,7 +166,10 @@ fn pad_image(
         additional_padding_needed.x as i64,
         additional_padding_needed.y as i64,
     );
-    (DynamicImage::from(padded_buffer), additional_padding_needed)
+    (
+        Some(DynamicImage::from(padded_buffer)),
+        additional_padding_needed,
+    )
 }
 
 /// Creates a cutout map image for a given cell. The cell is centered in this cutout as much as possible,
@@ -235,16 +261,15 @@ fn fit_to_bounds(
     if point.y < 0 {
         point.y = 0;
     }
+    if padded_image_size.x < cutout_image_size.x || padded_image_size.y < cutout_image_size.y {
+        panic!("The padded map image was somehow smaller than the cutout image size");
+    }
     let distance_to_positive_boundary = *padded_image_size - *cutout_image_size - point;
     if distance_to_positive_boundary.x < 0 {
         point.x += distance_to_positive_boundary.x;
     }
     if distance_to_positive_boundary.y < 0 {
         point.y += distance_to_positive_boundary.y;
-    }
-    if point.x < 0 || point.y < 0 || point.x > padded_image_size.x || point.y > padded_image_size.y
-    {
-        panic!("The map was too small, it was not possible to fit a cutout image into it.")
     }
     point
 }
@@ -255,12 +280,12 @@ mod test {
     mod save_cutout_images {
         use crate::PixelPoint;
         use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
+        use crate::image_handling::IMAGE_SUBDIRECTORY;
         use crate::image_handling::image_config::{ImageHandling, SkipEmptyCells};
         use crate::image_handling::map_cutout::save_cutout_images;
         use crate::image_handling::test::fixtures::FourByFourImages;
         use image::Rgba;
         use std::path::PathBuf;
-        use crate::image_handling::IMAGE_SUBDIRECTORY;
 
         #[test]
         fn creates_cutout_images_for_non_empty_cells() {
@@ -337,11 +362,12 @@ mod test {
             let current_margin = PixelPoint { x: 10, y: 10 };
             let minimum_margin = PixelPoint { x: 10, y: 10 };
             let white = Rgba::from([0u8, 0, 0, 255]);
+            let zoomed_in_map_size = PixelPoint { x: 100, y: 100 };
 
             let (padded_image, added_margin) =
-                pad_image(&image, current_margin, minimum_margin, white);
+                pad_image(&image, current_margin, minimum_margin,zoomed_in_map_size, white);
 
-            assert_eq!(image, padded_image);
+            assert_eq!(None, padded_image);
             assert_eq!(PixelPoint { x: 0, y: 0 }, added_margin);
         }
 
@@ -350,6 +376,7 @@ mod test {
             let image = FourByFourImages::Standardized.load_image();
             let current_margin = PixelPoint { x: 10, y: 10 };
             let minimum_margin = PixelPoint { x: 20, y: 20 };
+            let zoomed_in_map_size = PixelPoint { x: 100, y: 100 };
             let green = Rgba::from([0u8, 255, 0, 255]);
             let mut expected_path = FourByFourImages::Standardized.get_test_cases_path();
             expected_path.push("pad_image/expected.png");
@@ -359,9 +386,9 @@ mod test {
                 .unwrap();
 
             let (padded_image, added_margin) =
-                pad_image(&image, current_margin, minimum_margin, green);
+                pad_image(&image, current_margin, minimum_margin, zoomed_in_map_size, green);
 
-            assert_eq!(expected, padded_image);
+            assert_eq!(expected, padded_image.unwrap());
             assert_eq!(PixelPoint { x: 10, y: 10 }, added_margin);
         }
     }
@@ -369,12 +396,12 @@ mod test {
     mod save_cutout_image {
         use crate::PixelPoint;
         use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
+        use crate::image_handling::IMAGE_SUBDIRECTORY;
         use crate::image_handling::image_config::ImageHandling;
         use crate::image_handling::map_cutout::{CutoutImage, pad_image, save_cutout_map_image};
         use crate::image_handling::test::fixtures::FourByFourImages;
         use image::Rgba;
         use std::path::PathBuf;
-        use crate::image_handling::IMAGE_SUBDIRECTORY;
 
         fn test_config() -> ImageHandling {
             ImageHandling {
@@ -397,6 +424,7 @@ mod test {
                 &image,
                 PixelPoint { x: 0, y: 0 },
                 config.minimum_map_margin,
+                config.zoomed_in_map_image_size,
                 green,
             );
             let snapshot = FourByFour::Standardized.to_snapshot();
@@ -417,7 +445,7 @@ mod test {
                 .unwrap();
 
             let cutout_image =
-                save_cutout_map_image(&padded_image, padding, cell, &target_directory, &config);
+                save_cutout_map_image(&padded_image.unwrap(), padding, cell, &target_directory, &config);
             let mut cutout_image_path = PathBuf::from(target_directory);
             cutout_image_path.push(IMAGE_SUBDIRECTORY);
             cutout_image_path.push(cell.coordinate.clone() + ".png");

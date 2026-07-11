@@ -69,10 +69,12 @@ pub fn generate_docs(config: Config)  {
     document::html::write_html_doc(target_directory, &config.title, &cell_map, image_handling.zoomed_in_map_image_size, &table_of_contents_images, &cutout_images,  &config.template);
 
     //Cleanup, caching
-    image_handling::visualize_cell_map::save_cell_map_visualization(
-        target_directory, &cell_map, &map_image, &image_handling.cell_outline_color
-    );
-    caching::persist_cached_objects(target_directory, &config, &map_image, cell_map, &table_of_contents_images, &cutout_images);
+    if changed_image != ChangedImage::NoChanges {
+        image_handling::visualize_cell_map::save_cell_map_visualization(
+            target_directory, &cell_map, &map_image, &image_handling.cell_outline_color
+        );
+        caching::persist_cached_objects(target_directory, &config, &map_image, cell_map, &table_of_contents_images, &cutout_images);
+    }
 }
 
 pub fn read_input_with_default(input: &mut String, default: String) -> String {
