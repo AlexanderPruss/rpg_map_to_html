@@ -163,8 +163,8 @@ fn find_changed_pixels(map_image: &DynamicImage, previous_image: &DynamicImage) 
                 == PixelBox {
                     top_left_corner: PixelPoint { x: 0, y: 0 },
                     bottom_right_corner: PixelPoint {
-                        x: map_image.width() as i32,
-                        y: map_image.height() as i32,
+                        x: map_image.width() as i32 - 1,
+                        y: map_image.height() as i32 - 1,
                     },
                 })
             {
@@ -179,7 +179,7 @@ fn find_changed_pixels(map_image: &DynamicImage, previous_image: &DynamicImage) 
 #[cfg(test)]
 mod test {
     use crate::PixelPoint;
-    use crate::config::{Config, MapImageConfig};
+    use crate::config::{Config, MapImageConfig, LAST_USED_CONFIG};
     use crate::geometry::CellMap;
     use crate::geometry::Geometry::Hexagons;
     use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
@@ -204,6 +204,11 @@ mod test {
     }
 
     fn standard_test_case(test_case: String) -> CachingTestCase {
+        let last_used_config = PathBuf::from(LAST_USED_CONFIG);
+        if fs::exists(&last_used_config).unwrap() {
+            fs::remove_file(last_used_config).unwrap();
+        }
+
         let mut test_case_path = PathBuf::new();
         test_case_path.push(env!("CARGO_MANIFEST_DIR"));
         test_case_path.push("test_resources");
@@ -299,7 +304,17 @@ mod test {
         use crate::caching::test::standard_test_case;
         use crate::caching::{CachedComputedObjects, get_cached_objects, persist_cached_objects};
 
+        ///These are a bit silly because they all access the last_used_config.json at the root directory.
+        ///For now we'll just run them in sequence.
         #[test]
+        fn sequential_caching_tests() {
+            returns_none_if_the_config_has_changed();
+            returns_none_if_the_image_has_changed_completely();
+            returns_all_cached_values_if_the_image_is_unchanged();
+            filters_out_cached_values_intersecting_changed_pixels();
+        }
+
+
         fn returns_none_if_the_config_has_changed() {
             let test_case_name = "changed_config".to_string();
             let test_case = standard_test_case(test_case_name);
@@ -319,7 +334,6 @@ mod test {
             assert_eq!(None, cached_objects);
         }
 
-        #[test]
         fn returns_none_if_the_image_has_changed_completely() {
             let test_case_name = "new_image".to_string();
             let test_case = standard_test_case(test_case_name);
@@ -337,7 +351,6 @@ mod test {
 
             assert_eq!(None, cached_objects);
         }
-        #[test]
         fn returns_all_cached_values_if_the_image_is_unchanged() {
             let test_case_name = "basic_caching".to_string();
             let test_case = standard_test_case(test_case_name);
@@ -361,7 +374,6 @@ mod test {
             assert_eq!(expected, cached_objects);
         }
 
-        #[test]
         fn filters_out_cached_values_intersecting_changed_pixels() {
             let test_case_name = "updated_image".to_string();
             let test_case = standard_test_case(test_case_name);
@@ -397,25 +409,54 @@ mod test {
     }
 
     mod find_changed_pixels {
+        use image::DynamicImage::ImageRgb8;
+        use image::{GenericImage, Rgba};
+        use crate::caching::ChangedImage::{AllNew, Changes, NoChanges};
+        use crate::caching::find_changed_pixels;
+        use crate::{PixelBox, PixelPoint};
 
         #[test]
         fn identifies_an_image_as_new_if_its_dimensions_have_changed() {
-            todo!()
+            let baseline_image = ImageRgb8(image::RgbImage::new(32, 32));
+            let wrong_width = ImageRgb8(image::RgbImage::new(30, 32));
+            let wrong_height = ImageRgb8(image::RgbImage::new(32, 35));
+
+            assert_eq!(AllNew, find_changed_pixels(&baseline_image, &wrong_width));
+            assert_eq!(AllNew, find_changed_pixels(&baseline_image, &wrong_height));
         }
 
         #[test]
         fn identifies_an_image_as_new_if_its_changed_bounding_box_is_the_whole_image() {
-            todo!()
+            let baseline_image = ImageRgb8(image::RgbImage::new(32, 32));
+            let mut changed_corners = ImageRgb8(image::RgbImage::new(32, 32));
+            changed_corners.put_pixel(0, 0, Rgba([1, 1, 1, 1]));
+            changed_corners.put_pixel(31, 31, Rgba([1, 1, 1, 1]));
+
+            assert_eq!(AllNew, find_changed_pixels(&baseline_image, &changed_corners));
         }
 
         #[test]
         fn identifies_when_images_have_not_changed() {
-            todo!()
+            let baseline_image = ImageRgb8(image::RgbImage::new(32, 32));
+            let same_image = ImageRgb8(image::RgbImage::new(32, 32));
+
+            assert_eq!(NoChanges, find_changed_pixels(&baseline_image, &same_image));
         }
 
         #[test]
         fn returns_a_bounding_box_containing_all_changed_pixels_for_partially_changed_images() {
-            todo!()
+            let baseline_image = ImageRgb8(image::RgbImage::new(32, 32));
+            let mut changed_diagonal = ImageRgb8(image::RgbImage::new(32, 32));
+            for x in 10..=20 {
+                for y in 12..=18 {
+                    changed_diagonal.put_pixel(x, y, Rgba([1, 1, 1, 1]));
+                }
+            }
+
+            let expected = Changes {bounding_box: PixelBox{
+                top_left_corner: PixelPoint {x: 10, y:12},
+                bottom_right_corner: PixelPoint {x:20, y:18} }};
+            assert_eq!(expected, find_changed_pixels(&baseline_image, &changed_diagonal));
         }
     }
 }
