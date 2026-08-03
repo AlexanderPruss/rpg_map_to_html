@@ -179,7 +179,6 @@ fn find_changed_pixels(map_image: &DynamicImage, previous_image: &DynamicImage) 
 #[cfg(test)]
 mod test {
     use crate::PixelPoint;
-    use crate::caching::persist_cached_objects;
     use crate::config::{Config, MapImageConfig};
     use crate::geometry::CellMap;
     use crate::geometry::Geometry::Hexagons;
@@ -189,29 +188,44 @@ mod test {
     use crate::image_handling::test::fixtures::FourByFourImages;
     use image::DynamicImage;
     use std::collections::{HashMap, HashSet};
-    use std::path::PathBuf;
+    use std::fs;
+    use std::path::{ PathBuf};
 
     struct CachingTestCase {
-        test_case: String,
         target_directory: PathBuf,
         config: Config,
         image: DynamicImage,
-        image_filename: String,
+        original_image_path: PathBuf,
         cell_map: CellMap,
         table_of_contents_images: Vec<TableOfContentsMapImage>,
         table_of_contents_images_by_filename: HashMap<String, TableOfContentsMapImage>,
         cutout_images: Vec<CutoutImage>,
-        cutout_images_by_coordinate: HashMap<String, CutoutImage>
+        cutout_images_by_coordinate: HashMap<String, CutoutImage>,
     }
 
     fn standard_test_case(test_case: String) -> CachingTestCase {
         let mut test_case_path = PathBuf::new();
         test_case_path.push(env!("CARGO_MANIFEST_DIR"));
-        test_case_path.push("test_resources/caching");
+        test_case_path.push("test_resources");
+        test_case_path.push("caching");
         test_case_path.push(&test_case);
         let mut target_directory = PathBuf::from(&test_case_path);
         target_directory.push("cached");
-        let image_filename = "four-by-four.png".to_string();
+        //Remove any previous cached entries.
+        fs::read_dir(&target_directory)
+            .unwrap()
+            .filter(|file| {
+                !file
+                    .as_ref()
+                    .unwrap()
+                    .file_name()
+                    .to_str()
+                    .unwrap()
+                    .starts_with(".")
+            })
+            .for_each(|file| fs::remove_file(file.unwrap().path()).unwrap());
+
+        let image_filename = "four_by_four.png".to_string();
         let mut original_image_path = PathBuf::from(&test_case_path);
         original_image_path.push("original");
         original_image_path.push(&image_filename);
@@ -221,7 +235,7 @@ mod test {
             target_directory: PathBuf::from(&target_directory),
             title: "title".to_string(),
             map_image: MapImageConfig {
-                image_file: original_image_path,
+                image_file: original_image_path.clone(),
                 image_margins: None,
                 skip_empty_cells: None,
             },
@@ -245,9 +259,11 @@ mod test {
                 coordinates_contained: HashSet::from(["baz".to_string(), "dag".to_string()]),
             },
         ];
-        let table_of_contents_images_by_filename : HashMap<String, TableOfContentsMapImage> = table_of_contents_images.iter().map(|toc|
-            (toc.filename.clone(), toc.clone())
-        ).collect();
+        let table_of_contents_images_by_filename: HashMap<String, TableOfContentsMapImage> =
+            table_of_contents_images
+                .iter()
+                .map(|toc| (toc.filename.clone(), toc.clone()))
+                .collect();
         let cutout_images: Vec<CutoutImage> = vec![
             CutoutImage {
                 coordinate: "first_cutout.png".to_string(),
@@ -260,37 +276,66 @@ mod test {
                 image_size: PixelPoint { x: 300, y: 400 },
             },
         ];
-        let cutout_images_by_coordinate : HashMap<String, CutoutImage> = cutout_images.iter().map(|cutout|
-            (cutout.coordinate.clone(), cutout.clone())
-        ).collect();
+        let cutout_images_by_coordinate: HashMap<String, CutoutImage> = cutout_images
+            .iter()
+            .map(|cutout| (cutout.coordinate.clone(), cutout.clone()))
+            .collect();
         let image = FourByFourImages::Standardized.load_image();
 
         CachingTestCase {
-            test_case,
             target_directory,
             config,
             image,
-            image_filename,
             cell_map: standard_snapshot.cell_map,
             table_of_contents_images,
             cutout_images,
             table_of_contents_images_by_filename,
-            cutout_images_by_coordinate
+            cutout_images_by_coordinate,
+            original_image_path,
         }
     }
 
     mod get_cached_objects {
-        use crate::caching::{get_cached_objects, persist_cached_objects, CachedComputedObjects};
         use crate::caching::test::standard_test_case;
+        use crate::caching::{CachedComputedObjects, get_cached_objects, persist_cached_objects};
 
         #[test]
         fn returns_none_if_the_config_has_changed() {
-            todo!()
+            let test_case_name = "changed_config".to_string();
+            let test_case = standard_test_case(test_case_name);
+            persist_cached_objects(
+                &test_case.target_directory,
+                &test_case.config,
+                &test_case.image,
+                test_case.cell_map.clone(),
+                &test_case.table_of_contents_images,
+                &test_case.cutout_images,
+            );
+
+            let mut changed_config = test_case.config;
+            changed_config.title = "Changed title".to_string();
+            let cached_objects = get_cached_objects(&changed_config, &test_case.image);
+
+            assert_eq!(None, cached_objects);
         }
 
         #[test]
         fn returns_none_if_the_image_has_changed_completely() {
-            todo!()
+            let test_case_name = "new_image".to_string();
+            let test_case = standard_test_case(test_case_name);
+            persist_cached_objects(
+                &test_case.target_directory,
+                &test_case.config,
+                &test_case.image,
+                test_case.cell_map.clone(),
+                &test_case.table_of_contents_images,
+                &test_case.cutout_images,
+            );
+
+            let new_image = image::open(test_case.original_image_path).unwrap();
+            let cached_objects = get_cached_objects(&test_case.config, &new_image);
+
+            assert_eq!(None, cached_objects);
         }
         #[test]
         fn returns_all_cached_values_if_the_image_is_unchanged() {
@@ -306,10 +351,11 @@ mod test {
                 &test_case.cutout_images,
             );
             let cached_objects = get_cached_objects(&test_case.config, &test_case.image);
-            
+
             let expected = Some(CachedComputedObjects {
                 cell_map: test_case.cell_map,
-                table_of_contents_map_images_by_filename: test_case.table_of_contents_images_by_filename,
+                table_of_contents_map_images_by_filename: test_case
+                    .table_of_contents_images_by_filename,
                 cutout_images_by_coordinate: test_case.cutout_images_by_coordinate,
             });
             assert_eq!(expected, cached_objects);
@@ -317,7 +363,36 @@ mod test {
 
         #[test]
         fn filters_out_cached_values_intersecting_changed_pixels() {
-            todo!()
+            let test_case_name = "updated_image".to_string();
+            let test_case = standard_test_case(test_case_name);
+
+            persist_cached_objects(
+                &test_case.target_directory,
+                &test_case.config,
+                &test_case.image,
+                test_case.cell_map.clone(),
+                &test_case.table_of_contents_images,
+                &test_case.cutout_images,
+            );
+            let changed_image = image::open(test_case.original_image_path).unwrap();
+            let cached_objects = get_cached_objects(&test_case.config, &changed_image);
+
+            //The original image here has its top-left corner changed, which eliminates
+            //the first cutout and the first toc image.
+            let expected = Some(CachedComputedObjects {
+                cell_map: test_case.cell_map,
+                table_of_contents_map_images_by_filename: test_case
+                    .table_of_contents_images_by_filename
+                    .into_iter()
+                    .filter(|(_filename, toc)| toc.offset.x > 99)
+                    .collect(),
+                cutout_images_by_coordinate: test_case.cutout_images_by_coordinate
+                    .into_iter()
+                    .filter(|(_filename, cutout)| cutout.offset_from_original_image.x > 99)
+                    .collect(),
+            });
+
+            assert_eq!(expected, cached_objects);
         }
     }
 
