@@ -556,7 +556,7 @@ fn iterate_until_page_starts<I: Iterator<Item = Result<String, std::io::Error>>>
     })
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 enum NextLineMatch {
     Match,
     NoMatch,
@@ -709,8 +709,7 @@ mod test {
     }
 
     mod iterate_until_page_starts {
-        use crate::document::html::{iterate_until_page_starts, read_next_section, Section, StartOfCellPage};
-        use crate::document::TemplateFiles;
+        use crate::document::html::{iterate_until_page_starts, StartOfCellPage};
 
         #[test]
         fn iterates_to_pages_and_identifies_cell_page_information() {
@@ -885,43 +884,108 @@ mod test {
     }
 
     mod next_line_starts_with {
+        use crate::document::html::{next_line_starts_with, NextLineMatch};
 
         #[test]
         fn determines_that_the_iterator_is_at_eof() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![];
+            let mut iterator = md_lines.into_iter().peekable();
+            let prefix = "eof, doesn't matter";
+
+            assert_eq!(NextLineMatch::Eof, next_line_starts_with(&mut iterator, prefix));
         }
 
         #[test]
         fn determines_that_the_iterator_is_at_a_match_without_advancing_the_iterator() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("Match found".to_string())
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+            let prefix = "Match";
+
+            assert_eq!(NextLineMatch::Match, next_line_starts_with(&mut iterator, prefix));
+            assert_eq!("Match found", iterator.next().unwrap().unwrap().as_str());
         }
 
         #[test]
         fn determines_that_the_iterator_is_not_at_a_match_without_advancing_the_iterator() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("No Match found".to_string())
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+            let prefix = "Match";
+
+            assert_eq!(NextLineMatch::NoMatch, next_line_starts_with(&mut iterator, prefix));
+            assert_eq!("No Match found", iterator.next().unwrap().unwrap().as_str());
         }
     }
 
     mod iterate_until_header_or_eof {
+        use crate::document::html::iterate_until_header_or_eof;
 
         #[test]
         fn iterates_until_a_header_is_reached() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("First line".to_string()),
+                Ok("Second line".to_string()),
+                Ok("# Found a header!".to_string())
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let lines = iterate_until_header_or_eof(&mut iterator);
+
+            let expected_lines = vec![
+                "First line".to_string(),
+                "Second line".to_string(),
+            ];
+            assert_eq!(expected_lines, lines);
+            assert_eq!("# Found a header!", iterator.next().unwrap().unwrap().as_str())
         }
 
         #[test]
         fn iterates_until_eof_is_reached() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("First line".to_string()),
+                Ok("Second line".to_string()),
+                Ok("File is about to end".to_string())
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let lines = iterate_until_header_or_eof(&mut iterator);
+
+            let expected_lines = vec![
+                "First line".to_string(),
+                "Second line".to_string(),
+                "File is about to end".to_string()
+            ];
+            assert_eq!(expected_lines, lines);
         }
 
         #[test]
         fn stops_immediately_if_the_next_line_is_already_a_header() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("# Found a header!".to_string()),
+                Ok("First line".to_string()),
+                Ok("Second line".to_string()),
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let lines = iterate_until_header_or_eof(&mut iterator);
+
+            let expected_lines: Vec<String> = vec![];
+            assert_eq!(expected_lines, lines);
+            assert_eq!("# Found a header!", iterator.next().unwrap().unwrap().as_str())
         }
 
         #[test]
         fn stops_immediately_if_the_next_line_is_already_eof() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![];
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let lines = iterate_until_header_or_eof(&mut iterator);
+
+            let expected_lines: Vec<String> = vec![];
+            assert_eq!(expected_lines, lines);
         }
     }
 }
