@@ -386,14 +386,14 @@ impl<'document> DocumentContext<'document> {
             SectionContents => self.current_section_contents.as_ref(),
             ViewBox => self.current_svg_viewbox.as_ref(),
         };
-        if option.is_none() {
-            panic!(
+        option.expect(
+            format!(
                 "Tried to obtain a value for token {}, but none was present in the context.\n\
             This is a templating error, a value is being requested before it is available.",
                 token
-            );
-        }
-        option.unwrap()
+            )
+            .as_str(),
+        )
     }
 }
 

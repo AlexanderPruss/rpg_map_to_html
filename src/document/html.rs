@@ -235,14 +235,10 @@ fn fill_table_of_contents_polygon_links<I: Iterator<Item = Result<String, std::i
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
 ) {
-    let table_of_contents_image = context.current_table_of_contents_image;
-    if table_of_contents_image.is_none() {
-        panic!(
-            "Tried to fill a [[{}]] template, but the context had not set a current table of contents image.",
-            Template::TableOfContentsPolygonLinks
-        )
-    }
-    let table_of_contents_image = table_of_contents_image.unwrap();
+    let table_of_contents_image = context.current_table_of_contents_image.expect(
+        format!("Tried to fill a [[{}]] template, but the context had not set a current table of contents image.",
+            Template::TableOfContentsPolygonLinks).as_str()
+    );
     write_polygon_links(
         &mut reader_writer.writer,
         context.cell_map,
@@ -266,14 +262,13 @@ fn fill_zoomed_in_map_polygon_links<I: Iterator<Item = Result<String, std::io::E
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
 ) {
-    let coordinate = context.current_coordinate.as_ref();
-    if coordinate.is_none() {
-        panic!(
+    let coordinate = context.current_coordinate.as_ref().expect(
+        format!(
             "Tried to fill a [[{}]] template, but the context had not set current coordinate",
             Template::ZoomedInMapPolygonLinks
         )
-    }
-    let coordinate = coordinate.unwrap();
+        .as_str(),
+    );
     let cell = context
         .cell_map
         .cells_by_coordinate
@@ -297,14 +292,12 @@ fn write_polygon_links(
     coordinates_to_link: HashSet<&String>,
 ) {
     for coordinate in coordinates_to_link {
-        let cell = cell_map.cells_by_coordinate.get(coordinate);
-        if cell.is_none() {
-            panic!(
+        let cell = cell_map.cells_by_coordinate.get(coordinate).expect(
+            format!(
                 "Expected to draw a link for a cell with coordinate {}, but no such cell was found in the cell map",
                 coordinate
-            );
-        }
-        let cell = cell.unwrap();
+            ).as_str()
+        );
         let link_box = &cell.inscribed_rectangle;
         let top_left = link_box.top_left_corner + offset;
         let bottom_right = link_box.bottom_right_corner + offset;
@@ -396,15 +389,14 @@ fn fill_column<I: Iterator<Item = Result<String, std::io::Error>>>(
         ),
     };
     iterate_until_header_or_eof(&mut reader_writer.md_lines);
-    let expect_column_header_line = reader_writer.md_lines.next();
-    if expect_column_header_line.is_none() {
-        panic!(
+    let expect_column_header_line = reader_writer.md_lines.next().expect(
+        format!(
             "Tried to fill in a [[{template}]] Template for page {:?}, but the markdown content file was already exhausted.\n\
             You may have deleted the '## Left Column' or '## Right Column' markdown headers from that page; add them back to fix this error.",
             context.current_page_title
-        )
-    }
-    let expect_column_header_line = expect_column_header_line.unwrap().unwrap();
+        ).as_str()
+    );
+    let expect_column_header_line = expect_column_header_line.unwrap();
     if !expect_column_header_line.starts_with(required_markdown_prefix) {
         panic!(
             "Tried to fill in a [[{template}]] Template, but the next header encountered was '{}'. The markdown line has to start with '{}' instead.",

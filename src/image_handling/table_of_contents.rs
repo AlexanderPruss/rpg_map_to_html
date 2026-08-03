@@ -308,10 +308,10 @@ mod test {
                 TableOfContentsMapImage, save_table_of_contents_map_images_with_cache,
             };
             use crate::image_handling::test::fixtures::get_test_resources_path;
-            use crate::{PixelBox, PixelPoint};
+            use crate::{ PixelPoint};
             use std::collections::{HashMap, HashSet};
             use std::fs;
-            use std::path::{Path, PathBuf};
+            use std::path::{ PathBuf};
 
             #[test]
             fn only_saves_images_if_no_cached_image_is_present() {
@@ -377,10 +377,6 @@ mod test {
                     ),
                 ]);
                 let cached_filenames = HashSet::from([
-                    "table_of_contents_0_1800.png".to_string(),
-                    "table_of_contents_800_0.png".to_string(),
-                ]);
-                let resulting_filenames = HashSet::from([
                     "table_of_contents_0_1800.png".to_string(),
                     "table_of_contents_800_0.png".to_string(),
                 ]);

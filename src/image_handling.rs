@@ -141,7 +141,7 @@ impl Add<&PixelPoint> for &PixelPoint {
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use crate::image_handling::test::fixtures::get_test_resources_path;
     use image::DynamicImage;
 

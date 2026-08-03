@@ -10,6 +10,7 @@ use std::path::PathBuf;
 
 /// Contains valid cached objects; valid meaning that the caching mechanism has already verified
 /// that these objects can be safely used without being recomputed.
+#[derive(Debug, PartialEq)]
 pub struct CachedComputedObjects {
     pub cell_map: CellMap,
     pub table_of_contents_map_images_by_filename: HashMap<String, TableOfContentsMapImage>,
@@ -177,24 +178,113 @@ fn find_changed_pixels(map_image: &DynamicImage, previous_image: &DynamicImage) 
 
 #[cfg(test)]
 mod test {
+    use crate::PixelPoint;
+    use crate::caching::persist_cached_objects;
+    use crate::config::{Config, MapImageConfig};
+    use crate::geometry::CellMap;
+    use crate::geometry::Geometry::Hexagons;
+    use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
+    use crate::image_handling::map_cutout::CutoutImage;
+    use crate::image_handling::table_of_contents::TableOfContentsMapImage;
+    use crate::image_handling::test::fixtures::FourByFourImages;
+    use image::DynamicImage;
+    use std::collections::{HashMap, HashSet};
+    use std::path::PathBuf;
 
-    mod persist_and_load_cached_objects {
+    struct CachingTestCase {
+        test_case: String,
+        target_directory: PathBuf,
+        config: Config,
+        image: DynamicImage,
+        image_filename: String,
+        cell_map: CellMap,
+        table_of_contents_images: Vec<TableOfContentsMapImage>,
+        table_of_contents_images_by_filename: HashMap<String, TableOfContentsMapImage>,
+        cutout_images: Vec<CutoutImage>,
+        cutout_images_by_coordinate: HashMap<String, CutoutImage>
+    }
 
-        #[test]
-        fn persists_and_reloads_cached_objects() {
-            todo!()
+    fn standard_test_case(test_case: String) -> CachingTestCase {
+        let mut test_case_path = PathBuf::new();
+        test_case_path.push(env!("CARGO_MANIFEST_DIR"));
+        test_case_path.push("test_resources/caching");
+        test_case_path.push(&test_case);
+        let mut target_directory = PathBuf::from(&test_case_path);
+        target_directory.push("cached");
+        let image_filename = "four-by-four.png".to_string();
+        let mut original_image_path = PathBuf::from(&test_case_path);
+        original_image_path.push("original");
+        original_image_path.push(&image_filename);
+
+        let standard_snapshot = FourByFour::Standardized.to_snapshot();
+        let config = Config {
+            target_directory: PathBuf::from(&target_directory),
+            title: "title".to_string(),
+            map_image: MapImageConfig {
+                image_file: original_image_path,
+                image_margins: None,
+                skip_empty_cells: None,
+            },
+            geometry: Hexagons {
+                definition: standard_snapshot.geometry_definition,
+            },
+            image_handling_config: None,
+            template: None,
+        };
+        let table_of_contents_images: Vec<TableOfContentsMapImage> = vec![
+            TableOfContentsMapImage {
+                filename: "first_toc.jpg".to_string(),
+                size: PixelPoint { x: 1, y: 2 },
+                offset: PixelPoint { x: 3, y: 4 },
+                coordinates_contained: HashSet::from(["foo".to_string(), "bar".to_string()]),
+            },
+            TableOfContentsMapImage {
+                filename: "second_toc.jpg".to_string(),
+                size: PixelPoint { x: 4, y: 5 },
+                offset: PixelPoint { x: 6, y: 7 },
+                coordinates_contained: HashSet::from(["baz".to_string(), "dag".to_string()]),
+            },
+        ];
+        let table_of_contents_images_by_filename : HashMap<String, TableOfContentsMapImage> = table_of_contents_images.iter().map(|toc|
+            (toc.filename.clone(), toc.clone())
+        ).collect();
+        let cutout_images: Vec<CutoutImage> = vec![
+            CutoutImage {
+                coordinate: "first_cutout.png".to_string(),
+                offset_from_original_image: PixelPoint { x: 10, y: 20 },
+                image_size: PixelPoint { x: 30, y: 40 },
+            },
+            CutoutImage {
+                coordinate: "second_cutout.png".to_string(),
+                offset_from_original_image: PixelPoint { x: 100, y: 200 },
+                image_size: PixelPoint { x: 300, y: 400 },
+            },
+        ];
+        let cutout_images_by_coordinate : HashMap<String, CutoutImage> = cutout_images.iter().map(|cutout|
+            (cutout.coordinate.clone(), cutout.clone())
+        ).collect();
+        let image = FourByFourImages::Standardized.load_image();
+
+        CachingTestCase {
+            test_case,
+            target_directory,
+            config,
+            image,
+            image_filename,
+            cell_map: standard_snapshot.cell_map,
+            table_of_contents_images,
+            cutout_images,
+            table_of_contents_images_by_filename,
+            cutout_images_by_coordinate
         }
     }
 
     mod get_cached_objects {
+        use crate::caching::{get_cached_objects, persist_cached_objects, CachedComputedObjects};
+        use crate::caching::test::standard_test_case;
 
         #[test]
         fn returns_none_if_the_config_has_changed() {
-            todo!()
-        }
-
-        #[test]
-        fn returns_none_if_the_config_cache_does_not_exist() {
             todo!()
         }
 
@@ -204,7 +294,25 @@ mod test {
         }
         #[test]
         fn returns_all_cached_values_if_the_image_is_unchanged() {
-            todo!()
+            let test_case_name = "basic_caching".to_string();
+            let test_case = standard_test_case(test_case_name);
+
+            persist_cached_objects(
+                &test_case.target_directory,
+                &test_case.config,
+                &test_case.image,
+                test_case.cell_map.clone(),
+                &test_case.table_of_contents_images,
+                &test_case.cutout_images,
+            );
+            let cached_objects = get_cached_objects(&test_case.config, &test_case.image);
+            
+            let expected = Some(CachedComputedObjects {
+                cell_map: test_case.cell_map,
+                table_of_contents_map_images_by_filename: test_case.table_of_contents_images_by_filename,
+                cutout_images_by_coordinate: test_case.cutout_images_by_coordinate,
+            });
+            assert_eq!(expected, cached_objects);
         }
 
         #[test]
