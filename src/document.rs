@@ -19,6 +19,7 @@ pub mod markdown_content;
 
 pub mod html;
 /// The templates that are used to generate the final html document.
+#[derive(PartialEq, Debug)]
 enum TemplateFiles {
     Styles,
     MapDocs,

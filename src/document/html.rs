@@ -316,6 +316,7 @@ fn write_polygon_links(
     }
 }
 
+#[derive(PartialEq, Debug)]
 struct StartOfCellPage {
     coordinate: Option<String>,
     title: String,
@@ -421,6 +422,7 @@ fn write_template<I: Iterator<Item = Result<String, std::io::Error>>>(
     }
 }
 
+#[derive(PartialEq, Debug)]
 struct Section {
     title: String,
     content: String,
@@ -537,16 +539,19 @@ fn iterate_until_page_starts<I: Iterator<Item = Result<String, std::io::Error>>>
     };
 
     //The lines until the next header contain the description, if any.
-    //If multiple lines are found, just take the first one.
-    let description = iterate_until_header_or_eof(md_lines)
-        .into_iter()
-        .filter(|line| !line.trim().is_empty())
-        .next()
-        .unwrap_or_else(|| "".to_string());
+    let raw_content = iterate_until_header_or_eof(md_lines).join("\n");
+    let parser = pulldown_cmark::Parser::new(raw_content.as_str());
+    let mut content = String::new();
+    pulldown_cmark::html::push_html(&mut content, parser);
+    let content_lines: Vec<String> = content
+        .lines()
+        .map(|line| line.to_string())
+        .collect();
+
     Some(StartOfCellPage {
         coordinate,
         title,
-        description,
+        description: content_lines.join("\n"),
         extra_page,
     })
 }
@@ -598,70 +603,284 @@ mod test {
     }
 
     mod read_next_section {
+        use crate::document::html::{read_next_section, Section};
+        use crate::document::TemplateFiles;
+
         #[test]
         fn iterates_to_pages_and_identifies_the_next_section() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("Filler line".to_string()),
+                Ok("### Section Title".to_string()),
+                Ok("".to_string()),
+                Ok("Markdown, including [links](#000.001)".to_string()),
+                Ok("Another **line** of markdown".to_string()),
+                Ok("".to_string()),
+                Ok("# Next Header starting".to_string())
+            ];
+            let prefix = "prefix: ".to_string();
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let section = read_next_section(&mut iterator, &prefix);
+
+            let expected = Some(Section{
+                title: "Section Title".to_string(),
+                content: "prefix: <p>Markdown, including <a href=\"#000.001\">links</a>\nprefix: Another <strong>line</strong> of markdown</p>".to_string(),
+                template: TemplateFiles::Section,
+            });
+            assert_eq!(expected, section);
+        }
+
+        #[test]
+        fn iterates_to_pages_and_identifies_the_next_highlighted_section() {
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("Filler line".to_string()),
+                Ok("#### Section Title".to_string()),
+                Ok("".to_string()),
+                Ok("Markdown, including [links](#000.001)".to_string()),
+                Ok("Another **line** of markdown".to_string()),
+                Ok("".to_string()),
+                Ok("# Next Header starting".to_string())
+            ];
+            let prefix = "prefix: ".to_string();
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let section = read_next_section(&mut iterator, &prefix);
+
+            let expected = Some(Section{
+                title: "Section Title".to_string(),
+                content: "prefix: <p>Markdown, including <a href=\"#000.001\">links</a>\nprefix: Another <strong>line</strong> of markdown</p>".to_string(),
+                template: TemplateFiles::HighlightedSection,
+            });
+            assert_eq!(expected, section);
         }
 
         #[test]
         fn identifies_sections_if_the_iterator_is_already_at_a_valid_section_header() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("### Section Title".to_string()),
+                Ok("".to_string()),
+                Ok("Markdown, including [links](#000.001)".to_string()),
+                Ok("Another **line** of markdown".to_string()),
+                Ok("".to_string()),
+                Ok("# Next Header starting".to_string())
+            ];
+            let prefix = "prefix: ".to_string();
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let section = read_next_section(&mut iterator, &prefix);
+
+            let expected = Some(Section{
+                title: "Section Title".to_string(),
+                content: "prefix: <p>Markdown, including <a href=\"#000.001\">links</a>\nprefix: Another <strong>line</strong> of markdown</p>".to_string(),
+                template: TemplateFiles::Section,
+            });
+            assert_eq!(expected, section);
         }
 
         #[test]
         fn returns_none_if_eof_is_reached() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("Filler line".to_string()),
+                Ok("File is about to end".to_string())
+            ];
+            let prefix = "prefix: ".to_string();
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let section = read_next_section(&mut iterator, &prefix);
+
+            assert_eq!(None, section);
         }
 
         #[test]
         fn returns_none_if_the_next_header_is_not_a_section() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("Filler line".to_string()),
+                Ok("# Wrong header".to_string()),
+                Ok("### Now we get a valid section".to_string()),
+                Ok("But it's too late".to_string())
+            ];
+            let prefix = "prefix: ".to_string();
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let section = read_next_section(&mut iterator, &prefix);
+
+            assert_eq!(None, section);
         }
     }
 
     mod iterate_until_page_starts {
+        use crate::document::html::{iterate_until_page_starts, read_next_section, Section, StartOfCellPage};
+        use crate::document::TemplateFiles;
 
         #[test]
-        fn iterates_to_pages_and_identifies_page_information() {
-            todo!()
+        fn iterates_to_pages_and_identifies_cell_page_information() {
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("Filler line".to_string()),
+                Ok("# Cell ABC".to_string()),
+                Ok("".to_string()),
+                Ok("## Title - Page Title".to_string()),
+                Ok("Markdown, including [links](#000.001)".to_string()),
+                Ok("Another **line** of markdown".to_string()),
+                Ok("".to_string()),
+                Ok("# Next Header starting".to_string())
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let start_of_page = iterate_until_page_starts(&mut iterator);
+
+            let expected = Some(StartOfCellPage{
+                title: "Page Title".to_string(),
+                description: "<p>Markdown, including <a href=\"#000.001\">links</a>\nAnother <strong>line</strong> of markdown</p>".to_string(),
+                coordinate: Some("ABC".to_string()),
+                extra_page: false
+            });
+            assert_eq!(expected, start_of_page);
+        }
+
+        #[test]
+        fn iterates_to_pages_and_identifies_extra_cell_page_information() {
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("Filler line".to_string()),
+                Ok("# Extra Cell ABC".to_string()),
+                Ok("".to_string()),
+                Ok("## Title - Page Title".to_string()),
+                Ok("Markdown, including [links](#000.001)".to_string()),
+                Ok("Another **line** of markdown".to_string()),
+                Ok("".to_string()),
+                Ok("# Next Header starting".to_string())
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let start_of_page = iterate_until_page_starts(&mut iterator);
+
+            let expected = Some(StartOfCellPage{
+                title: "Page Title".to_string(),
+                description: "<p>Markdown, including <a href=\"#000.001\">links</a>\nAnother <strong>line</strong> of markdown</p>".to_string(),
+                coordinate: Some("ABC".to_string()),
+                extra_page: true
+            });
+            assert_eq!(expected, start_of_page);
         }
 
         #[test]
         fn identifies_pages_if_the_iterator_is_already_at_a_valid_page_header() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("# Cell ABC".to_string()),
+                Ok("".to_string()),
+                Ok("## Title - Page Title".to_string()),
+                Ok("Markdown, including [links](#000.001)".to_string()),
+                Ok("Another **line** of markdown".to_string()),
+                Ok("".to_string()),
+                Ok("# Next Header starting".to_string())
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let start_of_page = iterate_until_page_starts(&mut iterator);
+
+            let expected = Some(StartOfCellPage{
+                title: "Page Title".to_string(),
+                description: "<p>Markdown, including <a href=\"#000.001\">links</a>\nAnother <strong>line</strong> of markdown</p>".to_string(),
+                coordinate: Some("ABC".to_string()),
+                extra_page: false
+            });
+            assert_eq!(expected, start_of_page);
         }
 
         #[test]
         fn allows_pages_to_not_have_coordinates() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("Filler line".to_string()),
+                Ok("# Extra Cell".to_string()),
+                Ok("".to_string()),
+                Ok("## Title - Page Title".to_string()),
+                Ok("Markdown, including [links](#000.001)".to_string()),
+                Ok("Another **line** of markdown".to_string()),
+                Ok("".to_string()),
+                Ok("# Next Header starting".to_string())
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let start_of_page = iterate_until_page_starts(&mut iterator);
+
+            let expected = Some(StartOfCellPage{
+                title: "Page Title".to_string(),
+                description: "<p>Markdown, including <a href=\"#000.001\">links</a>\nAnother <strong>line</strong> of markdown</p>".to_string(),
+                coordinate: None,
+                extra_page: true
+            });
+            assert_eq!(expected, start_of_page);
         }
 
         #[test]
         fn allows_empty_page_descriptions() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("# Cell ABC".to_string()),
+                Ok("".to_string()),
+                Ok("## Title - Page Title".to_string()),
+                Ok("# Next Header starting, no page description here".to_string())
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let start_of_page = iterate_until_page_starts(&mut iterator);
+
+            let expected = Some(StartOfCellPage{
+                title: "Page Title".to_string(),
+                description: "".to_string(),
+                coordinate: Some("ABC".to_string()),
+                extra_page: false
+            });
+            assert_eq!(expected, start_of_page);
         }
 
         #[test]
         fn returns_none_if_the_file_ends_before_a_page_is_encountered() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("Filler".to_string()),
+                Ok("File is about to end".to_string()),
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let start_of_page = iterate_until_page_starts(&mut iterator);
+
+            assert_eq!(None, start_of_page);
         }
 
         #[test]
         #[should_panic]
         fn panics_if_a_header_that_is_not_a_page_header_is_encountered() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("Filler".to_string()),
+                Ok("## This is not a page header!".to_string()),
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let start_of_page = iterate_until_page_starts(&mut iterator);
         }
 
         #[test]
         #[should_panic]
         fn panics_if_the_page_has_no_title_header() {
-            todo!()
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("Filler".to_string()),
+                Ok("# Cell ABC".to_string()),
+                Ok("# This is not a title header!".to_string()),
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let start_of_page = iterate_until_page_starts(&mut iterator);
         }
 
         #[test]
         #[should_panic]
-        fn panics_if_the_page_ends_before_its_title_header() {
-            todo!()
+        fn panics_if_the_file_ends_before_a_pages_title_is_found() {
+            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+                Ok("Filler".to_string()),
+                Ok("# Cell ABC".to_string()),
+                Ok("The file is about to end with no title in sight".to_string()),
+            ];
+            let mut iterator = md_lines.into_iter().peekable();
+
+            let start_of_page = iterate_until_page_starts(&mut iterator);
         }
     }
 

@@ -371,7 +371,7 @@ mod test {
                     .table_of_contents_images_by_filename,
                 cutout_images_by_coordinate: test_case.cutout_images_by_coordinate,
             });
-            assert_eq!(expected, cached_objects);
+            assert_eq!(expected, cached_objects); 
         }
 
         fn filters_out_cached_values_intersecting_changed_pixels() {
