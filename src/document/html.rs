@@ -18,7 +18,7 @@ use std::path::PathBuf;
 static HTML_DOC_FILENAME: &str = "rpg_map_doc.html";
 static STYLES_FILENAME: &str = "styles.css";
 
-struct ReaderWriter<I: Iterator<Item = std::io::Result<String>>> {
+struct ReaderWriter<I: Iterator<Item=std::io::Result<String>>> {
     writer: BufWriter<File>,
     md_lines: Peekable<I>,
 }
@@ -120,7 +120,7 @@ fn generate_html_doc(mut context: DocumentContext) {
 ///
 /// Otherwise, any [Token]s the line contains are replaced with their values, and the
 /// line is written with an endline.
-fn fill_template_or_write_line<I: Iterator<Item = Result<String, std::io::Error>>>(
+fn fill_template_or_write_line<I: Iterator<Item=Result<String, std::io::Error>>>(
     mut context: &mut DocumentContext,
     mut reader_writer: &mut ReaderWriter<I>,
     line: String,
@@ -135,7 +135,7 @@ fn fill_template_or_write_line<I: Iterator<Item = Result<String, std::io::Error>
     reader_writer.writer.write("\n".as_bytes()).unwrap();
 }
 
-fn fill_templates_if_found<I: Iterator<Item = Result<String, std::io::Error>>>(
+fn fill_templates_if_found<I: Iterator<Item=Result<String, std::io::Error>>>(
     line: &str,
     reader_writer: &mut ReaderWriter<I>,
     context: &mut DocumentContext,
@@ -214,7 +214,7 @@ enum Column {
     ExtraRight,
 }
 
-fn fill_table_of_contents_templates<I: Iterator<Item = Result<String, std::io::Error>>>(
+fn fill_table_of_contents_templates<I: Iterator<Item=Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
@@ -230,14 +230,14 @@ fn fill_table_of_contents_templates<I: Iterator<Item = Result<String, std::io::E
     }
 }
 
-fn fill_table_of_contents_polygon_links<I: Iterator<Item = Result<String, std::io::Error>>>(
+fn fill_table_of_contents_polygon_links<I: Iterator<Item=Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
 ) {
     let table_of_contents_image = context.current_table_of_contents_image.expect(
         format!("Tried to fill a [[{}]] template, but the context had not set a current table of contents image.",
-            Template::TableOfContentsPolygonLinks).as_str()
+                Template::TableOfContentsPolygonLinks).as_str()
     );
     write_polygon_links(
         &mut reader_writer.writer,
@@ -257,7 +257,7 @@ fn fill_table_of_contents_polygon_links<I: Iterator<Item = Result<String, std::i
     )
 }
 
-fn fill_zoomed_in_map_polygon_links<I: Iterator<Item = Result<String, std::io::Error>>>(
+fn fill_zoomed_in_map_polygon_links<I: Iterator<Item=Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
@@ -267,7 +267,7 @@ fn fill_zoomed_in_map_polygon_links<I: Iterator<Item = Result<String, std::io::E
             "Tried to fill a [[{}]] template, but the context had not set current coordinate",
             Template::ZoomedInMapPolygonLinks
         )
-        .as_str(),
+            .as_str(),
     );
     let cell = context
         .cell_map
@@ -291,6 +291,8 @@ fn write_polygon_links(
     offset: PixelPoint,
     coordinates_to_link: HashSet<&String>,
 ) {
+    let mut coordinates_to_link: Vec<&String> = coordinates_to_link.into_iter().collect();
+    coordinates_to_link.sort();
     for coordinate in coordinates_to_link {
         let cell = cell_map.cells_by_coordinate.get(coordinate).expect(
             format!(
@@ -326,7 +328,7 @@ struct StartOfCellPage {
 
 /// Iterates over the markdown content until it is consumed and all pages contained inside are mapped
 /// to html. Further calls to templates based on the markdown reader will fail.
-fn fill_cell_pages<I: Iterator<Item = Result<String, std::io::Error>>>(
+fn fill_cell_pages<I: Iterator<Item=Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
@@ -366,7 +368,7 @@ fn fill_cell_pages<I: Iterator<Item = Result<String, std::io::Error>>>(
         write_template(context, reader_writer, prefix, template);
     }
 }
-fn fill_column<I: Iterator<Item = Result<String, std::io::Error>>>(
+fn fill_column<I: Iterator<Item=Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
@@ -407,7 +409,7 @@ fn fill_column<I: Iterator<Item = Result<String, std::io::Error>>>(
     write_template(context, reader_writer, &prefix, template_file);
 }
 
-fn write_template<I: Iterator<Item = Result<String, std::io::Error>>>(
+fn write_template<I: Iterator<Item=Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
@@ -429,7 +431,7 @@ struct Section {
     template: TemplateFiles,
 }
 
-fn fill_sections<I: Iterator<Item = Result<String, std::io::Error>>>(
+fn fill_sections<I: Iterator<Item=Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
@@ -445,7 +447,7 @@ fn fill_sections<I: Iterator<Item = Result<String, std::io::Error>>>(
     }
 }
 
-fn read_next_section<I: Iterator<Item = Result<String, std::io::Error>>>(
+fn read_next_section<I: Iterator<Item=Result<String, std::io::Error>>>(
     md_lines: &mut Peekable<I>,
     prefix: &String,
 ) -> Option<Section> {
@@ -491,7 +493,7 @@ fn read_next_section<I: Iterator<Item = Result<String, std::io::Error>>>(
     })
 }
 
-fn iterate_until_page_starts<I: Iterator<Item = Result<String, std::io::Error>>>(
+fn iterate_until_page_starts<I: Iterator<Item=Result<String, std::io::Error>>>(
     md_lines: &mut Peekable<I>,
 ) -> Option<StartOfCellPage> {
     // Cells are H1 headers. If the next line is not a header, then we're in the wrong part of the markdown file and give up
@@ -543,10 +545,7 @@ fn iterate_until_page_starts<I: Iterator<Item = Result<String, std::io::Error>>>
     let parser = pulldown_cmark::Parser::new(raw_content.as_str());
     let mut content = String::new();
     pulldown_cmark::html::push_html(&mut content, parser);
-    let content_lines: Vec<String> = content
-        .lines()
-        .map(|line| line.to_string())
-        .collect();
+    let content_lines: Vec<String> = content.lines().map(|line| line.to_string()).collect();
 
     Some(StartOfCellPage {
         coordinate,
@@ -563,7 +562,7 @@ enum NextLineMatch {
     Eof,
 }
 
-fn next_line_starts_with<I: Iterator<Item = Result<String, std::io::Error>>>(
+fn next_line_starts_with<I: Iterator<Item=Result<String, std::io::Error>>>(
     md_lines: &mut Peekable<I>,
     prefix: &str,
 ) -> NextLineMatch {
@@ -579,7 +578,7 @@ fn next_line_starts_with<I: Iterator<Item = Result<String, std::io::Error>>>(
 }
 
 /// Iterates until the next (peeked) line is either a header or EOF. Returns all lines encountered.
-fn iterate_until_header_or_eof<I: Iterator<Item = Result<String, std::io::Error>>>(
+fn iterate_until_header_or_eof<I: Iterator<Item=Result<String, std::io::Error>>>(
     md_lines: &mut Peekable<I>,
 ) -> Vec<String> {
     let mut lines: Vec<String> = vec![];
@@ -593,36 +592,245 @@ fn iterate_until_header_or_eof<I: Iterator<Item = Result<String, std::io::Error>
 
 #[cfg(test)]
 mod test {
-
+    //TODO: Should these be integration tests? But then I can't use my fixtures.
     mod write_html_doc {
+        use crate::config::TemplateConfig;
+        use crate::geometry::{BoundingPolygon, Cell, CellMap};
+        use crate::image_handling::map_cutout::CutoutImage;
+        use crate::image_handling::table_of_contents::TableOfContentsMapImage;
+        use crate::{PixelBox, PixelPoint};
+        use std::collections::{HashMap, HashSet};
+        use std::fs;
+        use std::path::PathBuf;
+        use crate::document::html::write_html_doc;
+        use crate::document::test::fixtures::assert_files_equal;
+
+        struct HtmlDocTestCase {
+            target_directory: PathBuf,
+            expected_directory: PathBuf,
+            cell_map: CellMap,
+            table_of_contents_images: Vec<TableOfContentsMapImage>,
+            cutout_images: Vec<CutoutImage>,
+        }
+
+        fn standard_test_case(test_case: String) -> HtmlDocTestCase {
+            let mut test_case_path = PathBuf::new();
+            test_case_path.push(env!("CARGO_MANIFEST_DIR"));
+            test_case_path.push("test_resources");
+            test_case_path.push("write_html_doc");
+            test_case_path.push(&test_case);
+            let mut target_directory = PathBuf::from(&test_case_path);
+            target_directory.push("result");
+            let mut expected_directory = PathBuf::from(&test_case_path);
+            expected_directory.push("expected");
+
+            //Remove any previous results.
+            fs::read_dir(&target_directory)
+                .unwrap()
+                .filter(|file| {
+                    !file
+                        .as_ref()
+                        .unwrap()
+                        .file_name()
+                        .to_str()
+                        .unwrap()
+                        .starts_with(".")
+                })
+                .for_each(|file| fs::remove_file(file.unwrap().path()).unwrap());
+
+            let cell_map = CellMap {
+                cells_by_coordinate: HashMap::from([
+                    (
+                        "coord-1".to_string(),
+                        Cell {
+                            coordinate: "coord-1".to_string(),
+                            neighbor_coordinates: HashSet::from(["coord-2".to_string()]),
+                            center_point: PixelPoint { x: 5, y: 10 },
+                            bounding_polygon: BoundingPolygon { points: vec![] },
+                            inscribed_rectangle: PixelBox {
+                                top_left_corner: PixelPoint { x: 1, y: 1 },
+                                bottom_right_corner: PixelPoint { x: 10, y: 20 },
+                            },
+                        },
+                    ),
+                    (
+                        "coord-2".to_string(),
+                        Cell {
+                            coordinate: "coord-2".to_string(),
+                            neighbor_coordinates: HashSet::from([
+                                "coord-1".to_string(),
+                                "coord-3".to_string(),
+                            ]),
+                            center_point: PixelPoint { x: 25, y: 30 },
+                            bounding_polygon: BoundingPolygon { points: vec![] },
+                            inscribed_rectangle: PixelBox {
+                                top_left_corner: PixelPoint { x: 21, y: 21 },
+                                bottom_right_corner: PixelPoint { x: 30, y: 30 },
+                            },
+                        },
+                    ),
+                    (
+                        "coord-3".to_string(),
+                        Cell {
+                            coordinate: "coord-3".to_string(),
+                            neighbor_coordinates: HashSet::from(["coord-2".to_string()]),
+                            center_point: PixelPoint { x: 45, y: 50 },
+                            bounding_polygon: BoundingPolygon { points: vec![] },
+                            inscribed_rectangle: PixelBox {
+                                top_left_corner: PixelPoint { x: 41, y: 41 },
+                                bottom_right_corner: PixelPoint { x: 50, y: 50 },
+                            },
+                        },
+                    ),
+                ]),
+            };
+            let table_of_contents_images: Vec<TableOfContentsMapImage> = vec![
+                TableOfContentsMapImage {
+                    filename: "first_toc.jpg".to_string(),
+                    size: PixelPoint { x: 1, y: 2 },
+                    offset: PixelPoint { x: 3, y: 4 },
+                    coordinates_contained: HashSet::from([
+                        "coord-1".to_string(),
+                        "coord-2".to_string(),
+                    ]),
+                },
+                TableOfContentsMapImage {
+                    filename: "second_toc.jpg".to_string(),
+                    size: PixelPoint { x: 4, y: 5 },
+                    offset: PixelPoint { x: 6, y: 7 },
+                    coordinates_contained: HashSet::from([
+                        "coord-2".to_string(),
+                        "coord-3".to_string(),
+                    ]),
+                },
+            ];
+            let cutout_images: Vec<CutoutImage> = vec![
+                CutoutImage {
+                    coordinate: "coord-1".to_string(),
+                    offset_from_original_image: PixelPoint { x: 10, y: 20 },
+                    image_size: PixelPoint { x: 30, y: 40 },
+                },
+                CutoutImage {
+                    coordinate: "coord-2".to_string(),
+                    offset_from_original_image: PixelPoint { x: 100, y: 200 },
+                    image_size: PixelPoint { x: 300, y: 400 },
+                },
+                CutoutImage {
+                    coordinate: "coord-3".to_string(),
+                    offset_from_original_image: PixelPoint { x: 150, y: 250 },
+                    image_size: PixelPoint { x: 350, y: 450 },
+                },
+            ];
+
+            HtmlDocTestCase {
+                target_directory,
+                expected_directory,
+                cell_map,
+                table_of_contents_images,
+                cutout_images,
+            }
+        }
 
         #[test]
-        fn creates_a_complete_html_document() {
-            todo!()
+        fn creates_a_new_html_document_with_default_content() {
+            let test_case = standard_test_case("new_document".to_string());
+            write_html_doc(&test_case.target_directory, &"new_document".to_string(),
+                           &test_case.cell_map, PixelPoint { x: 99, y: 199 },
+                           &test_case.table_of_contents_images, &test_case.cutout_images, &None);
+
+            let mut matching_file = test_case.target_directory;
+            fs::read_dir(test_case.expected_directory).unwrap().for_each(
+                |entry| {
+                    let entry = entry.unwrap();
+                    matching_file.push(entry.file_name());
+                    assert_files_equal(&entry.path(), &matching_file);
+                    matching_file.push("..");
+                })
+        }
+
+        #[test]
+        fn updates_html_documents_using_user_content() {
+            let test_case = standard_test_case("updated_document".to_string());
+
+            //Write the 'user-input' map_content.md into the target directory.
+            let mut user_content = PathBuf::from(&test_case.target_directory);
+            user_content.push("..");
+            user_content.push("map_content.md");
+            let mut user_content_destination = PathBuf::from(&test_case.target_directory);
+            user_content_destination.push("map_content.md");
+            fs::copy(user_content, user_content_destination).unwrap();
+
+            write_html_doc(&test_case.target_directory, &"updated_document".to_string(),
+                           &test_case.cell_map, PixelPoint { x: 99, y: 199 },
+                           &test_case.table_of_contents_images, &test_case.cutout_images, &None);
+
+            let mut matching_file = test_case.target_directory;
+            fs::read_dir(test_case.expected_directory).unwrap().for_each(
+                |entry| {
+                    let entry = entry.unwrap();
+                    matching_file.push(entry.file_name());
+                    assert_files_equal(&entry.path(), &matching_file);
+                    matching_file.push("..");
+                })
+        }
+
+        #[test]
+        fn allows_user_defined_templates() {
+            let test_case = standard_test_case("custom_template".to_string());
+            let mut custom_html_template = PathBuf::from(&test_case.target_directory);
+            custom_html_template.push("..");
+            custom_html_template.push("custom_template.html");
+            let template_config = Some(TemplateConfig{
+                styles_override: None,
+                document_html_override: Some(custom_html_template),
+                table_of_contents_html_override: None,
+                cell_page_html_override: None,
+                extra_cell_page_html_override: None,
+                left_column_html_override: None,
+                right_column_html_override: None,
+                extra_right_column_html_override: None,
+                section_html_override: None,
+                highlighted_section_html_override: None,
+                zoomed_in_map_image_size: None,
+            });
+
+            //The custom template here just prints a single "Custom template!" string.
+            write_html_doc(&test_case.target_directory, &"updated_document".to_string(),
+                           &test_case.cell_map, PixelPoint { x: 99, y: 199 },
+                           &test_case.table_of_contents_images, &test_case.cutout_images, &template_config);
+
+            let mut matching_file = test_case.target_directory;
+            fs::read_dir(test_case.expected_directory).unwrap().for_each(
+                |entry| {
+                    let entry = entry.unwrap();
+                    matching_file.push(entry.file_name());
+                    assert_files_equal(&entry.path(), &matching_file);
+                    matching_file.push("..");
+                })
         }
     }
 
     mod read_next_section {
-        use crate::document::html::{read_next_section, Section};
         use crate::document::TemplateFiles;
+        use crate::document::html::{Section, read_next_section};
 
         #[test]
         fn iterates_to_pages_and_identifies_the_next_section() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("Filler line".to_string()),
                 Ok("### Section Title".to_string()),
                 Ok("".to_string()),
                 Ok("Markdown, including [links](#000.001)".to_string()),
                 Ok("Another **line** of markdown".to_string()),
                 Ok("".to_string()),
-                Ok("# Next Header starting".to_string())
+                Ok("# Next Header starting".to_string()),
             ];
             let prefix = "prefix: ".to_string();
             let mut iterator = md_lines.into_iter().peekable();
 
             let section = read_next_section(&mut iterator, &prefix);
 
-            let expected = Some(Section{
+            let expected = Some(Section {
                 title: "Section Title".to_string(),
                 content: "prefix: <p>Markdown, including <a href=\"#000.001\">links</a>\nprefix: Another <strong>line</strong> of markdown</p>".to_string(),
                 template: TemplateFiles::Section,
@@ -632,21 +840,21 @@ mod test {
 
         #[test]
         fn iterates_to_pages_and_identifies_the_next_highlighted_section() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("Filler line".to_string()),
                 Ok("#### Section Title".to_string()),
                 Ok("".to_string()),
                 Ok("Markdown, including [links](#000.001)".to_string()),
                 Ok("Another **line** of markdown".to_string()),
                 Ok("".to_string()),
-                Ok("# Next Header starting".to_string())
+                Ok("# Next Header starting".to_string()),
             ];
             let prefix = "prefix: ".to_string();
             let mut iterator = md_lines.into_iter().peekable();
 
             let section = read_next_section(&mut iterator, &prefix);
 
-            let expected = Some(Section{
+            let expected = Some(Section {
                 title: "Section Title".to_string(),
                 content: "prefix: <p>Markdown, including <a href=\"#000.001\">links</a>\nprefix: Another <strong>line</strong> of markdown</p>".to_string(),
                 template: TemplateFiles::HighlightedSection,
@@ -656,20 +864,20 @@ mod test {
 
         #[test]
         fn identifies_sections_if_the_iterator_is_already_at_a_valid_section_header() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("### Section Title".to_string()),
                 Ok("".to_string()),
                 Ok("Markdown, including [links](#000.001)".to_string()),
                 Ok("Another **line** of markdown".to_string()),
                 Ok("".to_string()),
-                Ok("# Next Header starting".to_string())
+                Ok("# Next Header starting".to_string()),
             ];
             let prefix = "prefix: ".to_string();
             let mut iterator = md_lines.into_iter().peekable();
 
             let section = read_next_section(&mut iterator, &prefix);
 
-            let expected = Some(Section{
+            let expected = Some(Section {
                 title: "Section Title".to_string(),
                 content: "prefix: <p>Markdown, including <a href=\"#000.001\">links</a>\nprefix: Another <strong>line</strong> of markdown</p>".to_string(),
                 template: TemplateFiles::Section,
@@ -679,9 +887,9 @@ mod test {
 
         #[test]
         fn returns_none_if_eof_is_reached() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("Filler line".to_string()),
-                Ok("File is about to end".to_string())
+                Ok("File is about to end".to_string()),
             ];
             let prefix = "prefix: ".to_string();
             let mut iterator = md_lines.into_iter().peekable();
@@ -693,11 +901,11 @@ mod test {
 
         #[test]
         fn returns_none_if_the_next_header_is_not_a_section() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("Filler line".to_string()),
                 Ok("# Wrong header".to_string()),
                 Ok("### Now we get a valid section".to_string()),
-                Ok("But it's too late".to_string())
+                Ok("But it's too late".to_string()),
             ];
             let prefix = "prefix: ".to_string();
             let mut iterator = md_lines.into_iter().peekable();
@@ -709,11 +917,11 @@ mod test {
     }
 
     mod iterate_until_page_starts {
-        use crate::document::html::{iterate_until_page_starts, StartOfCellPage};
+        use crate::document::html::{StartOfCellPage, iterate_until_page_starts};
 
         #[test]
         fn iterates_to_pages_and_identifies_cell_page_information() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("Filler line".to_string()),
                 Ok("# Cell ABC".to_string()),
                 Ok("".to_string()),
@@ -721,24 +929,24 @@ mod test {
                 Ok("Markdown, including [links](#000.001)".to_string()),
                 Ok("Another **line** of markdown".to_string()),
                 Ok("".to_string()),
-                Ok("# Next Header starting".to_string())
+                Ok("# Next Header starting".to_string()),
             ];
             let mut iterator = md_lines.into_iter().peekable();
 
             let start_of_page = iterate_until_page_starts(&mut iterator);
 
-            let expected = Some(StartOfCellPage{
+            let expected = Some(StartOfCellPage {
                 title: "Page Title".to_string(),
                 description: "<p>Markdown, including <a href=\"#000.001\">links</a>\nAnother <strong>line</strong> of markdown</p>".to_string(),
                 coordinate: Some("ABC".to_string()),
-                extra_page: false
+                extra_page: false,
             });
             assert_eq!(expected, start_of_page);
         }
 
         #[test]
         fn iterates_to_pages_and_identifies_extra_cell_page_information() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("Filler line".to_string()),
                 Ok("# Extra Cell ABC".to_string()),
                 Ok("".to_string()),
@@ -746,48 +954,48 @@ mod test {
                 Ok("Markdown, including [links](#000.001)".to_string()),
                 Ok("Another **line** of markdown".to_string()),
                 Ok("".to_string()),
-                Ok("# Next Header starting".to_string())
+                Ok("# Next Header starting".to_string()),
             ];
             let mut iterator = md_lines.into_iter().peekable();
 
             let start_of_page = iterate_until_page_starts(&mut iterator);
 
-            let expected = Some(StartOfCellPage{
+            let expected = Some(StartOfCellPage {
                 title: "Page Title".to_string(),
                 description: "<p>Markdown, including <a href=\"#000.001\">links</a>\nAnother <strong>line</strong> of markdown</p>".to_string(),
                 coordinate: Some("ABC".to_string()),
-                extra_page: true
+                extra_page: true,
             });
             assert_eq!(expected, start_of_page);
         }
 
         #[test]
         fn identifies_pages_if_the_iterator_is_already_at_a_valid_page_header() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("# Cell ABC".to_string()),
                 Ok("".to_string()),
                 Ok("## Title - Page Title".to_string()),
                 Ok("Markdown, including [links](#000.001)".to_string()),
                 Ok("Another **line** of markdown".to_string()),
                 Ok("".to_string()),
-                Ok("# Next Header starting".to_string())
+                Ok("# Next Header starting".to_string()),
             ];
             let mut iterator = md_lines.into_iter().peekable();
 
             let start_of_page = iterate_until_page_starts(&mut iterator);
 
-            let expected = Some(StartOfCellPage{
+            let expected = Some(StartOfCellPage {
                 title: "Page Title".to_string(),
                 description: "<p>Markdown, including <a href=\"#000.001\">links</a>\nAnother <strong>line</strong> of markdown</p>".to_string(),
                 coordinate: Some("ABC".to_string()),
-                extra_page: false
+                extra_page: false,
             });
             assert_eq!(expected, start_of_page);
         }
 
         #[test]
         fn allows_pages_to_not_have_coordinates() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("Filler line".to_string()),
                 Ok("# Extra Cell".to_string()),
                 Ok("".to_string()),
@@ -795,45 +1003,45 @@ mod test {
                 Ok("Markdown, including [links](#000.001)".to_string()),
                 Ok("Another **line** of markdown".to_string()),
                 Ok("".to_string()),
-                Ok("# Next Header starting".to_string())
+                Ok("# Next Header starting".to_string()),
             ];
             let mut iterator = md_lines.into_iter().peekable();
 
             let start_of_page = iterate_until_page_starts(&mut iterator);
 
-            let expected = Some(StartOfCellPage{
+            let expected = Some(StartOfCellPage {
                 title: "Page Title".to_string(),
                 description: "<p>Markdown, including <a href=\"#000.001\">links</a>\nAnother <strong>line</strong> of markdown</p>".to_string(),
                 coordinate: None,
-                extra_page: true
+                extra_page: true,
             });
             assert_eq!(expected, start_of_page);
         }
 
         #[test]
         fn allows_empty_page_descriptions() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("# Cell ABC".to_string()),
                 Ok("".to_string()),
                 Ok("## Title - Page Title".to_string()),
-                Ok("# Next Header starting, no page description here".to_string())
+                Ok("# Next Header starting, no page description here".to_string()),
             ];
             let mut iterator = md_lines.into_iter().peekable();
 
             let start_of_page = iterate_until_page_starts(&mut iterator);
 
-            let expected = Some(StartOfCellPage{
+            let expected = Some(StartOfCellPage {
                 title: "Page Title".to_string(),
                 description: "".to_string(),
                 coordinate: Some("ABC".to_string()),
-                extra_page: false
+                extra_page: false,
             });
             assert_eq!(expected, start_of_page);
         }
 
         #[test]
         fn returns_none_if_the_file_ends_before_a_page_is_encountered() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("Filler".to_string()),
                 Ok("File is about to end".to_string()),
             ];
@@ -847,75 +1055,81 @@ mod test {
         #[test]
         #[should_panic]
         fn panics_if_a_header_that_is_not_a_page_header_is_encountered() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("Filler".to_string()),
                 Ok("## This is not a page header!".to_string()),
             ];
             let mut iterator = md_lines.into_iter().peekable();
 
-            let start_of_page = iterate_until_page_starts(&mut iterator);
+            iterate_until_page_starts(&mut iterator);
         }
 
         #[test]
         #[should_panic]
         fn panics_if_the_page_has_no_title_header() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("Filler".to_string()),
                 Ok("# Cell ABC".to_string()),
                 Ok("# This is not a title header!".to_string()),
             ];
             let mut iterator = md_lines.into_iter().peekable();
 
-            let start_of_page = iterate_until_page_starts(&mut iterator);
+            iterate_until_page_starts(&mut iterator);
         }
 
         #[test]
         #[should_panic]
         fn panics_if_the_file_ends_before_a_pages_title_is_found() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("Filler".to_string()),
                 Ok("# Cell ABC".to_string()),
                 Ok("The file is about to end with no title in sight".to_string()),
             ];
             let mut iterator = md_lines.into_iter().peekable();
 
-            let start_of_page = iterate_until_page_starts(&mut iterator);
+            iterate_until_page_starts(&mut iterator);
         }
     }
 
     mod next_line_starts_with {
-        use crate::document::html::{next_line_starts_with, NextLineMatch};
+        use crate::document::html::{NextLineMatch, next_line_starts_with};
 
         #[test]
         fn determines_that_the_iterator_is_at_eof() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![];
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![];
             let mut iterator = md_lines.into_iter().peekable();
             let prefix = "eof, doesn't matter";
 
-            assert_eq!(NextLineMatch::Eof, next_line_starts_with(&mut iterator, prefix));
+            assert_eq!(
+                NextLineMatch::Eof,
+                next_line_starts_with(&mut iterator, prefix)
+            );
         }
 
         #[test]
         fn determines_that_the_iterator_is_at_a_match_without_advancing_the_iterator() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
-                Ok("Match found".to_string())
-            ];
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![Ok("Match found".to_string())];
             let mut iterator = md_lines.into_iter().peekable();
             let prefix = "Match";
 
-            assert_eq!(NextLineMatch::Match, next_line_starts_with(&mut iterator, prefix));
+            assert_eq!(
+                NextLineMatch::Match,
+                next_line_starts_with(&mut iterator, prefix)
+            );
             assert_eq!("Match found", iterator.next().unwrap().unwrap().as_str());
         }
 
         #[test]
         fn determines_that_the_iterator_is_not_at_a_match_without_advancing_the_iterator() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
-                Ok("No Match found".to_string())
-            ];
+            let md_lines: Vec<Result<String, std::io::Error>> =
+                vec![Ok("No Match found".to_string())];
             let mut iterator = md_lines.into_iter().peekable();
             let prefix = "Match";
 
-            assert_eq!(NextLineMatch::NoMatch, next_line_starts_with(&mut iterator, prefix));
+            assert_eq!(
+                NextLineMatch::NoMatch,
+                next_line_starts_with(&mut iterator, prefix)
+            );
             assert_eq!("No Match found", iterator.next().unwrap().unwrap().as_str());
         }
     }
@@ -925,29 +1139,29 @@ mod test {
 
         #[test]
         fn iterates_until_a_header_is_reached() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("First line".to_string()),
                 Ok("Second line".to_string()),
-                Ok("# Found a header!".to_string())
+                Ok("# Found a header!".to_string()),
             ];
             let mut iterator = md_lines.into_iter().peekable();
 
             let lines = iterate_until_header_or_eof(&mut iterator);
 
-            let expected_lines = vec![
-                "First line".to_string(),
-                "Second line".to_string(),
-            ];
+            let expected_lines = vec!["First line".to_string(), "Second line".to_string()];
             assert_eq!(expected_lines, lines);
-            assert_eq!("# Found a header!", iterator.next().unwrap().unwrap().as_str())
+            assert_eq!(
+                "# Found a header!",
+                iterator.next().unwrap().unwrap().as_str()
+            )
         }
 
         #[test]
         fn iterates_until_eof_is_reached() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("First line".to_string()),
                 Ok("Second line".to_string()),
-                Ok("File is about to end".to_string())
+                Ok("File is about to end".to_string()),
             ];
             let mut iterator = md_lines.into_iter().peekable();
 
@@ -956,14 +1170,14 @@ mod test {
             let expected_lines = vec![
                 "First line".to_string(),
                 "Second line".to_string(),
-                "File is about to end".to_string()
+                "File is about to end".to_string(),
             ];
             assert_eq!(expected_lines, lines);
         }
 
         #[test]
         fn stops_immediately_if_the_next_line_is_already_a_header() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![
                 Ok("# Found a header!".to_string()),
                 Ok("First line".to_string()),
                 Ok("Second line".to_string()),
@@ -974,12 +1188,15 @@ mod test {
 
             let expected_lines: Vec<String> = vec![];
             assert_eq!(expected_lines, lines);
-            assert_eq!("# Found a header!", iterator.next().unwrap().unwrap().as_str())
+            assert_eq!(
+                "# Found a header!",
+                iterator.next().unwrap().unwrap().as_str()
+            )
         }
 
         #[test]
         fn stops_immediately_if_the_next_line_is_already_eof() {
-            let md_lines : Vec<Result<String, std::io::Error>> = vec![];
+            let md_lines: Vec<Result<String, std::io::Error>> = vec![];
             let mut iterator = md_lines.into_iter().peekable();
 
             let lines = iterate_until_header_or_eof(&mut iterator);

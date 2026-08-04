@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8"/>
+    <title>updated_document</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+    <div class="map-container page">
+        <img src="generated-images/first_toc.jpg" alt="Large map with linked cells." style="width:1px; height:2px;"/>
+        <svg class="link-overlay" viewBox="0 0 1 2" xmlns="http://www.w3.org/2000/svg">
+
+                <a href=#coord-1>
+                    <rect class="cell-link" x="-2" y="-3" width="9" height ="19"/>
+                </a>
+
+                <a href=#coord-2>
+                    <rect class="cell-link" x="18" y="17" width="9" height ="9"/>
+                </a>
+        </svg>
+    </div>
+    <div class="map-container page">
+        <img src="generated-images/second_toc.jpg" alt="Large map with linked cells." style="width:4px; height:5px;"/>
+        <svg class="link-overlay" viewBox="0 0 4 5" xmlns="http://www.w3.org/2000/svg">
+
+                <a href=#coord-2>
+                    <rect class="cell-link" x="15" y="14" width="9" height ="9"/>
+                </a>
+
+                <a href=#coord-3>
+                    <rect class="cell-link" x="35" y="34" width="9" height ="9"/>
+                </a>
+        </svg>
+    </div>
+    <div class="cell-page" id="coord-1">
+        <div class="page-header">
+            <h1 class="header-title">
+                User First Page
+            </h1>
+            <h4 class="header-description">
+                <p>First page description</p>
+            </h4>
+            <div class="header-separator"></div>
+        </div>
+        <div class="page-contents">
+            <div class="left-column column">
+                <section class="standard-section">
+                    <h4 class="standard-section-header">
+                        Foo
+                    </h4>
+                    <p class="standard-section-contents">
+                                        <p><a href="#coord-1">Bar</a></p>
+                    </p>
+                </section>
+                <div class="filler-woods"></div>
+            </div>
+            <div class="column">
+                <div class="map-container" id="map-coord-1">
+                    <img class= "zoomed-in-map" src="generated-images/coord-1.png" alt="coord-1 Map Cutout"/>
+                    <svg class="link-overlay" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
+
+                            <a href=#coord-2>
+                                <rect class="cell-link" x="31" y="41" width="9" height ="9"/>
+                            </a>
+                    </svg>
+                </div>
+                <section class="standard-section">
+                    <h4 class="standard-section-header">
+                        Coord two is missing and will be added
+                    </h4>
+                    <p class="standard-section-contents">
+                                        <p>Yo</p>
+                    </p>
+                </section>
+                <div class="filler-hexagons"></div>
+            </div>
+        </div>
+    </div>
+    <div class="cell-page" id="coord-2">
+        <div class="page-header">
+            <h1 class="header-title">
+                Cell coord-2
+            </h1>
+            <h4 class="header-description">
+                <p>Short Description</p>
+            </h4>
+            <div class="header-separator"></div>
+        </div>
+        <div class="page-contents">
+            <div class="left-column column">
+                <section class="standard-section">
+                    <h4 class="standard-section-header">
+                        Normal Section - Title
+                    </h4>
+                    <p class="standard-section-contents">
+                                        <p>This is a normal section, good for describing big features.</p>
+                    </p>
+                </section>
+                <section class="highlighted-section">
+                    <h4 class="highlighted-section-header">Highlighted Section - Title</h4>
+                    <p class="highlighted-section-contents">                <p>This is a highlighted section, good for focusing in on details such as NPCs or treasure.</p></p>
+                </section>
+                <div class="filler-woods"></div>
+            </div>
+            <div class="column">
+                <div class="map-container" id="map-coord-2">
+                    <img class= "zoomed-in-map" src="generated-images/coord-2.png" alt="coord-2 Map Cutout"/>
+                    <svg class="link-overlay" viewBox="0 0 99 199" xmlns="http://www.w3.org/2000/svg">
+
+                            <a href=#coord-1>
+                                <rect class="cell-link" x="101" y="201" width="9" height ="19"/>
+                            </a>
+
+                            <a href=#coord-3>
+                                <rect class="cell-link" x="141" y="241" width="9" height ="9"/>
+                            </a>
+                    </svg>
+                </div>
+                <section class="standard-section">
+                    <h4 class="standard-section-header">
+                        Columns
+                    </h4>
+                    <p class="standard-section-contents">
+                                        <p>Every page is split into two columns. Extra space is filled with SVG art.</p>
+                    </p>
+                </section>
+                <section class="highlighted-section">
+                    <h4 class="highlighted-section-header">Need more space?</h4>
+                    <p class="highlighted-section-contents">                <p>Add any number of extra pages by writing a Header starting with '# Extra (Title of your extra page)'.
+                Note that these extra pages also need a ## Left Column and ## Right Column.</p></p>
+                </section>
+                <div class="filler-hexagons"></div>
+            </div>
+        </div>
+    </div>
+    <div class="cell-page" id="coord-3">
+        <div class="page-header">
+            <h1 class="header-title">
+                Custom cell 3
+            </h1>
+            <h4 class="header-description">
+                <p>Short Description 3</p>
+            </h4>
+            <div class="header-separator"></div>
+        </div>
+        <div class="page-contents">
+            <div class="left-column column">
+                <section class="standard-section">
+                    <h4 class="standard-section-header">
+                        Blah
+                    </h4>
+                    <p class="standard-section-contents">
+                                        <p>Deblah</p>
+                    </p>
+                </section>
+                <div class="filler-woods"></div>
+            </div>
+            <div class="column">
+                <div class="map-container" id="map-coord-3">
+                    <img class= "zoomed-in-map" src="generated-images/coord-3.png" alt="coord-3 Map Cutout"/>
+                    <svg class="link-overlay" viewBox="0 0 99 199" xmlns="http://www.w3.org/2000/svg">
+
+                            <a href=#coord-2>
+                                <rect class="cell-link" x="171" y="271" width="9" height ="9"/>
+                            </a>
+                    </svg>
+                </div>
+                <section class="highlighted-section">
+                    <h4 class="highlighted-section-header">Even more</h4>
+                    <p class="highlighted-section-contents">                <p>blah</p></p>
+                </section>
+                <div class="filler-hexagons"></div>
+            </div>
+        </div>
+    </div>
+</html>
