@@ -6,20 +6,27 @@ use std::io;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
+/// After each run, the [Config] used is persisted to [LAST_USED_CONFIG].
 pub static LAST_USED_CONFIG: &str = "last_used_config.json";
 
+/// Holds all user input required for running the program.
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct Config {
     /// Generated files - images and html - will be saved in a child directory of [target_directory].
     pub target_directory: PathBuf,
+    /// The title of the generated html.
     pub title: String,
+    /// Describes the input map image.
     pub map_image: MapImageConfig,
     /// Describes the structure of the map.
     pub geometry: Geometry,
+    /// Optional customization on how images are generaetd.
     pub image_handling_config: Option<ImageHandlingConfig>,
+    /// Optional overrides for the various html and css templates used.
     pub template: Option<TemplateConfig>,
 }
 
+/// Describes the input map image.
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct MapImageConfig {
     /// The file containing the map. ex: sweetestMap.png
@@ -33,6 +40,7 @@ pub struct MapImageConfig {
 /// The program can try to automatically determine which cells have no content.
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 
+/// Allows customizing whether and how empty cells are detected.
 pub struct SkipEmptyCellsConfig {
     /// Whether to determine and skip empty cells. Defaults to true.
     pub skipping_enabled: Option<bool>,
@@ -120,7 +128,7 @@ pub struct TemplateConfig {
     pub zoomed_in_map_image_size: Option<PixelPoint>,
 }
 
-/// Reads a [Config] out of the file at [config_path].
+/// Reads a [Config] out of the file at the input [PathBuf].
 pub fn parse_config(config_path: PathBuf) -> Option<Config> {
     let file = File::open(config_path);
     if file.is_err() {
@@ -134,7 +142,7 @@ pub fn parse_config(config_path: PathBuf) -> Option<Config> {
     }
 }
 
-/// Persists the [config] to the [path] as a pretty-JSON file.
+/// Persists the [Config] to the [LAST_USED_CONFIG] path as a pretty-JSON file.
 pub fn persist_config(config: &Config) {
     let path = PathBuf::from(LAST_USED_CONFIG);
     let mut writer = BufWriter::new(File::create(path).unwrap());
@@ -144,6 +152,11 @@ pub fn persist_config(config: &Config) {
     writer.flush().unwrap();
 }
 
+/// Generates a [Config] in a terminal interactively, asking the user for each required piece of
+/// input.
+///
+/// Not all possible inputs are queried, if you want a more advanced Config you'll have to write a
+/// config.json file and pass it to the program.
 pub fn generate_config_interactively() -> Config {
     println!("Generating a config interactively");
     let mut input = String::new();
