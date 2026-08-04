@@ -302,16 +302,16 @@ mod test {
         }
 
         mod caching {
+            use crate::PixelPoint;
             use crate::image_handling::IMAGE_SUBDIRECTORY;
             use crate::image_handling::table_of_contents::test::save_table_of_contents_map_images::two_fifty_px_by_two_fifty_px_cell_map;
             use crate::image_handling::table_of_contents::{
                 TableOfContentsMapImage, save_table_of_contents_map_images_with_cache,
             };
             use crate::image_handling::test::fixtures::get_test_resources_path;
-            use crate::{ PixelPoint};
             use std::collections::{HashMap, HashSet};
             use std::fs;
-            use std::path::{ PathBuf};
+            use std::path::PathBuf;
 
             #[test]
             fn only_saves_images_if_no_cached_image_is_present() {

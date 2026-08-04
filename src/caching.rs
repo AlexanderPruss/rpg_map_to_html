@@ -179,7 +179,7 @@ fn find_changed_pixels(map_image: &DynamicImage, previous_image: &DynamicImage) 
 #[cfg(test)]
 mod test {
     use crate::PixelPoint;
-    use crate::config::{Config, MapImageConfig, LAST_USED_CONFIG};
+    use crate::config::{Config, LAST_USED_CONFIG, MapImageConfig};
     use crate::geometry::CellMap;
     use crate::geometry::Geometry::Hexagons;
     use crate::geometry::hexagons::fixtures::{FourByFour, ToSnapshot};
@@ -189,7 +189,7 @@ mod test {
     use image::DynamicImage;
     use std::collections::{HashMap, HashSet};
     use std::fs;
-    use std::path::{ PathBuf};
+    use std::path::PathBuf;
 
     struct CachingTestCase {
         target_directory: PathBuf,
@@ -314,7 +314,6 @@ mod test {
             filters_out_cached_values_intersecting_changed_pixels();
         }
 
-
         fn returns_none_if_the_config_has_changed() {
             let test_case_name = "changed_config".to_string();
             let test_case = standard_test_case(test_case_name);
@@ -371,7 +370,7 @@ mod test {
                     .table_of_contents_images_by_filename,
                 cutout_images_by_coordinate: test_case.cutout_images_by_coordinate,
             });
-            assert_eq!(expected, cached_objects); 
+            assert_eq!(expected, cached_objects);
         }
 
         fn filters_out_cached_values_intersecting_changed_pixels() {
@@ -398,7 +397,8 @@ mod test {
                     .into_iter()
                     .filter(|(_filename, toc)| toc.offset.x > 99)
                     .collect(),
-                cutout_images_by_coordinate: test_case.cutout_images_by_coordinate
+                cutout_images_by_coordinate: test_case
+                    .cutout_images_by_coordinate
                     .into_iter()
                     .filter(|(_filename, cutout)| cutout.offset_from_original_image.x > 99)
                     .collect(),
@@ -409,11 +409,11 @@ mod test {
     }
 
     mod find_changed_pixels {
-        use image::DynamicImage::ImageRgb8;
-        use image::{GenericImage, Rgba};
         use crate::caching::ChangedImage::{AllNew, Changes, NoChanges};
         use crate::caching::find_changed_pixels;
         use crate::{PixelBox, PixelPoint};
+        use image::DynamicImage::ImageRgb8;
+        use image::{GenericImage, Rgba};
 
         #[test]
         fn identifies_an_image_as_new_if_its_dimensions_have_changed() {
@@ -432,7 +432,10 @@ mod test {
             changed_corners.put_pixel(0, 0, Rgba([1, 1, 1, 1]));
             changed_corners.put_pixel(31, 31, Rgba([1, 1, 1, 1]));
 
-            assert_eq!(AllNew, find_changed_pixels(&baseline_image, &changed_corners));
+            assert_eq!(
+                AllNew,
+                find_changed_pixels(&baseline_image, &changed_corners)
+            );
         }
 
         #[test]
@@ -453,10 +456,16 @@ mod test {
                 }
             }
 
-            let expected = Changes {bounding_box: PixelBox{
-                top_left_corner: PixelPoint {x: 10, y:12},
-                bottom_right_corner: PixelPoint {x:20, y:18} }};
-            assert_eq!(expected, find_changed_pixels(&baseline_image, &changed_diagonal));
+            let expected = Changes {
+                bounding_box: PixelBox {
+                    top_left_corner: PixelPoint { x: 10, y: 12 },
+                    bottom_right_corner: PixelPoint { x: 20, y: 18 },
+                },
+            };
+            assert_eq!(
+                expected,
+                find_changed_pixels(&baseline_image, &changed_diagonal)
+            );
         }
     }
 }

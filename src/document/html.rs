@@ -18,7 +18,7 @@ use std::path::PathBuf;
 static HTML_DOC_FILENAME: &str = "rpg_map_doc.html";
 static STYLES_FILENAME: &str = "styles.css";
 
-struct ReaderWriter<I: Iterator<Item=std::io::Result<String>>> {
+struct ReaderWriter<I: Iterator<Item = std::io::Result<String>>> {
     writer: BufWriter<File>,
     md_lines: Peekable<I>,
 }
@@ -120,7 +120,7 @@ fn generate_html_doc(mut context: DocumentContext) {
 ///
 /// Otherwise, any [Token]s the line contains are replaced with their values, and the
 /// line is written with an endline.
-fn fill_template_or_write_line<I: Iterator<Item=Result<String, std::io::Error>>>(
+fn fill_template_or_write_line<I: Iterator<Item = Result<String, std::io::Error>>>(
     mut context: &mut DocumentContext,
     mut reader_writer: &mut ReaderWriter<I>,
     line: String,
@@ -135,7 +135,7 @@ fn fill_template_or_write_line<I: Iterator<Item=Result<String, std::io::Error>>>
     reader_writer.writer.write("\n".as_bytes()).unwrap();
 }
 
-fn fill_templates_if_found<I: Iterator<Item=Result<String, std::io::Error>>>(
+fn fill_templates_if_found<I: Iterator<Item = Result<String, std::io::Error>>>(
     line: &str,
     reader_writer: &mut ReaderWriter<I>,
     context: &mut DocumentContext,
@@ -214,7 +214,7 @@ enum Column {
     ExtraRight,
 }
 
-fn fill_table_of_contents_templates<I: Iterator<Item=Result<String, std::io::Error>>>(
+fn fill_table_of_contents_templates<I: Iterator<Item = Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
@@ -230,7 +230,7 @@ fn fill_table_of_contents_templates<I: Iterator<Item=Result<String, std::io::Err
     }
 }
 
-fn fill_table_of_contents_polygon_links<I: Iterator<Item=Result<String, std::io::Error>>>(
+fn fill_table_of_contents_polygon_links<I: Iterator<Item = Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
@@ -257,7 +257,7 @@ fn fill_table_of_contents_polygon_links<I: Iterator<Item=Result<String, std::io:
     )
 }
 
-fn fill_zoomed_in_map_polygon_links<I: Iterator<Item=Result<String, std::io::Error>>>(
+fn fill_zoomed_in_map_polygon_links<I: Iterator<Item = Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
@@ -267,7 +267,7 @@ fn fill_zoomed_in_map_polygon_links<I: Iterator<Item=Result<String, std::io::Err
             "Tried to fill a [[{}]] template, but the context had not set current coordinate",
             Template::ZoomedInMapPolygonLinks
         )
-            .as_str(),
+        .as_str(),
     );
     let cell = context
         .cell_map
@@ -328,7 +328,7 @@ struct StartOfCellPage {
 
 /// Iterates over the markdown content until it is consumed and all pages contained inside are mapped
 /// to html. Further calls to templates based on the markdown reader will fail.
-fn fill_cell_pages<I: Iterator<Item=Result<String, std::io::Error>>>(
+fn fill_cell_pages<I: Iterator<Item = Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
@@ -368,7 +368,7 @@ fn fill_cell_pages<I: Iterator<Item=Result<String, std::io::Error>>>(
         write_template(context, reader_writer, prefix, template);
     }
 }
-fn fill_column<I: Iterator<Item=Result<String, std::io::Error>>>(
+fn fill_column<I: Iterator<Item = Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
@@ -409,7 +409,7 @@ fn fill_column<I: Iterator<Item=Result<String, std::io::Error>>>(
     write_template(context, reader_writer, &prefix, template_file);
 }
 
-fn write_template<I: Iterator<Item=Result<String, std::io::Error>>>(
+fn write_template<I: Iterator<Item = Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
@@ -431,7 +431,7 @@ struct Section {
     template: TemplateFiles,
 }
 
-fn fill_sections<I: Iterator<Item=Result<String, std::io::Error>>>(
+fn fill_sections<I: Iterator<Item = Result<String, std::io::Error>>>(
     context: &mut DocumentContext,
     reader_writer: &mut ReaderWriter<I>,
     prefix: &String,
@@ -447,7 +447,7 @@ fn fill_sections<I: Iterator<Item=Result<String, std::io::Error>>>(
     }
 }
 
-fn read_next_section<I: Iterator<Item=Result<String, std::io::Error>>>(
+fn read_next_section<I: Iterator<Item = Result<String, std::io::Error>>>(
     md_lines: &mut Peekable<I>,
     prefix: &String,
 ) -> Option<Section> {
@@ -493,7 +493,7 @@ fn read_next_section<I: Iterator<Item=Result<String, std::io::Error>>>(
     })
 }
 
-fn iterate_until_page_starts<I: Iterator<Item=Result<String, std::io::Error>>>(
+fn iterate_until_page_starts<I: Iterator<Item = Result<String, std::io::Error>>>(
     md_lines: &mut Peekable<I>,
 ) -> Option<StartOfCellPage> {
     // Cells are H1 headers. If the next line is not a header, then we're in the wrong part of the markdown file and give up
@@ -562,7 +562,7 @@ enum NextLineMatch {
     Eof,
 }
 
-fn next_line_starts_with<I: Iterator<Item=Result<String, std::io::Error>>>(
+fn next_line_starts_with<I: Iterator<Item = Result<String, std::io::Error>>>(
     md_lines: &mut Peekable<I>,
     prefix: &str,
 ) -> NextLineMatch {
@@ -578,7 +578,7 @@ fn next_line_starts_with<I: Iterator<Item=Result<String, std::io::Error>>>(
 }
 
 /// Iterates until the next (peeked) line is either a header or EOF. Returns all lines encountered.
-fn iterate_until_header_or_eof<I: Iterator<Item=Result<String, std::io::Error>>>(
+fn iterate_until_header_or_eof<I: Iterator<Item = Result<String, std::io::Error>>>(
     md_lines: &mut Peekable<I>,
 ) -> Vec<String> {
     let mut lines: Vec<String> = vec![];
@@ -595,6 +595,8 @@ mod test {
     //TODO: Should these be integration tests? But then I can't use my fixtures.
     mod write_html_doc {
         use crate::config::TemplateConfig;
+        use crate::document::html::write_html_doc;
+        use crate::document::test::fixtures::assert_files_equal;
         use crate::geometry::{BoundingPolygon, Cell, CellMap};
         use crate::image_handling::map_cutout::CutoutImage;
         use crate::image_handling::table_of_contents::TableOfContentsMapImage;
@@ -602,8 +604,6 @@ mod test {
         use std::collections::{HashMap, HashSet};
         use std::fs;
         use std::path::PathBuf;
-        use crate::document::html::write_html_doc;
-        use crate::document::test::fixtures::assert_files_equal;
 
         struct HtmlDocTestCase {
             target_directory: PathBuf,
@@ -734,13 +734,20 @@ mod test {
         #[test]
         fn creates_a_new_html_document_with_default_content() {
             let test_case = standard_test_case("new_document".to_string());
-            write_html_doc(&test_case.target_directory, &"new_document".to_string(),
-                           &test_case.cell_map, PixelPoint { x: 99, y: 199 },
-                           &test_case.table_of_contents_images, &test_case.cutout_images, &None);
+            write_html_doc(
+                &test_case.target_directory,
+                &"new_document".to_string(),
+                &test_case.cell_map,
+                PixelPoint { x: 99, y: 199 },
+                &test_case.table_of_contents_images,
+                &test_case.cutout_images,
+                &None,
+            );
 
             let mut matching_file = test_case.target_directory;
-            fs::read_dir(test_case.expected_directory).unwrap().for_each(
-                |entry| {
+            fs::read_dir(test_case.expected_directory)
+                .unwrap()
+                .for_each(|entry| {
                     let entry = entry.unwrap();
                     matching_file.push(entry.file_name());
                     assert_files_equal(&entry.path(), &matching_file);
@@ -760,13 +767,20 @@ mod test {
             user_content_destination.push("map_content.md");
             fs::copy(user_content, user_content_destination).unwrap();
 
-            write_html_doc(&test_case.target_directory, &"updated_document".to_string(),
-                           &test_case.cell_map, PixelPoint { x: 99, y: 199 },
-                           &test_case.table_of_contents_images, &test_case.cutout_images, &None);
+            write_html_doc(
+                &test_case.target_directory,
+                &"updated_document".to_string(),
+                &test_case.cell_map,
+                PixelPoint { x: 99, y: 199 },
+                &test_case.table_of_contents_images,
+                &test_case.cutout_images,
+                &None,
+            );
 
             let mut matching_file = test_case.target_directory;
-            fs::read_dir(test_case.expected_directory).unwrap().for_each(
-                |entry| {
+            fs::read_dir(test_case.expected_directory)
+                .unwrap()
+                .for_each(|entry| {
                     let entry = entry.unwrap();
                     matching_file.push(entry.file_name());
                     assert_files_equal(&entry.path(), &matching_file);
@@ -780,7 +794,7 @@ mod test {
             let mut custom_html_template = PathBuf::from(&test_case.target_directory);
             custom_html_template.push("..");
             custom_html_template.push("custom_template.html");
-            let template_config = Some(TemplateConfig{
+            let template_config = Some(TemplateConfig {
                 styles_override: None,
                 document_html_override: Some(custom_html_template),
                 table_of_contents_html_override: None,
@@ -795,13 +809,20 @@ mod test {
             });
 
             //The custom template here just prints a single "Custom template!" string.
-            write_html_doc(&test_case.target_directory, &"updated_document".to_string(),
-                           &test_case.cell_map, PixelPoint { x: 99, y: 199 },
-                           &test_case.table_of_contents_images, &test_case.cutout_images, &template_config);
+            write_html_doc(
+                &test_case.target_directory,
+                &"updated_document".to_string(),
+                &test_case.cell_map,
+                PixelPoint { x: 99, y: 199 },
+                &test_case.table_of_contents_images,
+                &test_case.cutout_images,
+                &template_config,
+            );
 
             let mut matching_file = test_case.target_directory;
-            fs::read_dir(test_case.expected_directory).unwrap().for_each(
-                |entry| {
+            fs::read_dir(test_case.expected_directory)
+                .unwrap()
+                .for_each(|entry| {
                     let entry = entry.unwrap();
                     matching_file.push(entry.file_name());
                     assert_files_equal(&entry.path(), &matching_file);
