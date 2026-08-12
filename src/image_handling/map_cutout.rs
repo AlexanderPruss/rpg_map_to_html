@@ -16,6 +16,7 @@ pub struct CutoutImage {
     pub image_size: PixelPoint,
 }
 
+/// As [save_cutout_images_with_cache], but without caching.
 pub fn save_cutout_images(
     target_directory: &PathBuf,
     cell_map: &CellMap,

@@ -12,7 +12,7 @@ pub static LAST_USED_CONFIG: &str = "last_used_config.json";
 /// Holds all user input required for running the program.
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct Config {
-    /// Generated files - images and html - will be saved in a child directory of [target_directory].
+    /// Generated files - images and html - will be saved in a child directory of the target_directory.
     pub target_directory: PathBuf,
     /// The title of the generated html.
     pub title: String,
@@ -20,7 +20,7 @@ pub struct Config {
     pub map_image: MapImageConfig,
     /// Describes the structure of the map.
     pub geometry: Geometry,
-    /// Optional customization on how images are generaetd.
+    /// Optional customization on how images are generated.
     pub image_handling_config: Option<ImageHandlingConfig>,
     /// Optional overrides for the various html and css templates used.
     pub template: Option<TemplateConfig>,
@@ -44,7 +44,7 @@ pub struct MapImageConfig {
 pub struct SkipEmptyCellsConfig {
     /// Whether to determine and skip empty cells. Defaults to true.
     pub skipping_enabled: Option<bool>,
-    /// The multiplier should be in the range (0, 1.0). It scales the [BoundingPolygon] around the
+    /// The multiplier should be in the range (0, 1.0). It scales the [geometry::BoundingPolygon] around the
     /// cell's center point. If the area defined this way is empty, the cell is skipped.
     ///
     /// Defaults to 30%. You may need so scale this up if the middle of filled cells is still blank,

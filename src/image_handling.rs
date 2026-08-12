@@ -9,10 +9,18 @@ use std::io::{BufReader, Write};
 use std::ops::Add;
 use std::path::PathBuf;
 
+/// Handles user input.
 pub mod image_config;
 
+/// Creates map cutouts, i.e. the small zoomed-in maps used on cell pages.
+///
+/// It would be possible to do not do any map cutouts at all and instead just re-use the original image,
+/// like with a sprite atlas, but this would result in a much larger pdf file size.
 pub mod map_cutout;
+/// Creates table of contents images, i.e. the large pictures of the map at the start of the document.
 pub mod table_of_contents;
+/// Saves a visualization of the cell map to allow users a sanity check as to whether the geometry was
+/// computed correctly.
 pub mod visualize_cell_map;
 
 mod empty_cell_detection;
@@ -21,7 +29,7 @@ pub static IMAGE_SUBDIRECTORY: &str = "generated-images";
 pub static CACHED_TABLE_OF_CONTENTS_FILE: &str = "table-of-contents-metadata.json";
 pub static CACHED_CUTOUT_IMAGES_FILE: &str = "cutout-images-metadata.json";
 
-/// Saves a cell map. Used primarily for caching.
+/// Saves image metadata. Used primarily for caching.
 pub fn persist_image_metadata(
     target_directory: &PathBuf,
     image_filename: &String,
@@ -53,7 +61,7 @@ pub fn persist_image_metadata(
     image.save(cached_image_path).unwrap();
 }
 
-/// Loads the cell map persisted by [persist_cell_map_as_geometry]. Returns NONE if the file can't
+/// Loads the metadata persisted by [persist_image_metadata]. Returns NONE if any files can't
 /// be found or parsed.
 pub fn load_persisted_image_metadata(
     target_directory: &PathBuf,

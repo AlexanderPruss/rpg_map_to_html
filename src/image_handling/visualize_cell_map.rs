@@ -4,7 +4,7 @@ use image::{DynamicImage, ImageFormat, Rgba};
 use imageproc::drawing::{draw_cross_mut, draw_text_mut};
 use std::path::PathBuf;
 
-/// Draws the [cell_map] onto a copy of the [original_image], saving the result. This allows
+/// Draws a [CellMap] onto a copy of the original_iamge, saving the result. This allows
 /// a visual inspection of what was generated.
 pub fn save_cell_map_visualization(
     target_directory: &PathBuf,

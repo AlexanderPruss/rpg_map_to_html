@@ -20,9 +20,9 @@ pub struct HexagonGeometryDefinition {
     pub filled_top_left_corner: FilledTopLeftCorner,
     pub number_of_rows: u8,
     pub number_of_columns: u8,
-    /// The units here can be pixels, cm, whatever, so long as they're consistent with [hexagon_width]
+    /// The units here can be pixels, cm, whatever, so long as they're consistent with [hexagon_width](HexagonGeometryDefinition::hexagon_width)
     pub hexagon_height: f32,
-    /// The units here can be pixels, cm, whatever, so long as they're consistent with [hexagon_height]
+    /// The units here can be pixels, cm, whatever, so long as they're consistent with [hexagon_height](HexagonGeometryDefinition::hexagon_height)
     pub hexagon_width: f32,
 }
 

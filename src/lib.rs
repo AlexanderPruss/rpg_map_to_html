@@ -7,7 +7,7 @@
 //!
 //! Thanks to Gavin Norman and his brilliant Dolmenwood! Your old players in Germany say hello :)
 //!
-//! ## Who is this for?
+//! # Who is this for?
 //!
 //! For GMs and players who want to share location-based information with each other. This helps with
 //! any exploration based game or hexcrawl, but is especially useful for open tables. Instead of
@@ -18,13 +18,9 @@
 //! at the beginning of the file links to all discovered cells, and each cell's page contains a hyperlinked
 //! map cutout showing its surroundings.
 //!
-//! ### Examples
+//! # Usage
 //!
-//! See the `examples` folder on GitHub for an example of a simple hex map.
-//!
-//! ## Usage
-//!
-//! ### Make a map
+//! ## Make a map
 //!
 //! First, you need a map! The app was built for hex maps from Hexographer, but any hex map will work.
 //!
@@ -32,7 +28,7 @@
 //! as the players explore. Per default, the app will not generate any documentation for 'empty' (white) hexes.
 //! You can reconfigure what color counts as 'empty'.
 //!
-//! ### Convert your map to a new html file
+//! ## Convert your map to a new html file
 //!
 //! Now run the app. It will start in interactive mode and will ask you for the input needed to
 //! transform the map into an html file. The resulting files will be created in a target directory
@@ -41,7 +37,7 @@
 //! * rpg_map_doc.html - This is the html file that you can then print to a PDF.
 //! * map_content.md - This is a markdown file that you and your players can edit to document the map.
 //!
-//! ### Document your map
+//! ## Document your map
 //!
 //! You or your players can edit the `map_content.md` file to write documentation for the map cells
 //! that they have discovered. A page is generated for every non-empty cell that does not yet have a cell
@@ -49,11 +45,11 @@
 //!
 //! Once you've added your own content, simply re-run the app and it will update the html for you.
 //!
-//! ### Print to PDF
+//! ## Print to PDF
 //!
 //! All major browsers can then print the html to a pdf file.
 //!
-//! ### Share with your party
+//! ## Share with your party
 //!
 //! You can share the your map documentation PDF and the `map_content.md` with your players. After each
 //! section, you can update the map image (if the players have explored further) and the `map_content` and rerun the app,
