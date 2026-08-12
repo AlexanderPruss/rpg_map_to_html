@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
+/// The name of the generated markdown content file.
 pub static MARKDOWN_TEMPLATE_FILENAME: &str = "map_content.md";
 static TEMP_PREFIX: &str = "temp_";
 
@@ -15,8 +16,8 @@ static RIGHT_COLUMN_PREFIX: &str = "## Right Column";
 static SECTION_PREFIX: &str = "### ";
 static HIGHLIGHTED_SECTION_PREFIX: &str = "#### ";
 
-/// Each page generates an h1 header that identifies it and its cell coordinate.
-pub enum MarkdownHeaders {
+/// The headers identifying pieces of information in the markdown file.
+pub(crate) enum MarkdownHeaders {
     CellPage,
     ExtraCellPage,
     PageTitle,

@@ -15,12 +15,15 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::string::ToString;
 
+/// Creates and updates the markdown content of the map.
 pub mod markdown_content;
 
+/// Creates the final html.
 pub mod html;
-/// The templates that are used to generate the final html document.
+/// The templates that are used to generate the final html document. Any of these can be overwritten
+/// by providing your own [TemplateConfig].
 #[derive(PartialEq, Debug)]
-enum TemplateFiles {
+pub enum TemplateFiles {
     Styles,
     MapDocs,
     TableOfContents,
@@ -100,9 +103,7 @@ impl TemplateFiles {
 }
 
 /// In-line tokens inside of the template files. They are replaced by simple strings.
-///
-/// Tokens are wrapped by double brackets;
-/// e.g. {{DOCUMENT_TITLE}} maps to [DocumentTitle](Token/DocumentTitle).
+/// Tokens are wrapped by double brackets; e.g. {{DOCUMENT_TITLE}} maps to [DocumentTitle].
 #[derive(Eq, Hash, PartialEq)]
 pub enum Token {
     DocumentTitle,
@@ -152,9 +153,8 @@ impl FromStr for Token {
     }
 }
 
-/// In-line templates inside of the template files. Unlike (tokens)[Token], Templates can contain
+/// In-line templates inside of the template files. Unlike [tokens](Token), Templates can contain
 /// multiple lines, including further tokens and templates.
-///
 /// Templates are wrapped by double brackets;
 /// e.g. \[\[CELL_PAGES]] maps to [CellPages](Template/CellPages).
 #[derive(Debug, PartialEq)]

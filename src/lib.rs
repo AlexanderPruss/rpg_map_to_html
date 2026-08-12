@@ -9,13 +9,13 @@
 //!
 //! ## Who is this for?
 //!
-//! For GMs and players who want to share location-based information with each other. This help with
+//! For GMs and players who want to share location-based information with each other. This helps with
 //! any exploration based game or hexcrawl, but is especially useful for open tables. Instead of
-//! reading through multiple session logs, new or returning players can just  browse through the locations
+//! reading through multiple session logs, new or returning players can just browse through the locations
 //! the party has discovered.
 //!
 //! The resulting file is styled loosely like the Dolmenwood Campaign Book. A table-of-contents map
-//! at the beginning of the file links to all discovered hexes, and each hex's page contains a hyperlinked
+//! at the beginning of the file links to all discovered cells, and each cell's page contains a hyperlinked
 //! map cutout showing its surroundings.
 //!
 //! ### Examples
@@ -43,19 +43,9 @@
 //!
 //! ### Document your map
 //!
-//! You or your players can edit the `map_content.md` file to write documentation for the hexes
-//! that they have discovered. This content is markdown-ish, meaning you can write bold text, links,
-//! etc.
-//!
-//! **However**, the structure of the `map_content.md` file must stay valid. Basically, just copy
-//! the structure of the auto-generated file and you'll be fine. More precisely,
-//!
-//! * Cell (hex) pages must start with `# Cell {Coordinate}` or `# Extra Page - {Optional Coordinate}`.
-//! * No other h1 headers ('#') are allowed.
-//! * The first h2 header ('##') of the cell must contain its title, as `## Title - {Title}`.
-//! * The cell page needs a `## Left Column` and `## Right Column`.
-//! * Each column can have as many h3 sections (`### Section title`) or highlighted h4 sections `#### Highlighted Title`) as you want.
-//! * However, be careful not to overflow the page if you want the pdf to look nice.
+//! You or your players can edit the `map_content.md` file to write documentation for the map cells
+//! that they have discovered. A page is generated for every non-empty cell that does not yet have a cell
+//! page. Generated pages contain instructions on how `map_content.md` is used.
 //!
 //! Once you've added your own content, simply re-run the app and it will update the html for you.
 //!
@@ -67,7 +57,7 @@
 //!
 //! You can share the your map documentation PDF and the `map_content.md` with your players. After each
 //! section, you can update the map image (if the players have explored further) and the `map_content` and rerun the app,
-//! generatin an updated html and PDF.
+//! generating an updated html and PDF.
 //!
 //! ## Advanced Users
 //!
@@ -95,7 +85,7 @@ pub mod config;
 pub mod geometry;
 /// Prepares all the images needed by the final html document.
 pub mod image_handling;
-/// Puts everything together and generates an html document.
+/// Combines the results from [geometry] and [image_handling] to generate an html document.
 pub mod document;
 /// Caches computed objects between runs to allow faster repeated executions.
 mod caching;

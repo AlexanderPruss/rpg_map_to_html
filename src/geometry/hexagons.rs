@@ -110,6 +110,7 @@ impl HexCell {
     }
 }
 
+/// Whether the vertical or horizontal sides of the hexagon are flat.
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Copy)]
 pub enum FlatSides {
     FlatVerticalSides,
@@ -230,6 +231,7 @@ impl ComputesCellMap for HexagonGeometryDefinition {
     }
 }
 
+/// Creates a Hexagon Geometry by prompting the user with a terminal wizard.
 pub fn generate_geometry_interactively() -> Geometry {
     let mut input = String::new();
     println!(

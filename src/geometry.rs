@@ -6,8 +6,10 @@ use std::fs::File;
 use std::io::{BufReader, Write};
 use std::path::PathBuf;
 
+/// Computes geometries for maps made of hexagons.
 pub mod hexagons;
 
+/// Where the geometry of a successful run will be persisted to.
 pub static CACHED_GEOMETRY_FILE: &str = "geometry.json";
 
 /// Describes the structure of the RPG map. The map's [Geometry] is used to identify map cells and neighbors.
@@ -25,7 +27,10 @@ pub enum Geometry {
     },
 }
 
+/// Computes cell maps.
 pub trait ComputesCellMap {
+
+    /// Given some image metadata, computes the cell map for this image.
     fn compute_cell_map<'map>(&self, map_dimensions: PixelPoint, map_margin: PixelPoint)
     -> CellMap;
 }
@@ -41,11 +46,13 @@ impl ComputesCellMap for Geometry {
     }
 }
 
+/// The [Cell]s of the map that will be processed.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct CellMap {
     pub cells_by_coordinate: HashMap<String, Cell>,
 }
 
+/// A map cell with all the metadata needed for image generation.
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Cell {
     pub coordinate: String,

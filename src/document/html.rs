@@ -34,6 +34,13 @@ impl ReaderWriter<Lines<BufReader<File>>> {
 
 /// Generates or appends to any existing markdown content found. Then uses this markdown content
 /// to generate the final html document.
+///
+/// First the .css and .md files needed are created/updated. Then, starting with the [map docs template,](TemplateFiles::MapDocs)
+/// each template line is written to html. If the line contains a [Token], the token is filled; if the line contains
+/// [Template]s, the respective template(s) are opened and written out.
+///
+/// The markdown input file is opened when this process starts. Whenever the current [Template] being
+/// written requires markdown input, the markdown cursor is advanced until the required input is found.
 pub fn write_html_doc(
     target_directory: &PathBuf,
     title: &String,

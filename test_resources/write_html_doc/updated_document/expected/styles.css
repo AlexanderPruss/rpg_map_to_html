@@ -1,3 +1,9 @@
+p {
+    font-size: 14px;
+    margin-top: 5px;
+    margin-bottom:5px;
+}
+
 .page {
     break-after: page;
 }
@@ -53,12 +59,13 @@
     color: orangered;
     display: flex;
     justify-content: center;
-    margin-bottom: 1px;
+    margin-bottom: 0px;
+    margin-top: 0px;
 }
 
 .header-description {
-    margin-top: 2px;
-    margin-bottom: 6px;
+    margin-top: 0px;
+    margin-bottom: 0px;
     display: flex;
     justify-content: center;
 }
