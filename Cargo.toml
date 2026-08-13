@@ -4,6 +4,10 @@ version = "1.0.0"
 edition = "2024"
 description = "Creates html documentation for rpg maps."
 license = "MIT"
+repository = "https://github.com/AlexanderPruss/rpg_map_to_html"
+readme = "Readme.MD"
+keywords = ["ttrpg", "rpg", "dnd", "hexmap"]
+
 
 [dependencies]
 serde_json = "1.0.149"
