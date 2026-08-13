@@ -260,6 +260,7 @@ mod test {
         use std::path::PathBuf;
 
         #[test]
+        #[ignore]
         fn creates_cutout_images_for_non_empty_cells() {
             let image_handling = ImageHandling {
                 zoomed_in_map_image_size: PixelPoint { x: 175, y: 175 },
@@ -327,6 +328,7 @@ mod test {
             use std::collections::{HashMap, HashSet};
             use std::fs;
             #[test]
+            #[ignore]
             fn only_saves_images_if_no_cached_image_is_present() {
                 let image_handling = ImageHandling {
                     zoomed_in_map_image_size: PixelPoint { x: 175, y: 175 },

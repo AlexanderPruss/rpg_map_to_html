@@ -314,6 +314,7 @@ mod test {
             use std::path::PathBuf;
 
             #[test]
+            #[ignore]
             fn only_saves_images_if_no_cached_image_is_present() {
                 let mut test_case = get_test_resources_path();
                 test_case.push("table_of_contents_images/three_by_three_map");

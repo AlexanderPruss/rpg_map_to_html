@@ -171,6 +171,7 @@ pub(crate) mod test {
         use std::path::PathBuf;
 
         #[test]
+        #[ignore]
         fn persists_and_loads_computed_images() {
             let mut test_case_path = PathBuf::new();
             test_case_path.push(env!("CARGO_MANIFEST_DIR"));

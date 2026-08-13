@@ -17,7 +17,7 @@ static SECTION_PREFIX: &str = "### ";
 static HIGHLIGHTED_SECTION_PREFIX: &str = "#### ";
 
 /// The headers identifying pieces of information in the markdown file.
-pub(crate) enum MarkdownHeaders {
+pub enum MarkdownHeaders {
     CellPage,
     ExtraCellPage,
     PageTitle,
@@ -28,7 +28,7 @@ pub(crate) enum MarkdownHeaders {
 }
 
 impl MarkdownHeaders {
-    pub(crate) fn get_prefix(&self) -> &str {
+    pub fn get_prefix(&self) -> &str {
         match self {
             MarkdownHeaders::CellPage => CELL_PAGE_MD_HEADER_PREFIX,
             MarkdownHeaders::ExtraCellPage => EXTRA_CELL_PAGE_MD_HEADER_PREFIX,
