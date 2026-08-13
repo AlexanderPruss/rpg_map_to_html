@@ -72,8 +72,8 @@ jobs:
       - name: Install rust target
         run: rustup target add ${{ matrix.target }}
 
-#      - name: Build
-#        run: cargo build --release --locked --target ${{ matrix.target }}
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Build and Package (Linux/macOS)
         if: runner.os != 'Windows'
