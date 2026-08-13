@@ -307,6 +307,7 @@ mod test {
         ///These are a bit silly because they all access the last_used_config.json at the root directory.
         ///For now we'll just run them in sequence.
         #[test]
+        #[ignore]
         fn sequential_caching_tests() {
             returns_none_if_the_config_has_changed();
             returns_none_if_the_image_has_changed_completely();

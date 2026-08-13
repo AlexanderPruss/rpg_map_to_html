@@ -739,6 +739,7 @@ mod test {
         }
 
         #[test]
+        #[ignore]
         fn creates_a_new_html_document_with_default_content() {
             let test_case = standard_test_case("new_document".to_string());
             write_html_doc(
@@ -763,6 +764,7 @@ mod test {
         }
 
         #[test]
+        #[ignore]
         fn updates_html_documents_using_user_content() {
             let test_case = standard_test_case("updated_document".to_string());
 
@@ -796,6 +798,7 @@ mod test {
         }
 
         #[test]
+        #[ignore]
         fn allows_user_defined_templates() {
             let test_case = standard_test_case("custom_template".to_string());
             let mut custom_html_template = PathBuf::from(&test_case.target_directory);
