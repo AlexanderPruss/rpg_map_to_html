@@ -7,6 +7,10 @@ most major browsers.
 
 Thanks to Gavin Norman and his brilliant Dolmenwood! Your old players in Germany say hello :)
 
+# Examples
+
+See the `examples` folder to see what the input and resulting PDF can look like.
+
 # Who is this for?
 
 For GMs and players who want to share location-based information with each other. This helps with
